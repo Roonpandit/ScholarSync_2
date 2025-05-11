@@ -2,28 +2,12 @@ const asyncHandler = require('express-async-handler');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const cloudinary = require('../config/cloudinary');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/attendance';
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'attendance-' + uniqueSuffix + ext);
-  }
-});
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
 
 // Set up file filter for images
 const fileFilter = (req, file, cb) => {
@@ -43,6 +27,30 @@ const upload = multer({
 
 // Handle file upload middleware
 exports.uploadAttendancePhoto = upload.single('photo');
+
+// Helper function to upload to Cloudinary
+const uploadToCloudinary = async (file) => {
+  return new Promise((resolve, reject) => {
+    const uploadOptions = {
+      resource_type: 'image',
+      quality: 'auto:best', // Automatically optimize quality while maintaining high standards
+      fetch_format: 'auto', // Automatically choose the best format
+      transformation: [
+        { width: 1920, height: 1080, crop: 'limit' }, // Limit maximum dimensions
+        { quality: 'auto:best' }, // Ensure best quality
+        { fetch_format: 'auto' } // Optimize format
+      ]
+    };
+
+    cloudinary.uploader.upload_stream(
+      uploadOptions,
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    ).end(file.buffer);
+  });
+};
 
 // @desc    Get available attendance slots for today
 // @route   GET /api/students/attendance-slots
@@ -88,6 +96,9 @@ exports.markAttendance = asyncHandler(async (req, res) => {
       message: 'Please upload a photo for attendance verification',
     });
   }
+
+  // Upload photo to Cloudinary
+  const cloudinaryResult = await uploadToCloudinary(req.file);
   
   // Find the attendance slot
   const slot = await AttendanceSlot.findById(slotId);
@@ -137,7 +148,13 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     slot: slotId,
     date: slot.date,
     shift: slot.shift,
-    photo: req.file.path,
+    photo: {
+      url: cloudinaryResult.secure_url,
+      public_id: cloudinaryResult.public_id,
+      format: cloudinaryResult.format,
+      width: cloudinaryResult.width,
+      height: cloudinaryResult.height
+    },
     location: {
       type: 'Point',
       coordinates: [parseFloat(longitude), parseFloat(latitude)],

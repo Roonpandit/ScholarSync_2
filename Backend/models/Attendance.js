@@ -22,8 +22,17 @@ const attendanceSchema = new mongoose.Schema(
       enum: ['morning', 'afternoon', 'evening'],
     },
     photo: {
-      type: String,
-      required: [true, 'Please upload a photo'],
+      url: {
+        type: String,
+        required: [true, 'Photo URL is required'],
+      },
+      public_id: {
+        type: String,
+        required: [true, 'Photo public ID is required'],
+      },
+      format: String,
+      width: Number,
+      height: Number
     },
     location: {
       type: {

@@ -1,0 +1,144 @@
+.absence-history {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--gray-800);
+}
+
+.filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  box-shadow: var(--box-shadow);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.filter-group select, .filter-group input {
+  min-width: 120px;
+}
+
+.absence-list {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow);
+  margin-bottom: 2rem;
+}
+
+.absence-list h2 {
+  margin-bottom: 1.5rem;
+  color: var(--gray-800);
+  font-size: 1.25rem;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.absence-table {
+  width: 100%;
+  min-width: 600px;
+}
+
+.absence-table th {
+  background-color: var(--gray-100);
+  color: var(--gray-700);
+  font-weight: 600;
+}
+
+.absence-row {
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+.absence-summary {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow);
+}
+
+.absence-summary h2 {
+  margin-bottom: 1.5rem;
+  color: var(--gray-800);
+  font-size: 1.25rem;
+}
+
+.summary-card {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1rem;
+  background-color: var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-label {
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.summary-value {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.status.good {
+  color: var(--success-color);
+}
+
+.status.warning {
+  color: var(--warning-color);
+}
+
+.status.critical {
+  color: var(--danger-color);
+}
+
+.warning-message {
+  background-color: rgba(244, 67, 54, 0.1);
+  border-left: 4px solid var(--danger-color);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+}
+
+.warning-message p {
+  color: var(--danger-color);
+  font-weight: 500;
+}
+
+@media (min-width: 640px) {
+  .summary-card {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
