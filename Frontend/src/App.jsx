@@ -10,6 +10,7 @@ import AbsentStudents from './pages/admin/AbsentStudents.jsx'
 import MarkAttendance from './pages/student/MarkAttendance.jsx'
 import AttendanceHistory from './pages/student/AttendanceHistory.jsx'
 import AbsenceHistory from './pages/student/AbsenceHistory.jsx'
+import Leave from './pages/student/Leave.jsx'
 import Layout from './components/Layout.jsx'
 import NotFound from './pages/NotFound.jsx'
 import './App.css'
@@ -102,6 +103,14 @@ function App() {
         element={
           user && user.role === 'student' ? 
           <Layout><AbsenceHistory /></Layout> : 
+          <Navigate to="/login" />
+        } 
+      />
+      <Route 
+        path="/student/apply-leave" 
+        element={
+          user && user.role === 'student' ? 
+          <Layout><Leave /></Layout> : 
           <Navigate to="/login" />
         } 
       />

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext.jsx'
+import { Calendar, Clock, Mail } from 'lucide-react'
 
 const StudentDashboard = () => {
   const { user } = useAuth()
@@ -14,6 +15,7 @@ const StudentDashboard = () => {
   })
   const [recentAttendance, setRecentAttendance] = useState([])
   const [loading, setLoading] = useState(true)
+
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -95,6 +97,7 @@ const StudentDashboard = () => {
         </div>
       </div>
       
+      {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-blue-500">
           <div className="flex justify-between items-start">
@@ -335,6 +338,7 @@ const StudentDashboard = () => {
           </div>
         </div>
       </div>
+
     </div>
   )
 }

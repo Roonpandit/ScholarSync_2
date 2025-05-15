@@ -314,6 +314,19 @@ const Layout = ({ children }) => {
                   >
                     Absence History
                   </NavItem>
+                                    <NavItem 
+                    to="/student/apply-leave"
+                    isActive={isActive('/student/apply-leave')}
+                    icon={
+<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+  <path d="M17.414 2.586A2 2 0 0016 2H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-.586-1.414zM6 4h8v2H6V4zm0 4h5v2H6V8zm0 4h8v2H6v-2zm9 4h-1v1h1v-1z" />
+</svg>
+
+
+                    }
+                  >
+                    Apply Leave
+                  </NavItem>
                 </div>
               )}
             </nav>
