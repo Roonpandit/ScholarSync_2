@@ -117,38 +117,25 @@ const uploadToCloudinary = async (file) => {
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
   const now = new Date();
   
-  // Get today's date at 00:00:00
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  
-  // Get tomorrow's date at 00:00:00
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  // Get current time in IST
-  const nowIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-  const nowUTC = new Date(nowIST);
+  // Get current time in UTC
+  const nowUTC = new Date();
 
-  // Find all active slots for today that are either:
+  // Find all active slots that are either:
   // 1. Currently active (startTime <= now <= endTime), OR
   // 2. Upcoming (startTime > now)
   const activeSlots = await AttendanceSlot.find({
     isActive: true,
-    date: { 
-      $gte: today,
-      $lt: tomorrow
-    },
     $or: [
       {
         // Currently active slots
-        startTime: { $lte: now },
-        endTime: { $gte: now }
+        startTime: { $lte: nowUTC },
+        endTime: { $gte: nowUTC }
       },
       {
         // Upcoming slots (within the next 12 hours)
         startTime: { 
-          $gt: now,
-          $lte: new Date(now.getTime() + (12 * 60 * 60 * 1000)) // Next 12 hours
+          $gt: nowUTC,
+          $lte: new Date(nowUTC.getTime() + (12 * 60 * 60 * 1000)) // Next 12 hours
         }
       }
     ]
