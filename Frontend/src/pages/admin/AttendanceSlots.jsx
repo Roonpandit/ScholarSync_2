@@ -40,27 +40,41 @@ const AttendanceSlots = () => {
   }, []); 
  
   // Format time in 24-hour format 
-  const formatTime24h = (date) => { 
-    if (!date) return ""; 
-    const d = new Date(date); 
-    return d.toLocaleTimeString("en-US", { 
-      hour: "2-digit", 
-      minute: "2-digit", 
-      hour12: false, 
-      timeZone: "Asia/Kolkata", 
-    }); 
-  }; 
- 
-  // Format date as 'Mon, 15 May' 
-  const formatDateDisplay = (date) => { 
-    if (!date) return ""; 
-    const d = new Date(date); 
-    return d.toLocaleDateString("en-US", { 
-      weekday: "short", 
-      day: "numeric", 
-      month: "short", 
-      timeZone: "Asia/Kolkata", 
-    }); 
+  const formatTime24h = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Kolkata"
+    });
+  };
+
+  // Format date as 'Mon, 15 May'
+  const formatDateDisplay = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      timeZone: "Asia/Kolkata"
+    });
+  };
+
+  // Get current time in IST
+  const getCurrentTimeIST = () => {
+    return new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
+  };
+
+  // Get current date in IST
+  const getCurrentDateIST = () => {
+    return new Date().toLocaleDateString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
   }; 
  
   const fetchSlots = async () => { 

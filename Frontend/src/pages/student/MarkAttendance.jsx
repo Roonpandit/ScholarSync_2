@@ -23,6 +23,20 @@ const MarkAttendance = () => {
   const [hasReadInstructions, setHasReadInstructions] = useState(false)
   const [errors, setErrors] = useState({})
 
+  // Get current time in IST
+  const getCurrentTimeIST = () => {
+    return new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
+  };
+
+  // Get current date in IST
+  const getCurrentDateIST = () => {
+    return new Date().toLocaleDateString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
+  };
+
   useEffect(() => {
     // Get slotId from URL query params
     const params = new URLSearchParams(location.search)
