@@ -23,7 +23,7 @@ app.use(express.json());
 
 // Enable CORS with specific origin and credentials
 const corsOptions = {
-  origin: 'http://localhost:5173', // Your frontend URL
+  origin: process.env.ALLOWED_ORIGINS.split(","), // Your frontend URL
   credentials: true, // Allow credentials (cookies, authorization headers)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
