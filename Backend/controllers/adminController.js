@@ -507,15 +507,23 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create date objects from the input in local timezone (Asia/Kolkata)
-  const [year, month, day] = date.split('-').map(Number);
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
+  // Parse the UTC timestamps
+  const slotDate = new Date(date);
+  const slotStartTime = new Date(startTime);
+  const slotEndTime = new Date(endTime);
 
-  // Create dates in the local timezone (Asia/Kolkata)
-  const localDate = new Date(year, month - 1, day);
-  const localStartTime = new Date(year, month - 1, day, startHour, startMinute);
-  const localEndTime = new Date(year, month - 1, day, endHour, endMinute);
+  // Validate the dates
+  if (isNaN(slotDate.getTime()) || isNaN(slotStartTime.getTime()) || isNaN(slotEndTime.getTime())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid date format. Please provide valid UTC timestamps'
+    });
+  }
+
+  // If end time is before start time, assume it's the next day
+  if (slotEndTime <= slotStartTime) {
+    slotEndTime.setDate(slotEndTime.getDate() + 1);
+  }
 
   // If end time is before start time, assume it's the next day
   if (localEndTime <= localStartTime) {
@@ -535,12 +543,12 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create attendance slot with proper timezone handling
+  // Create attendance slot with UTC timestamps
   const attendanceSlot = await AttendanceSlot.create({
     shift,
-    date: localDate,
-    startTime: localStartTime,
-    endTime: localEndTime,
+    date: slotDate,
+    startTime: slotStartTime,
+    endTime: slotEndTime,
     timezone: 'Asia/Kolkata',
     isActive: true,
     createdBy: req.user._id,
