@@ -37,12 +37,20 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
     const slots = await AttendanceSlot.find(query)
       .sort({ date: -1, startTime: 1 });
     
-    // Add isExpired flag to each slot
+    // Add isExpired flag and convert times to IST for display
     const now = new Date();
-    const processedSlots = slots.map(slot => ({
-      ...slot.toObject(),
-      isExpired: new Date(slot.endTime) < now
-    }));
+    const processedSlots = slots.map(slot => {
+      const slotObj = slot.toObject();
+      const startTimeIST = new Date(slotObj.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+      const endTimeIST = new Date(slotObj.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+      
+      return {
+        ...slotObj,
+        startTime: startTimeIST,
+        endTime: endTimeIST,
+        isExpired: new Date(slotObj.endTime) < now
+      };
+    });
     
     res.status(200).json({
       success: true,
@@ -120,8 +128,8 @@ exports.getAttendanceBySlot = asyncHandler(async (req, res) => {
           _id: slot._id,
           shift: slot.shift,
           date: slot.date,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
+          startTime: new Date(slot.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+          endTime: new Date(slot.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
           isActive: slot.isActive
         },
         attendance: formattedRecords

@@ -21,12 +21,20 @@ const attendanceSlotSchema = new mongoose.Schema(
     startTime: {
       type: Date,
       required: [true, 'Please add a start time'],
-      set: toUTCDate
+      set: function(value) {
+        // Convert IST time to UTC
+        const istTime = new Date(value);
+        return new Date(istTime.getTime() + (istTime.getTimezoneOffset() * 60000));
+      }
     },
     endTime: {
       type: Date,
       required: [true, 'Please add an end time'],
-      set: toUTCDate
+      set: function(value) {
+        // Convert IST time to UTC
+        const istTime = new Date(value);
+        return new Date(istTime.getTime() + (istTime.getTimezoneOffset() * 60000));
+      }
     },
     timezone: {
       type: String,

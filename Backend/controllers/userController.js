@@ -125,6 +125,10 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
+  // Get current time in IST
+  const nowIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const nowUTC = new Date(nowIST);
+
   // Find all active slots for today that are either:
   // 1. Currently active (startTime <= now <= endTime), OR
   // 2. Upcoming (startTime > now)
@@ -150,10 +154,19 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
     ]
   }).sort({ startTime: 1 }); // Sort by start time ascending
   
+  // Convert times to IST for display
+  const slotsWithISTTimes = activeSlots.map(slot => {
+    return {
+      ...slot.toObject(),
+      startTime: new Date(slot.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+      endTime: new Date(slot.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    };
+  });
+
   res.status(200).json({
     success: true,
     count: activeSlots.length,
-    data: activeSlots,
+    data: slotsWithISTTimes,
   });
 });
 
