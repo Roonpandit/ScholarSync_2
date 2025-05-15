@@ -39,14 +39,6 @@ const AttendanceSlots = () => {
     return endTime < now; 
   }, []); 
  
-  // Convert UTC time to IST
-  const convertUTCToIST = (utcTime) => {
-    if (!utcTime) return "";
-    return new Date(utcTime).toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata"
-    });
-  };
-
   // Format time in 24-hour format (IST)
   const formatTime24h = (date) => {
     if (!date) return "";
@@ -71,14 +63,18 @@ const AttendanceSlots = () => {
     });
   };
 
-  // Get current time in UTC
-  const getCurrentTimeUTC = () => {
-    return new Date().toISOString();
+  // Get current time in IST
+  const getCurrentTimeIST = () => {
+    return new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
   };
 
-  // Get current date in UTC
-  const getCurrentDateUTC = () => {
-    return new Date().toISOString().split('T')[0];
+  // Get current date in IST
+  const getCurrentDateIST = () => {
+    return new Date().toLocaleDateString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
   }; 
  
   const fetchSlots = async () => { 
@@ -173,7 +169,7 @@ const AttendanceSlots = () => {
           studentId, 
           slotId: currentSlot._id, 
           isPresent, 
-          markedAt: getCurrentTimeUTC(), 
+          markedAt: getCurrentTimeIST(), 
         }, 
         config 
       ); 

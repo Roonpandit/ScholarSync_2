@@ -23,22 +23,42 @@ const MarkAttendance = () => {
   const [hasReadInstructions, setHasReadInstructions] = useState(false)
   const [errors, setErrors] = useState({})
 
-  // Convert UTC time to IST
-  const convertUTCToIST = (utcTime) => {
-    if (!utcTime) return "";
-    return new Date(utcTime).toLocaleString("en-US", {
+  // Format time in 24-hour format (IST)
+  const formatTime24h = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
       timeZone: "Asia/Kolkata"
     });
   };
 
-  // Get current time in UTC
-  const getCurrentTimeUTC = () => {
-    return new Date().toISOString();
+  // Format date as 'Mon, 15 May' (IST)
+  const formatDateDisplay = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      timeZone: "Asia/Kolkata"
+    });
   };
 
-  // Get current date in UTC
-  const getCurrentDateUTC = () => {
-    return new Date().toISOString().split('T')[0];
+  // Get current time in IST
+  const getCurrentTimeIST = () => {
+    return new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
+  };
+
+  // Get current date in IST
+  const getCurrentDateIST = () => {
+    return new Date().toLocaleDateString("en-US", {
+      timeZone: "Asia/Kolkata"
+    });
   };
 
   useEffect(() => {
@@ -167,7 +187,7 @@ const MarkAttendance = () => {
       formData.append('longitude', location_.longitude)
       formData.append('address', location_.address)
       formData.append('photo', photo)
-      formData.append('markedAt', getCurrentTimeUTC())
+      formData.append('markedAt', getCurrentTimeIST())
       
       const res = await axios.post('/students/attendance', formData, {
         headers: {
