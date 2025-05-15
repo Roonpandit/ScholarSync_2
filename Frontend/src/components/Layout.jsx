@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext.jsx'
+import Profile from './Profile'
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth()
@@ -9,6 +10,7 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // Handle window scroll for header shadow effect
   useEffect(() => {
@@ -131,18 +133,18 @@ const Layout = ({ children }) => {
                     <p className="text-xs text-gray-500">{user?.email || 'user@example.com'}</p>
                   </div>
                   <div className="py-1">
-                    <Link to="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button 
+                      onClick={() => {
+                        setShowProfileModal(true);
+                        setDropdownOpen(false);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left"
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       Profile
-                    </Link>
-                    <Link to="/settings" className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35-1.756 0-.163 0-.326-.003-.489" />
-                      </svg>
-                      Settings
-                    </Link>
+                    </button>
                     <button 
                       onClick={handleLogout}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
@@ -346,9 +348,42 @@ const Layout = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
+              onClick={() => setShowProfileModal(false)}
+            ></div>
+
+            {/* Modal panel */}
+            <div className="inline-block w-full max-w-2xl transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl">
+              <div className="absolute right-0 top-0 pr-4 pt-4">
+                <button
+                  type="button"
+                  className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onClick={() => setShowProfileModal(false)}
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <Profile />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
 // Navigation Item Component
 const NavItem = ({ to, isActive, icon, children, badge = false }) => {
