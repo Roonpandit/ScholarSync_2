@@ -7,6 +7,11 @@ const attendanceSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    timezone: {
+      type: String,
+      default: 'Asia/Kolkata',
+      required: true
+    },
     slot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'AttendanceSlot',
@@ -48,7 +53,9 @@ const attendanceSchema = new mongoose.Schema(
     },
     markedAt: {
       type: Date,
-      default: Date.now,
+      default: function() {
+        return new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+      }
     },
     studentCode: {
       type: String,

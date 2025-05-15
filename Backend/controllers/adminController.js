@@ -200,6 +200,9 @@ exports.markAttendance = asyncHandler(async (req, res) => {
       });
     }
 
+    // Get current time in IST
+    const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
     // Check if student exists
     const student = await User.findOne({
       _id: studentId,
@@ -218,15 +221,6 @@ exports.markAttendance = asyncHandler(async (req, res) => {
       student: studentId,
       slot: slotId
     });
-
-    const attendanceData = {
-      student: studentId,
-      slot: slotId,
-      date: slot.date,
-      shift: slot.shift,
-      isPresent,
-      markedAt: timestamp || new Date()
-    };
 
     if (attendance) {
       // Update existing attendance

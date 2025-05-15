@@ -64,10 +64,10 @@ const PORT = process.env.PORT;
 // Function to fetch active slots
 const fetchActiveSlots = async () => {
   try {
-    // Get today's date in UTC
-    const today = new Date().toISOString().split('T')[0];
-    // Get current time in UTC
-    const now = new Date().toISOString();
+    // Get today's date in IST
+    const today = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
+    // Get current time in IST
+    const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
 
     const activeSlots = await AttendanceSlot.find({
       date: today,

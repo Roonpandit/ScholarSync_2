@@ -224,8 +224,11 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     });
   }
   
-  // Create attendance record
-  const attendance = await Attendance.create({
+  // Get current time in IST
+  const nowIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
+  // Create attendance record with IST timestamp
+  const attendance = new Attendance({
     student: req.user._id,
     slot: slotId,
     date: slot.date,
@@ -239,14 +242,16 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     },
     location: {
       type: 'Point',
-      coordinates: [parseFloat(longitude), parseFloat(latitude)],
-      address: address || 'Unknown location'
+      coordinates: [longitude, latitude],
+      address
     },
-    markedAt: now,
+    markedAt: new Date(nowIST),
     studentCode: req.user.studentCode,
     studentName: req.user.name,
     studentEmail: req.user.email
   });
+  
+  await attendance.save();
   
   res.status(201).json({
     success: true,
