@@ -208,19 +208,18 @@ const AttendanceSlots = () => {
         .map(Number); 
       const [endHour, endMinute] = formData.endTime.split(":").map(Number); 
  
-      // Create date strings in local timezone (Asia/Kolkata) 
-      const formatTime = (hours, minutes) => { 
-        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart( 
-          2, 
-          "0" 
-        )}`; 
-      }; 
- 
-      const slotData = { 
-        shift: formData.shift, 
-        date: formData.date, // YYYY-MM-DD format 
-        startTime: formatTime(startHour, startMinute), // HH:MM format 
-        endTime: formatTime(endHour, endMinute), // HH:MM format 
+      // Convert IST time to UTC
+      const convertISTToUTC = (hours, minutes) => {
+        const istDate = new Date(formData.date);
+        istDate.setHours(hours, minutes, 0, 0);
+        return istDate.toISOString();
+      };
+
+      const slotData = {
+        shift: formData.shift,
+        date: formData.date, // YYYY-MM-DD format
+        startTime: convertISTToUTC(startHour, startMinute), // UTC ISO string
+        endTime: convertISTToUTC(endHour, endMinute), // UTC ISO string
       }; 
  
       const token = localStorage.getItem("token"); 
