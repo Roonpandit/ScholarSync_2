@@ -4,6 +4,433 @@ const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
 
+// @desc    Get all attendance slots
+// @route   GET /api/admin/attendance-slots
+// @access  Private/Admin
+exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
+  try {
+    const { date } = req.query;
+    let query = {};
+    
+    // If date is provided, filter slots for that date
+    if (date) {
+      const parsedDate = new Date(date);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid date format. Please provide a valid date in YYYY-MM-DD format',
+        });
+      }
+      
+      const startOfDay = new Date(parsedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(parsedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      query.date = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    }
+    
+    const slots = await AttendanceSlot.find(query)
+      .sort({ date: -1, startTime: 1 });
+    
+    // Add isExpired flag to each slot
+    const now = new Date();
+    const processedSlots = slots.map(slot => ({
+      ...slot.toObject(),
+      isExpired: new Date(slot.endTime) < now
+    }));
+    
+    res.status(200).json({
+      success: true,
+      count: processedSlots.length,
+      data: processedSlots
+    });
+  } catch (error) {
+    console.error('Error fetching attendance slots:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching attendance slots',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get attendance records by slot ID
+// @route   GET /api/attendance?slotId=:slotId
+// @access  Private/Admin
+exports.getAttendanceBySlot = asyncHandler(async (req, res) => {
+  try {
+    const { slotId } = req.query;
+    
+    console.log('Received request for slot ID:', slotId);
+    
+    if (!slotId) {
+      console.error('No slot ID provided');
+      return res.status(400).json({
+        success: false,
+        message: 'Slot ID is required',
+      });
+    }
+
+    // Find all attendance records for this slot
+    const attendanceRecords = await Attendance.find({ slot: slotId })
+      .populate('student', 'name email rollNumber studentCode')
+      .sort({ createdAt: -1 });
+    
+    // Get slot details
+    const slot = await AttendanceSlot.findById(slotId);
+    
+    if (!slot) {
+      console.error('Slot not found:', slotId);
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance slot not found',
+      });
+    }
+
+    console.log(`Found ${attendanceRecords.length} attendance records for slot:`, slotId);
+    
+    // Format the response
+    const formattedRecords = attendanceRecords.map(record => ({
+      _id: record._id,
+      student: {
+        _id: record.student._id,
+        name: record.student.name,
+        email: record.student.email,
+        rollNumber: record.student.rollNumber,
+        studentCode: record.student.studentCode
+      },
+      status: 'present',
+      markedAt: record.markedAt,
+      photo: record.photo,
+      location: record.location,
+      shift: record.shift,
+      date: record.date
+    }));
+    
+    res.status(200).json({
+      success: true,
+      count: formattedRecords.length,
+      data: {
+        slot: {
+          _id: slot._id,
+          shift: slot.shift,
+          date: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          isActive: slot.isActive
+        },
+        attendance: formattedRecords
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching attendance by slot:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching attendance records',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get students by class ID
+// @route   GET /api/admin/students/class?classId=:classId
+// @access  Private/Admin
+exports.getStudentsByClass = asyncHandler(async (req, res) => {
+  try {
+    const { classId } = req.query;
+    
+    if (!classId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Class ID is required',
+      });
+    }
+
+    // Find all students in the specified class
+    const students = await User.find({ 
+      class: classId,
+      role: 'student'
+    }).select('-password -refreshToken');
+
+    res.status(200).json({
+      success: true,
+      count: students.length,
+      data: students
+    });
+  } catch (error) {
+    console.error('Error fetching students by class:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Mark attendance for a student
+// @route   POST /api/admin/attendance/mark
+// @access  Private/Admin
+exports.markAttendance = asyncHandler(async (req, res) => {
+  try {
+    const { slotId, studentId, isPresent, timestamp } = req.body;
+
+    // Validate input
+    if (!slotId || !studentId || isPresent === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide slotId, studentId, and isPresent',
+      });
+    }
+
+    // Check if slot exists and is active
+    const slot = await AttendanceSlot.findOne({
+      _id: slotId,
+      isActive: true
+    });
+
+    if (!slot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Active attendance slot not found',
+      });
+    }
+
+    // Check if student exists
+    const student = await User.findOne({
+      _id: studentId,
+      role: 'student'
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
+
+    // Check if attendance record already exists for this student and slot
+    let attendance = await Attendance.findOne({
+      student: studentId,
+      slot: slotId
+    });
+
+    const attendanceData = {
+      student: studentId,
+      slot: slotId,
+      date: slot.date,
+      shift: slot.shift,
+      isPresent,
+      markedAt: timestamp || new Date()
+    };
+
+    if (attendance) {
+      // Update existing attendance
+      attendance = await Attendance.findByIdAndUpdate(
+        attendance._id,
+        { $set: attendanceData },
+        { new: true, runValidators: true }
+      );
+    } else {
+      // Create new attendance record
+      attendance = new Attendance(attendanceData);
+      await attendance.save();
+    }
+
+    // Populate student data in the response
+    attendance = await attendance.populate('student', 'name rollNumber email');
+
+    res.status(200).json({
+      success: true,
+      data: attendance,
+      message: 'Attendance marked successfully',
+    });
+  } catch (error) {
+    console.error('Error marking attendance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+
+// @desc    Get all students by class ID
+// @route   GET /api/admin/students?classId=:classId
+// @access  Private/Admin
+exports.getStudentsByClass = asyncHandler(async (req, res) => {
+  try {
+    const { classId } = req.query;
+    
+    if (!classId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Class ID is required',
+      });
+    }
+
+    const students = await User.find({ class: classId, role: 'student' })
+      .select('-password -refreshToken')
+      .sort({ name: 1 });
+
+    res.status(200).json({
+      success: true,
+      count: students.length,
+      data: students,
+    });
+  } catch (error) {
+    console.error('Error fetching students by class:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+
+// @desc    Get attendance records by slot ID
+// @route   GET /api/admin/attendance?slotId=:slotId
+// @access  Private/Admin
+exports.getAttendanceBySlot = asyncHandler(async (req, res) => {
+  try {
+    const { slotId } = req.query;
+    
+    if (!slotId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Slot ID is required',
+      });
+    }
+
+    // Check if slot exists
+    const slot = await AttendanceSlot.findById(slotId);
+    if (!slot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance slot not found',
+      });
+    }
+
+    const attendanceRecords = await Attendance.find({ slot: slotId })
+      .populate('student', 'name rollNumber email')
+      .select('-__v');
+
+    res.status(200).json({
+      success: true,
+      count: attendanceRecords.length,
+      data: attendanceRecords,
+    });
+  } catch (error) {
+    console.error('Error fetching attendance by slot:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+});
+
+// @desc    Get attendance details for a specific student
+// @route   GET /api/admin/attendance/details
+// @access  Private/Admin
+exports.getAttendanceDetails = asyncHandler(async (req, res) => {
+  try {
+    const { studentId, month, year } = req.query;
+    
+    console.log('Fetching attendance details for:', { studentId, month, year });
+
+    // Validation
+    if (!studentId || !month || !year) {
+      console.error('Missing required parameters');
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide studentId, month, and year',
+      });
+    }
+
+    // Validate student exists
+    const student = await User.findById(studentId);
+    if (!student) {
+      console.error('Student not found:', studentId);
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
+
+    // Parse month and year to numbers
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+
+    if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+      console.error('Invalid month:', month);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid month. Please provide a month between 1 and 12',
+      });
+    }
+
+
+    // Calculate start and end dates for the month
+    const startDate = new Date(yearNum, monthNum - 1, 1);
+    const endDate = new Date(yearNum, monthNum, 0);
+
+    console.log('Date range:', { startDate, endDate });
+
+    // Get attendance records for the student in the specified month
+    const attendanceRecords = await Attendance.aggregate([
+      {
+        $match: {
+          student: new mongoose.Types.ObjectId(studentId),
+          date: {
+            $gte: startDate,
+            $lte: endDate,
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'attendanceslots',
+          localField: 'slot',
+          foreignField: '_id',
+          as: 'slotDetails',
+        },
+      },
+      { $unwind: '$slotDetails' },
+      {
+        $project: {
+          _id: 1,
+          date: 1,
+          status: 1,
+          shift: '$slotDetails.shift',
+          startTime: '$slotDetails.startTime',
+          endTime: '$slotDetails.endTime',
+          createdAt: 1,
+        },
+      },
+      { $sort: { date: 1 } },
+    ]);
+
+    console.log('Found records:', attendanceRecords.length);
+
+    res.status(200).json({
+      success: true,
+      data: attendanceRecords,
+    });
+  } catch (error) {
+    console.error('Error in getAttendanceDetails:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching attendance details',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
 // @desc    Create a new student
 // @route   POST /api/admin/students
 // @access  Private/Admin
@@ -78,9 +505,24 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
+  // Create date objects from the input in local timezone (Asia/Kolkata)
+  const [year, month, day] = date.split('-').map(Number);
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+
+  // Create dates in the local timezone (Asia/Kolkata)
+  const localDate = new Date(year, month - 1, day);
+  const localStartTime = new Date(year, month - 1, day, startHour, startMinute);
+  const localEndTime = new Date(year, month - 1, day, endHour, endMinute);
+
+  // If end time is before start time, assume it's the next day
+  if (localEndTime <= localStartTime) {
+    localEndTime.setDate(localEndTime.getDate() + 1);
+  }
+  
   // Check if slot already exists for this date and shift
   const existingSlot = await AttendanceSlot.findOne({
-    date: new Date(date).setHours(0, 0, 0, 0),
+    date: localDate,
     shift,
   });
 
@@ -91,12 +533,13 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create attendance slot
+  // Create attendance slot with proper timezone handling
   const attendanceSlot = await AttendanceSlot.create({
     shift,
-    date: new Date(date).setHours(0, 0, 0, 0),
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
+    date: localDate,
+    startTime: localStartTime,
+    endTime: localEndTime,
+    timezone: 'Asia/Kolkata',
     isActive: true,
     createdBy: req.user._id,
   });
@@ -112,24 +555,46 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
   const { date } = req.query;
+  const now = new Date();
   
   let query = {};
   
   if (date) {
     const queryDate = new Date(date);
     queryDate.setHours(0, 0, 0, 0);
-    
     query.date = queryDate;
   }
 
+  // Find all slots that match the query
   const attendanceSlots = await AttendanceSlot.find(query)
     .sort({ date: -1, shift: 1 })
     .populate('createdBy', 'name email');
 
+  // Check for and close expired slots
+  const updatePromises = [];
+  const updatedSlots = [];
+
+  for (const slot of attendanceSlots) {
+    const slotEndTime = new Date(slot.endTime);
+    
+    // If slot has ended and is still active, close it
+    if (slot.isActive && slotEndTime < now) {
+      slot.isActive = false;
+      updatePromises.push(slot.save());
+    }
+    
+    updatedSlots.push(slot);
+  }
+
+  // Wait for all updates to complete
+  if (updatePromises.length > 0) {
+    await Promise.all(updatePromises);
+  }
+
   res.status(200).json({
     success: true,
-    count: attendanceSlots.length,
-    data: attendanceSlots,
+    count: updatedSlots.length,
+    data: updatedSlots,
   });
 });
 
@@ -175,10 +640,20 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
     });
   }
 
+  // Parse the date and validate it
   const queryDate = new Date(date);
-  queryDate.setHours(0, 0, 0, 0);
+  if (isNaN(queryDate.getTime())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid date format. Please provide a valid date in YYYY-MM-DD format',
+    });
+  }
   
-  let query = { date: queryDate };
+  // Ensure the date is set to the start of the day in the local timezone
+  const localDate = new Date(queryDate);
+  localDate.setHours(0, 0, 0, 0);
+  
+  let query = { date: localDate };
   
   if (shift) {
     query.shift = shift;

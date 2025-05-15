@@ -2,12 +2,16 @@ const express = require('express');
 const {
   createStudent,
   getAllStudents,
+  getStudentsByClass,
   createAttendanceSlot,
   getAllAttendanceSlots,
   closeAttendanceSlot,
   getAttendanceByDate,
+  getAttendanceBySlot,
+  markAttendance,
   getAttendanceStats,
-  getAbsentStudents
+  getAbsentStudents,
+  getAttendanceDetails
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -22,16 +26,31 @@ router.route('/students')
   .post(createStudent)
   .get(getAllStudents);
 
+// Get students by class ID
+router.get('/students/class', getStudentsByClass);
+
 // Attendance slot management routes
 router.route('/attendance-slots')
   .post(createAttendanceSlot)
-  .get(getAllAttendanceSlots);
+  .get((req, res, next) => {
+    console.log('GET /api/admin/attendance-slots called with query:', req.query);
+    console.log('Headers:', req.headers);
+    next();
+  }, getAllAttendanceSlots);
 
 router.put('/attendance-slots/:id/close', closeAttendanceSlot);
 
 // Attendance records routes
-router.get('/attendance', getAttendanceByDate);
+router.get('/attendance', (req, res) => {
+  // Route to appropriate handler based on query params
+  if (req.query.slotId) {
+    return getAttendanceBySlot(req, res);
+  }
+  return getAttendanceByDate(req, res);
+});
+router.post('/attendance/mark', markAttendance);
 router.get('/attendance/stats', getAttendanceStats);
 router.get('/attendance/absent', getAbsentStudents);
+router.get('/attendance/details', getAttendanceDetails);
 
 module.exports = router;

@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+// Helper to ensure dates are stored in UTC
+const toUTCDate = (date) => {
+  if (!date) return date;
+  return new Date(date.toISOString());
+};
+
 const attendanceSlotSchema = new mongoose.Schema(
   {
     shift: {
@@ -10,14 +16,22 @@ const attendanceSlotSchema = new mongoose.Schema(
     date: {
       type: Date,
       required: [true, 'Please add a date'],
+      set: toUTCDate
     },
     startTime: {
       type: Date,
       required: [true, 'Please add a start time'],
+      set: toUTCDate
     },
     endTime: {
       type: Date,
       required: [true, 'Please add an end time'],
+      set: toUTCDate
+    },
+    timezone: {
+      type: String,
+      default: 'Asia/Kolkata',
+      required: true
     },
     isActive: {
       type: Boolean,

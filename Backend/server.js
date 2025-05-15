@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const AttendanceSlot = require('./models/AttendanceSlot'); // import model
 
 // Load env vars
 dotenv.config();
@@ -20,8 +21,17 @@ const app = express();
 // Body parser
 app.use(express.json());
 
-// Enable CORS
-app.use(cors());
+// Enable CORS with specific origin and credentials
+const corsOptions = {
+  origin: 'http://localhost:5173', // Your frontend URL
+  credentials: true, // Allow credentials (cookies, authorization headers)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -49,15 +59,34 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT
+const PORT = process.env.PORT;
 
-const server = app.listen(PORT, () => {
+// Function to fetch active slots
+const fetchActiveSlots = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const activeSlots = await AttendanceSlot.find({
+      date: today,
+      isActive: true,
+      startTime: { $lte: new Date() },
+      endTime: { $gte: new Date() }
+    }).populate('class', '_id name');
+
+    console.log('Active slots:', activeSlots);
+  } catch (error) {
+    console.error('Error fetching active slots:', error.message);
+  }
+};
+
+// Start server and run fetch function
+const server = app.listen(PORT, async () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  await fetchActiveSlots();
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   console.log(`Error: ${err.message}`);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });

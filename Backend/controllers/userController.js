@@ -5,6 +5,7 @@ const multer = require('multer');
 const cloudinary = require('../config/cloudinary');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
+const User = require('../models/User');
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -27,6 +28,64 @@ const upload = multer({
 
 // Handle file upload middleware
 exports.uploadAttendancePhoto = upload.single('photo');
+
+// @desc    Get students by class ID
+// @route   GET /api/students/class?classId=:classId
+// @access  Private/Student,Admin
+exports.getStudentsByClass = asyncHandler(async (req, res) => {
+  try {
+    const { classId } = req.query;
+    
+    console.log('Received request for class ID:', classId);
+    
+    if (!classId) {
+      console.error('No class ID provided');
+      return res.status(400).json({
+        success: false,
+        message: 'Class ID is required',
+      });
+    }
+
+    console.log('Searching for students in class:', classId);
+    
+    // Find all students in the specified class
+    const students = await User.find({ 
+      class: classId,
+      role: 'student'
+    }).select('_id name email rollNumber photo');
+
+    console.log(`Found ${students.length} students in class ${classId}`);
+
+    // Format the response to match the expected structure
+    const formattedStudents = students.map(student => ({
+      _id: student._id,
+      name: student.name || 'Unknown Student',
+      email: student.email || '',
+      rollNumber: student.rollNumber || '',
+      photo: student.photo?.url || null
+    }));
+
+    console.log('Formatted students:', formattedStudents);
+
+    res.status(200).json({
+      success: true,
+      count: formattedStudents.length,
+      data: formattedStudents
+    });
+  } catch (error) {
+    console.error('Error in getStudentsByClass:', {
+      message: error.message,
+      stack: error.stack,
+      query: req.query,
+      params: req.params
+    });
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching students',
+      error: error.message
+    });
+  }
+});
 
 // Helper function to upload to Cloudinary
 const uploadToCloudinary = async (file) => {
@@ -56,17 +115,40 @@ const uploadToCloudinary = async (file) => {
 // @route   GET /api/students/attendance-slots
 // @access  Private/Student
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
-  // Get today's date and set time to beginning of day
-  const today = new Date();
+  const now = new Date();
+  
+  // Get today's date at 00:00:00
+  const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   
-  // Find all active slots for today
+  // Get tomorrow's date at 00:00:00
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  // Find all active slots for today that are either:
+  // 1. Currently active (startTime <= now <= endTime), OR
+  // 2. Upcoming (startTime > now)
   const activeSlots = await AttendanceSlot.find({
-    date: today,
     isActive: true,
-    startTime: { $lte: new Date() }, // Slot has started
-    endTime: { $gte: new Date() }    // Slot has not ended
-  });
+    date: { 
+      $gte: today,
+      $lt: tomorrow
+    },
+    $or: [
+      {
+        // Currently active slots
+        startTime: { $lte: now },
+        endTime: { $gte: now }
+      },
+      {
+        // Upcoming slots (within the next 12 hours)
+        startTime: { 
+          $gt: now,
+          $lte: new Date(now.getTime() + (12 * 60 * 60 * 1000)) // Next 12 hours
+        }
+      }
+    ]
+  }).sort({ startTime: 1 }); // Sort by start time ascending
   
   res.status(200).json({
     success: true,
