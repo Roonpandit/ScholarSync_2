@@ -215,9 +215,12 @@ const AttendanceSlots = () => {
         return istDate.toISOString();
       };
 
+      // Convert date to UTC timestamp
+      const dateUTC = new Date(formData.date).toISOString();
+
       const slotData = {
         shift: formData.shift,
-        date: formData.date, // YYYY-MM-DD format
+        date: dateUTC, // UTC ISO string
         startTime: convertISTToUTC(startHour, startMinute), // UTC ISO string
         endTime: convertISTToUTC(endHour, endMinute), // UTC ISO string
       }; 
