@@ -520,19 +520,9 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
-  // If end time is before start time, assume it's the next day
-  if (slotEndTime <= slotStartTime) {
-    slotEndTime.setDate(slotEndTime.getDate() + 1);
-  }
-
-  // If end time is before start time, assume it's the next day
-  if (localEndTime <= localStartTime) {
-    localEndTime.setDate(localEndTime.getDate() + 1);
-  }
-  
   // Check if slot already exists for this date and shift
   const existingSlot = await AttendanceSlot.findOne({
-    date: localDate,
+    date: slotDate,
     shift,
   });
 
