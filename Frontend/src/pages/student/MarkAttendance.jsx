@@ -23,10 +23,10 @@ const MarkAttendance = () => {
   const [hasReadInstructions, setHasReadInstructions] = useState(false)
   const [errors, setErrors] = useState({})
 
-  // Format time in 24-hour format (IST)
-  const formatTime24h = (date) => {
-    if (!date) return "";
-    const d = new Date(date);
+  // Format UTC time to 24-hour format in IST
+  const formatTime24h = (utcTime) => {
+    if (!utcTime) return "";
+    const d = new Date(utcTime);
     return d.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",

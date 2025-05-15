@@ -66,18 +66,24 @@ const StudentDashboard = () => {
     ? Math.round((attendanceStats.present / attendanceStats.total) * 100) 
     : 0
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  // Format UTC date to IST
+  const formatDate = (utcDate) => {
+    if (!utcDate) return "";
+    return new Date(utcDate).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata'
     })
   }
 
-  const formatTime = (timeString) => {
-    return new Date(timeString).toLocaleTimeString('en-US', {
+  // Format UTC time to IST
+  const formatTime = (utcTime) => {
+    if (!utcTime) return "";
+    return new Date(utcTime).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Kolkata'
     })
   }
 
