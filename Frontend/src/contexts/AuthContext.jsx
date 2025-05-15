@@ -12,14 +12,20 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   // Configure axios defaults
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:2009/api'
+  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:2009/api';
+  axios.defaults.baseURL = baseURL;
+  
+  // Configure axios to include credentials for CORS
+  axios.defaults.withCredentials = true;
   
   // Set auth token for all requests if available
   useEffect(() => {
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axios.defaults.headers.common['Content-Type'] = 'application/json';
+      axios.defaults.headers.common['Accept'] = 'application/json';
     } else {
-      delete axios.defaults.headers.common['Authorization']
+      delete axios.defaults.headers.common['Authorization'];
     }
   }, [token])
 

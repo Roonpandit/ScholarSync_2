@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify'
-import '../../styles/AttendanceHistory.css'
 
 const AttendanceHistory = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([])

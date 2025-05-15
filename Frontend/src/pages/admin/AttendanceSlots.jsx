@@ -1,247 +1,807 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { toast } from 'react-toastify'
-import '../../styles/AttendanceSlots.css'
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { 
+  Calendar, 
+  Clock, 
+  Plus, 
+  X, 
+  Users, 
+  Check, 
+  X as XIcon, 
+  User
+} from 'lucide-react';
+import Modal from './Modal';
+import PropTypes from 'prop-types';
 
 const AttendanceSlots = () => {
-  const [slots, setSlots] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showAddForm, setShowAddForm] = useState(false)
+  const [slots, setSlots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [currentSlot, setCurrentSlot] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [attendance, setAttendance] = useState({});
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  
   const [formData, setFormData] = useState({
     shift: 'morning',
     date: new Date().toISOString().split('T')[0],
     startTime: '',
     endTime: ''
-  })
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0])
+  });
+  
+  const [filterDate, setFilterDate] = useState('');
 
-  useEffect(() => {
-    fetchSlots()
-  }, [filterDate])
+  const isSlotExpired = useCallback((slot) => {
+    const now = new Date();
+    const endTime = new Date(slot.endTime);
+    return endTime < now;
+  }, []);
+
+  // Format time in 24-hour format
+  const formatTime24h = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Kolkata'
+    });
+  };
+
+  // Format date as 'Mon, 15 May'
+  const formatDateDisplay = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { 
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'Asia/Kolkata'
+    });
+  };
 
   const fetchSlots = async () => {
     try {
-      setLoading(true)
-      const res = await axios.get(`/admin/attendance-slots?date=${filterDate}`)
-      setSlots(res.data.data)
-    } catch (error) {
-      console.error('Error fetching attendance slots:', error)
-      toast.error('Failed to load attendance slots')
-    } finally {
-      setLoading(false)
-    }
-  }
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
+      const url = '/admin/attendance-slots';
+      console.log('Making request to:', url);
+      
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        withCredentials: true
+      };
+      
+      const res = await axios.get(url, config);
+      console.log('Response:', res);
+      
+      if (!res.data || !res.data.success) {
+        throw new Error(res.data?.message || 'Invalid response format');
+      }
+      
+      const now = new Date();
+      const processedSlots = res.data.data.map(slot => {
+        const startTime = new Date(slot.startTime);
+        const endTime = new Date(slot.endTime);
+        const isExpired = endTime < now;
+        
+        // If slot is expired and still marked as active, it will be automatically closed by the backend
+        // but we'll handle it on the frontend as well for consistency
+        const isActive = slot.isActive && !isExpired;
+        
+        return {
+          ...slot,
+          date: slot.date, // Already in YYYY-MM-DD format
+          startTime: slot.startTime, // Keep as ISO string
+          endTime: slot.endTime, // Keep as ISO string
+          isExpired,
+          isActive, // This will be false if expired, regardless of the backend value
+          displayActive: isActive,
+          formattedDate: formatDateDisplay(startTime),
+          formattedTime: `${formatTime24h(startTime)} - ${formatTime24h(endTime)}`
+        };
+      });
+      
+      processedSlots.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+      setSlots(processedSlots);
+    } catch (error) {
+      console.error('Error fetching attendance slots:', error);
+      toast.error(error.response?.data?.message || 'Failed to fetch attendance slots');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAttendance = async (studentId, isPresent) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      console.log('Marking attendance:', { studentId, slotId: currentSlot._id, isPresent });
+      
+      const res = await axios.post(
+        '/admin/attendance/mark',
+        {
+          studentId,
+          slotId: currentSlot._id,
+          isPresent,
+          markedAt: new Date().toISOString()
+        },
+        config
+      );
+
+      console.log('Mark attendance response:', res.data);
+
+      if (res.data.success) {
+        // Refresh the attendance data
+        if (currentSlot) {
+          await handleViewAttendance(currentSlot);
+        }
+        toast.success(`Marked as ${isPresent ? 'Present' : 'Absent'}`);
+      }
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      toast.error(error.response?.data?.message || 'Failed to mark attendance');
+    }
+  };
+
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
       [name]: value
-    })
-  }
+    }));
+  }, []);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     
     try {
-      // Combine date with time for start and end times
-      const startDateTime = new Date(`${formData.date}T${formData.startTime}`)
-      const endDateTime = new Date(`${formData.date}T${formData.endTime}`)
+      // Parse the selected date and times
+      const [year, month, day] = formData.date.split('-').map(Number);
+      const [startHour, startMinute] = formData.startTime.split(':').map(Number);
+      const [endHour, endMinute] = formData.endTime.split(':').map(Number);
       
-      // Validate that end time is after start time
-      if (endDateTime <= startDateTime) {
-        toast.error('End time must be after start time')
-        return
-      }
+      // Create date strings in local timezone (Asia/Kolkata)
+      const formatTime = (hours, minutes) => {
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      };
 
       const slotData = {
-        ...formData,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString()
-      }
+        shift: formData.shift,
+        date: formData.date, // YYYY-MM-DD format
+        startTime: formatTime(startHour, startMinute), // HH:MM format
+        endTime: formatTime(endHour, endMinute) // HH:MM format
+      };
       
-      const res = await axios.post('/admin/attendance-slots', slotData)
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+      
+      const res = await axios.post('/admin/attendance-slots', slotData, config);
       
       if (res.data.success) {
-        toast.success('Attendance slot created successfully')
-        setSlots([...slots, res.data.data])
-        setFormData({
-          shift: 'morning',
-          date: new Date().toISOString().split('T')[0],
-          startTime: '',
-          endTime: ''
-        })
-        setShowAddForm(false)
-        fetchSlots()
+        toast.success('Attendance slot created successfully');
+        setShowAddForm(false);
+        fetchSlots();
       }
     } catch (error) {
-      console.error('Error creating attendance slot:', error)
-      toast.error(error.response?.data?.message || 'Failed to create attendance slot')
+      console.error('Error creating slot:', error);
+      toast.error(error.response?.data?.message || 'Failed to create attendance slot');
     }
-  }
+  };
+
+  const handleViewAttendance = async (slot) => {
+    try {
+      setCurrentSlot(slot);
+      setShowAttendanceModal(true);
+      setLoadingAttendance(true);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      console.log('Fetching attendance for slot:', slot._id);
+      
+      try {
+        // Get attendance for this slot
+        const attendanceRes = await axios.get(`/admin/attendance?slotId=${slot._id}`, config);
+        console.log('Attendance response:', attendanceRes.data);
+        
+        // Process the attendance data
+        const attendanceData = attendanceRes.data.success ? attendanceRes.data.data : [];
+        console.log('Attendance records:', attendanceData);
+
+        // Create a map of studentId to attendance record
+        const attendanceMap = {};
+        attendanceData.forEach(record => {
+          if (record.student) {
+            attendanceMap[record.student._id || record.student] = {
+              isPresent: true, // All records in this response are present
+              markedAt: record.markedAt,
+              location: record.location,
+              photo: record.photo,
+              studentCode: record.studentCode
+            };
+          }
+        });
+
+        console.log('Attendance map:', attendanceMap);
+        
+        // Create students array from attendance data
+        const studentsData = attendanceData.map(record => ({
+          _id: record.student?._id || record.student,
+          name: record.studentName || record.student?.name || 'Unknown',
+          email: record.studentEmail || record.student?.email || '',
+          rollNumber: record.studentCode || record.student?.rollNumber || '',
+          studentCode: record.studentCode || record.student?.studentCode || ''
+        }));
+        
+        setStudents(studentsData);
+        setAttendance(attendanceMap);
+      } catch (error) {
+        console.error('Error in API calls:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error fetching attendance data:', error);
+      toast.error(error.response?.data?.message || 'Failed to load attendance data');
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
 
   const handleCloseSlot = async (slotId) => {
-    try {
-      const res = await axios.put(`/admin/attendance-slots/${slotId}/close`)
-      
-      if (res.data.success) {
-        toast.success('Attendance slot closed successfully')
-        // Update the slot in the state
-        setSlots(slots.map(slot => 
-          slot._id === slotId ? { ...slot, isActive: false } : slot
-        ))
+    if (window.confirm('Are you sure you want to close this slot? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('token');
+        const config = {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        };
+
+        const res = await axios.put(`/admin/attendance-slots/${slotId}/close`, {}, config);
+        
+        if (res.data.success) {
+          toast.success('Attendance slot closed successfully');
+          fetchSlots();
+        }
+      } catch (error) {
+        console.error('Error closing slot:', error);
+        toast.error(error.response?.data?.message || 'Failed to close attendance slot');
       }
-    } catch (error) {
-      console.error('Error closing attendance slot:', error)
-      toast.error(error.response?.data?.message || 'Failed to close attendance slot')
     }
-  }
+  };
+
+  const formatDate = useCallback((dateString) => {
+    if (!dateString) return '';
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  }, []);
+  
+  const formatTime = useCallback((timeString) => {
+    if (!timeString) return '';
+    const date = new Date(timeString);
+    if (isNaN(date.getTime())) return ''; // Handle invalid date
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  }, []);
+
+  const getStatusBadge = useCallback((slot) => {
+    if (!slot.isActive) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          Closed
+        </span>
+      );
+    }
+    
+    if (slot.isExpired) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          Expired
+        </span>
+      );
+    }
+    
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        Active
+      </span>
+    );
+  }, []);
+
+  const getShiftColor = useCallback((shift) => {
+    switch (shift) {
+      case 'morning':
+        return 'bg-blue-100 text-blue-800';
+      case 'afternoon':
+        return 'bg-green-100 text-green-800';
+      case 'evening':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSlots();
+  }, []);
 
   if (loading) {
     return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Loading attendance slots...</p>
+      <div className="flex flex-col items-center justify-center h-64">
+        <div className="w-12 h-12 border-4 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-gray-600">Loading attendance slots...</p>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="attendance-slots">
-      <div className="page-header">
-        <h1>Attendance Slots</h1>
-        <button 
-          className="add-button"
-          onClick={() => setShowAddForm(!showAddForm)}
-        >
-          {showAddForm ? 'Cancel' : 'Create Slot'}
-        </button>
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Clock className="mr-2 text-blue-500" size={20} />
+            Attendance Slots
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            {slots.length > 0 
+              ? `Showing ${slots.length} attendance slot${slots.length !== 1 ? 's' : ''}` 
+              : 'No attendance slots found'}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Calendar className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+          </div>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className={`inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+              showAddForm ? 'bg-gray-500 hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'
+            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200`}
+          >
+            {showAddForm ? (
+              <>
+                <X size={16} className="mr-2" />
+                Cancel
+              </>
+            ) : (
+              <>
+                <Plus size={16} className="mr-2" />
+                New Slot
+              </>
+            )}
+          </button>
+        </div>
       </div>
-      
+
       {showAddForm && (
-        <div className="add-slot-form">
-          <h2>Create New Attendance Slot</h2>
+        <div className="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
+          <h2 className="text-lg font-medium text-gray-800 mb-4">Create New Attendance Slot</h2>
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="shift">Shift</label>
-              <select
-                id="shift"
-                name="shift"
-                value={formData.shift}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="morning">Morning</option>
-                <option value="afternoon">Afternoon</option>
-                <option value="evening">Evening</option>
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex flex-col">
+                <label htmlFor="shift" className="text-sm text-gray-600 mb-1">Shift</label>
+                <select
+                  id="shift"
+                  name="shift"
+                  value={formData.shift}
+                  onChange={handleInputChange}
+                  required
+                  className="border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="morning">Morning</option>
+                  <option value="afternoon">Afternoon</option>
+                  <option value="evening">Evening</option>
+                </select>
+              </div>
+              
+              <div className="flex flex-col">
+                <label htmlFor="date" className="text-sm text-gray-600 mb-1">Date</label>
+                <input
+                  type="date"
+                  id="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  required
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div className="flex flex-col">
+                <label htmlFor="startTime" className="text-sm text-gray-600 mb-1">Start Time</label>
+                <input
+                  type="time"
+                  id="startTime"
+                  name="startTime"
+                  value={formData.startTime}
+                  onChange={handleInputChange}
+                  step="60" // Restrict to minutes only
+                  required
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div className="flex flex-col">
+                <label htmlFor="endTime" className="text-sm text-gray-600 mb-1">End Time</label>
+                <input
+                  type="time"
+                  id="endTime"
+                  name="endTime"
+                  value={formData.endTime}
+                  onChange={handleInputChange}
+                  step="60" // Restrict to minutes only
+                  required
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
             
-            <div className="form-group">
-              <label htmlFor="date">Date</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="startTime">Start Time</label>
-              <input
-                type="time"
-                id="startTime"
-                name="startTime"
-                value={formData.startTime}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="endTime">End Time</label>
-              <input
-                type="time"
-                id="endTime"
-                name="endTime"
-                value={formData.endTime}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="form-actions">
-              <button type="submit" className="submit-button">Create Slot</button>
-              <button 
-                type="button" 
-                className="cancel-button"
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
                 onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Create Slot
               </button>
             </div>
           </form>
         </div>
       )}
-      
-      <div className="filter-container">
-        <label htmlFor="filterDate">Filter by Date:</label>
-        <input
-          type="date"
-          id="filterDate"
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-        />
-      </div>
-      
-      <div className="slots-list">
-        <h2>Attendance Slots</h2>
-        
-        {slots.length > 0 ? (
-          <div className="table-container">
-            <table className="slots-table">
-              <thead>
+
+      <div className="mt-8">
+        {slots.length === 0 ? (
+          <div className="text-center py-12">
+            <Clock className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No slots</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {filterDate 
+                ? `No slots found for ${new Date(filterDate).toLocaleDateString()}`
+                : 'Create a new attendance slot to get started.'}
+            </p>
+            {filterDate && (
+              <button
+                onClick={() => setFilterDate('')}
+                className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Show all slots
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+            <table className="min-w-full divide-y divide-gray-300">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th>Shift</th>
-                  <th>Date</th>
-                  <th>Start Time</th>
-                  <th>End Time</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                    Date & Time
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Shift
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Status
+                  </th>
+                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
-              <tbody>
-                {slots.map((slot) => (
-                  <tr key={slot._id} className={slot.isActive ? 'active-slot' : 'inactive-slot'}>
-                    <td>{slot.shift}</td>
-                    <td>{new Date(slot.date).toLocaleDateString()}</td>
-                    <td>{new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td>{new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td>{slot.isActive ? 'Active' : 'Closed'}</td>
-                    <td>
-                      {slot.isActive && (
-                        <button 
-                          className="close-button"
-                          onClick={() => handleCloseSlot(slot._id)}
-                        >
-                          Close Slot
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {slots
+.filter(slot => {
+  if (!filterDate) return true;
+  const slotDate = new Date(slot.date);
+  const filterDateObj = new Date(filterDate);
+  return (
+    slotDate.getFullYear() === filterDateObj.getFullYear() &&
+    slotDate.getMonth() === filterDateObj.getMonth() &&
+    slotDate.getDate() === filterDateObj.getDate()
+  );
+})
+                  .map((slot) => (
+                    <tr key={slot._id} className={`hover:bg-gray-50 ${slot.isExpired ? 'opacity-70' : ''}`}>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-50">
+                            <Calendar className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div className="ml-4">
+                            <div className="font-medium text-gray-900">{slot.formattedDate}</div>
+                            <div className="text-gray-500">{slot.formattedTime}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getShiftColor(slot.shift)}`}>
+                          {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm">
+                        {getStatusBadge(slot)}
+                      </td>
+                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        <div className="flex justify-end space-x-3">
+                          <button
+                            onClick={() => handleViewAttendance(slot)}
+                            className="text-blue-600 hover:text-blue-900 flex items-center"
+                            title="View Attendance"
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            <span>View</span>
+                          </button>
+                          {slot.displayActive && (
+                            <button
+                              onClick={() => handleCloseSlot(slot._id)}
+                              className="text-red-600 hover:text-red-900 flex items-center"
+                              title="Close Slot"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              <span>Close</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
-        ) : (
-          <p className="no-data">No attendance slots found for the selected date.</p>
         )}
       </div>
-    </div>
-  )
-}
 
-export default AttendanceSlots
+      {/* Attendance Modal */}
+      <Modal
+        isOpen={showAttendanceModal}
+        onClose={() => setShowAttendanceModal(false)}
+        title={`Attendance for ${currentSlot ? formatDate(currentSlot.date) : ''} - ${currentSlot?.shift || ''}`}
+        size="xl"
+      >
+        {currentSlot && (
+          <div className="space-y-4">
+            {loadingAttendance ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="text-sm text-gray-500">
+                    {formatTime(currentSlot.startTime)} - {formatTime(currentSlot.endTime)}
+                  </div>
+                  <div className="flex space-x-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {Object.values(attendance).filter(a => a?.isPresent).length} Present
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      {students.length - Object.keys(attendance).length} Absent
+                    </span>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden border border-gray-200 rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Student Code
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Student Name
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Time
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Location
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Photo
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {students.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                            No attendance records found
+                          </td>
+                        </tr>
+                      ) : (
+                        students.map((student) => {
+                          const studentAttendance = attendance[student._id];
+                          const isPresent = studentAttendance?.isPresent;
+                          const markedAt = studentAttendance?.markedAt;
+                          const location = studentAttendance?.location;
+                          const photo = studentAttendance?.photo;
+
+                          return (
+                            <tr key={student._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {student.studentCode || 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                                <div className="text-sm text-gray-500">{student.email}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  isPresent ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {isPresent ? 'Present' : 'Absent'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {markedAt ? new Date(markedAt).toLocaleTimeString() : '--:--:--'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {location?.address || 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {photo?.url ? (
+                                  <a 
+                                    href={photo.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800"
+                                  >
+                                    View Photo
+                                  </a>
+                                ) : (
+                                  'N/A'
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
+      
+      <Modal
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        title="Create New Attendance Slot"
+        size="lg"
+      >
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input
+                  type="date"
+                  id="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="shift" className="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+                <select
+                  id="shift"
+                  name="shift"
+                  value={formData.shift}
+                  onChange={handleInputChange}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  required
+                >
+                  <option value="morning">Morning</option>
+                  <option value="afternoon">Afternoon</option>
+                  <option value="evening">Evening</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                <input
+                  type="time"
+                  id="startTime"
+                  name="startTime"
+                  value={formData.startTime}
+                  onChange={handleInputChange}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                <input
+                  type="time"
+                  id="endTime"
+                  name="endTime"
+                  value={formData.endTime}
+                  onChange={handleInputChange}
+                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Create Slot
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default AttendanceSlots;
