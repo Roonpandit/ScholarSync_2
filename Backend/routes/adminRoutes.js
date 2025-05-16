@@ -11,7 +11,8 @@ const {
   markAttendance,
   getAttendanceStats,
   getAbsentStudents,
-  getAttendanceDetails
+  getAttendanceDetails,
+  deleteAttendanceSlot
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -39,6 +40,7 @@ router.route('/attendance-slots')
   }, getAllAttendanceSlots);
 
 router.put('/attendance-slots/:id/close', closeAttendanceSlot);
+router.delete('/attendance-slots/:id', deleteAttendanceSlot);
 
 // Attendance records routes
 router.get('/attendance', (req, res) => {

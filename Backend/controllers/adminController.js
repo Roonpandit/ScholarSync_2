@@ -602,29 +602,67 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/attendance-slots/:id/close
 // @access  Private/Admin
 exports.closeAttendanceSlot = asyncHandler(async (req, res) => {
-  const slot = await AttendanceSlot.findById(req.params.id);
+  const { id } = req.params;
 
-  if (!slot) {
-    return res.status(404).json({
+  try {
+    const slot = await AttendanceSlot.findById(id);
+    if (!slot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance slot not found'
+      });
+    }
+
+    slot.isClosed = true;
+    await slot.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance slot closed successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message: 'Attendance slot not found',
+      message: 'Error closing attendance slot',
+      error: error.message
     });
   }
+});
 
-  if (!slot.isActive) {
-    return res.status(400).json({
+// @desc    Delete an attendance slot and its associated records
+// @route   DELETE /api/admin/attendance-slots/:id
+// @access  Private/Admin
+exports.deleteAttendanceSlot = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // First check if slot exists
+    const slot = await AttendanceSlot.findById(id);
+    if (!slot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance slot not found'
+      });
+    }
+
+    // Delete all attendance records associated with this slot
+    await Attendance.deleteMany({ slot: slot._id });
+
+    // Delete the slot itself
+    await AttendanceSlot.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance slot and associated records deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error in deleteAttendanceSlot:', error);
+    res.status(500).json({
       success: false,
-      message: 'Attendance slot is already closed',
+      message: 'Error deleting attendance slot',
+      error: error.message
     });
   }
-
-  slot.isActive = false;
-  await slot.save();
-
-  res.status(200).json({
-    success: true,
-    data: slot,
-  });
 });
 
 // @desc    Get attendance by date
