@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"; 
 import axios from "axios"; 
-import { toast } from "react-toastify"; 
+import { toast } from "react-toastify";
+import * as XLSX from 'xlsx'; 
 import { 
   Calendar, 
   Clock, 
@@ -14,7 +15,58 @@ import {
 import Modal from "./Modal"; 
 import PropTypes from "prop-types"; 
  
-const AttendanceSlots = () => { 
+const AttendanceSlots = () => {
+  // Function to export slot attendance to Excel
+  const exportSlotAttendance = () => {
+    if (!currentSlot) return;
+    try {
+      // Get attendance data for this slot
+      const slotAttendance = students.map((student) => {
+        const studentAttendance = attendance[student._id];
+        const isPresent = studentAttendance?.isPresent;
+        const photo = studentAttendance?.photo?.url || student.photo?.url;
+
+        return {
+          'Student Code': student.studentCode || 'N/A',
+          'Student Name': student.name,
+          'Student Email': student.email,
+          'Attendance Status': isPresent ? 'Present' : 'Absent',
+          'Shift': currentSlot.shift,
+          'Photo URL': photo || 'N/A'
+        };
+      }).filter(student => student); // Remove any undefined entries
+
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(slotAttendance);
+      
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+      
+      // Generate Excel file
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+      
+      // Create blob and download
+      const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance-${currentSlot.date}-${currentSlot.shift}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Attendance data exported successfully');
+      
+    } catch (error) {
+      toast.error('Error exporting attendance data');
+      console.error('Excel export error:', error);
+    }
+  };
+
+  // Rest of the component code... 
   const [slots, setSlots] = useState([]); 
   const [loading, setLoading] = useState(true); 
   const [showAddForm, setShowAddForm] = useState(false); 
@@ -640,7 +692,7 @@ const AttendanceSlots = () => {
                       Status 
                     </th> 
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"> 
-                      <span className="sr-only">Actions</span> 
+                      <span className="sr-only">Actions</span>
                     </th> 
                   </tr> 
                 </thead> 
@@ -754,13 +806,17 @@ const AttendanceSlots = () => {
             </div>
             <div className="flex space-x-2">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {Object.values(attendance).filter((a) => a?.isPresent).length}{" "}
-                Present
+                {Object.values(attendance).filter((a) => a?.isPresent).length} Present
               </span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-200 text-gray-800">
-                {Object.values(attendance).filter((a) => !a?.isPresent).length}{" "}
-                Absent
+                {Object.values(attendance).filter((a) => !a?.isPresent).length} Absent
               </span>
+              <button
+                onClick={exportSlotAttendance}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
+              >
+                Export
+              </button>
             </div>
           </div>
 
