@@ -123,35 +123,52 @@ exports.getMe = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Seed admin account
+// @desc    Seed admin accounts
 // @route   POST /api/auth/seed-admin
 // @access  Public (should be restricted in production)
 exports.seedAdmin = asyncHandler(async (req, res) => {
-  const adminCount = await Admin.countDocuments();
+  // Check if admin accounts already exist
+  const admin1 = await Admin.findOne({ email: process.env.ADMIN_EMAIL });
+  const admin2 = await Admin.findOne({ email: process.env.ADMIN2_EMAIL });
 
-  if (adminCount > 0) {
+  if (admin1 && admin2) {
     return res.status(400).json({
       success: false,
-      message: 'Admin account already exists',
+      message: 'Both admin accounts already exist',
     });
   }
 
-  // Create new admin
-  const admin = await Admin.create({
-    name: 'Masai Admin',
-    email: process.env.ADMIN_EMAIL,
-    password: process.env.ADMIN_PASSWORD,
-    role: 'admin',
-  });
+  let createdAdmins = [];
+
+  // Create admin accounts based on what's missing
+  if (!admin1) {
+    const newAdmin1 = await Admin.create({
+      name: 'Masai Admin',
+      email: process.env.ADMIN_EMAIL,
+      password: process.env.ADMIN_PASSWORD,
+      role: 'admin',
+    });
+    createdAdmins.push(newAdmin1);
+  }
+
+  if (!admin2) {
+    const newAdmin2 = await Admin.create({
+      name: 'Elevate Admin',
+      email: process.env.ADMIN2_EMAIL,
+      password: process.env.ADMIN2_PASSWORD,
+      role: 'admin',
+    });
+    createdAdmins.push(newAdmin2);
+  }
 
   res.status(201).json({
     success: true,
-    message: 'Admin account created successfully',
-    data: {
+    message: 'Admin accounts created successfully',
+    data: createdAdmins.map(admin => ({
       _id: admin._id,
       name: admin.name,
       email: admin.email,
       role: admin.role,
-    },
+    })),
   });
 });
