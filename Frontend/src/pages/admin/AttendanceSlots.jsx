@@ -788,16 +788,6 @@ const AttendanceSlots = () => {
                               <Users className="h-4 w-4 mr-1" /> 
                               <span className="hidden sm:inline">View</span> 
                             </button> 
-                            {slot.displayActive && ( 
-                              <button 
-                                onClick={() => handleCloseSlot(slot._id)} 
-                                className="text-red-600 hover:text-red-900 flex items-center" 
-                                title="Close Slot" 
-                              > 
-                                <X className="h-4 w-4 mr-1" /> 
-                                <span className="hidden sm:inline">Close</span> 
-                              </button> 
-                            )} 
                             <button 
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to delete this attendance slot?')) {
