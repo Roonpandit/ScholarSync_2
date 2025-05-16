@@ -3,7 +3,8 @@ const {
   registerStudent,
   login,
   getMe,
-  seedAdmin
+  seedAdmin,
+  updatePassword
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -15,6 +16,7 @@ router.post('/seed-admin', seedAdmin);
 
 // Protected routes
 router.get('/me', protect, getMe);
+router.put('/update-password', protect, updatePassword);
 router.post('/register', protect, authorize('admin'), registerStudent);
 
 module.exports = router;

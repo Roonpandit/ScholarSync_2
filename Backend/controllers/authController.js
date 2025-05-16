@@ -2,6 +2,54 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const Admin = require('../models/Admin');
 
+// Password validation
+const validatePassword = (password) => {
+  const errors = [];
+  
+  // Check length
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+  
+  // Check uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  
+  // Check lowercase letter
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  
+  // Check special character
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    errors.push('Password must contain at least one special character');
+  }
+  
+  // Check number
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+  
+  return errors;
+};
+
+// Password validation middleware
+const validatePasswordMiddleware = asyncHandler(async (req, res, next) => {
+  const { password } = req.body;
+  const errors = validatePassword(password);
+  
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password validation failed',
+      errors: errors
+    });
+  }
+  
+  next();
+});
+
 // @desc    Register student (Only for Admin)
 // @route   POST /api/auth/register
 // @access  Private/Admin
@@ -39,6 +87,44 @@ exports.registerStudent = asyncHandler(async (req, res) => {
       studentCode: user.studentCode,
       role: user.role,
     },
+  });
+});
+
+// @desc    Update user password
+// @route   PUT /api/auth/update-password
+// @access  Private
+exports.updatePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  // Validate new password
+  const validationErrors = validatePassword(newPassword);
+  if (validationErrors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password validation failed',
+      errors: validationErrors
+    });
+  }
+
+  // Get user
+  const user = await User.findById(req.user._id).select('+password');
+
+  // Check if current password is correct
+  const isMatch = await user.matchPassword(currentPassword);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: 'Current password is incorrect'
+    });
+  }
+
+  // Update password
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password updated successfully'
   });
 });
 
