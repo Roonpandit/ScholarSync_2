@@ -10,7 +10,8 @@ import {
   Users, 
   Check, 
   X as XIcon, 
-  User, 
+  User,
+  Trash2,
 } from "lucide-react"; 
 import Modal from "./Modal"; 
 import PropTypes from "prop-types"; 
@@ -300,6 +301,30 @@ const AttendanceSlots = () => {
     } 
   }; 
  
+  const handleDeleteSlot = async (slotId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+      await axios.delete(`/admin/attendance-slots/${slotId}`, config);
+      toast.success("Attendance slot deleted successfully");
+      // Refresh slots list
+      fetchSlots();
+    } catch (error) {
+      console.error("Error deleting slot:", error);
+      toast.error(error.response?.data?.message || "Failed to delete attendance slot");
+    }
+  };
+
   const handleViewAttendance = async (slot) => { 
     try { 
       setCurrentSlot(slot); 
@@ -773,6 +798,18 @@ const AttendanceSlots = () => {
                                 <span className="hidden sm:inline">Close</span> 
                               </button> 
                             )} 
+                            <button 
+                              onClick={() => {
+                                if (window.confirm('Are you sure you want to delete this attendance slot?')) {
+                                  handleDeleteSlot(slot._id);
+                                }
+                              }} 
+                              className="text-red-600 hover:text-red-900 flex items-center" 
+                              title="Delete Slot" 
+                            > 
+                              <Trash2 className="h-4 w-4 mr-1" /> 
+                              <span className="hidden sm:inline">Delete</span> 
+                            </button>
                           </div> 
                         </td> 
                       </tr> 

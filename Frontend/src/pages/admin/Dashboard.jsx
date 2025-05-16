@@ -99,7 +99,7 @@ const AdminDashboard = () => {
         <StatCard 
           title="Today's Attendance" 
           value={stats.todayAttendance} 
-          linkTo="/admin/attendance/stats"
+          linkTo="/admin/attendance-slots"
           linkText="View Details"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">

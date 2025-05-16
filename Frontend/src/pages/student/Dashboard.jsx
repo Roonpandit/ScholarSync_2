@@ -163,7 +163,7 @@ const StudentDashboard = () => {
           </div>
           <div className="mt-4">
             <Link 
-              to="/student/active-slots" 
+              to="/student/mark-attendance" 
               className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center"
             >
               Manage Slots
@@ -205,7 +205,7 @@ const StudentDashboard = () => {
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-800">Active Attendance Slots</h2>
-              <Link to="/student/all-slots" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
+              <Link to="/student/mark-attendance" className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
                 View All
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
