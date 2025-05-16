@@ -14,32 +14,55 @@ mongoose.connect(process.env.MONGO_URI, {
 // Create admin account
 const createAdmin = async () => {
   try {
-    // Check if admin already exists
-    const adminExists = await Admin.findOne({ email: process.env.ADMIN_EMAIL && process.env.ADMIN2_EMAIL });
+    // Check if admin accounts already exist
+    const admin1Exists = await Admin.findOne({ email: process.env.ADMIN_EMAIL });
+    const admin2Exists = await Admin.findOne({ email: process.env.ADMIN2_EMAIL });
 
-    if (adminExists) {
-      console.log('Admin account already exists');
+    if (admin1Exists && admin2Exists) {
+      console.log('Both admin accounts already exist');
       return;
-    }
-
-    // Create admin accounts
-    await Admin.create([
-      {
-        name: 'Masai Admin',
-        email: process.env.ADMIN_EMAIL,
-        password: process.env.ADMIN_PASSWORD,
-        role: 'admin',
-      },
-      {
+    } else if (admin1Exists) {
+      console.log('First admin exists, creating second admin...');
+      // Create only second admin if first already exists
+      await Admin.create({
         name: ' Elevate Admin',
         email: process.env.ADMIN2_EMAIL,
         password: process.env.ADMIN2_PASSWORD,
-        role: 'admin',
-      }
-    ]);
-
-    console.log('Admin accounts created successfully');
-    process.exit();
+        role: 'admin'
+      });
+      console.log('Second admin account created successfully');
+      process.exit();
+    } else if (admin2Exists) {
+      console.log('Second admin exists, creating first admin...');
+      // Create only first admin if second already exists
+      await Admin.create({
+        name: 'Masai Admin',
+        email: process.env.ADMIN_EMAIL,
+        password: process.env.ADMIN_PASSWORD,
+        role: 'admin'
+      });
+      console.log('First admin account created successfully');
+      process.exit();
+    } else {
+      console.log('Creating both admin accounts...');
+      // Create both admins if neither exists
+      await Admin.create([
+        {
+          name: 'Masai Admin',
+          email: process.env.ADMIN_EMAIL,
+          password: process.env.ADMIN_PASSWORD,
+          role: 'admin'
+        },
+        {
+          name: ' Elevate Admin',
+          email: process.env.ADMIN2_EMAIL,
+          password: process.env.ADMIN2_PASSWORD,
+          role: 'admin'
+        }
+      ]);
+      console.log('Both admin accounts created successfully');
+      process.exit();
+    }
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);
