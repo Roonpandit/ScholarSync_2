@@ -881,12 +881,6 @@ const AttendanceSlots = () => {
                   </th>
                   <th
                     scope="col"
-                    className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell"
-                  >
-                    Time
-                  </th>
-                  <th
-                    scope="col"
                     className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell"
                   >
                     Location
@@ -941,11 +935,7 @@ const AttendanceSlots = () => {
                             {isPresent ? "Present" : "Absent"}
                           </span>
                         </td>
-                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden sm:table-cell">
-                          {markedAt
-                            ? new Date(markedAt).toLocaleTimeString()
-                            : "--:--:--"}
-                        </td>
+
                         <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden md:table-cell">
                           {location?.address || "N/A"}
                         </td>
