@@ -120,7 +120,7 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
   // Get current time in UTC
   const nowUTC = new Date();
 
-  // Find all active slots that are either:
+  // Get all active slots that are either:
   // 1. Currently active (startTime <= now <= endTime), OR
   // 2. Upcoming (startTime > now)
   const activeSlots = await AttendanceSlot.find({
@@ -140,21 +140,38 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
       }
     ]
   }).sort({ startTime: 1 }); // Sort by start time ascending
-  
-  // Convert times to IST for display
-  const slotsWithISTTimes = activeSlots.map(slot => {
-    return {
-      ...slot.toObject(),
-      startTime: new Date(slot.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
-      endTime: new Date(slot.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
-    };
-  });
 
-  res.status(200).json({
-    success: true,
-    count: activeSlots.length,
-    data: slotsWithISTTimes,
-  });
+  // Filter out slots where student has already marked attendance
+  const filteredSlots = await Promise.all(
+    activeSlots.map(async (slot) => {
+      const hasMarked = await Attendance.findOne({
+        student: req.user._id,
+        slot: slot._id,
+        date: slot.date,
+        shift: slot.shift
+      });
+      
+      return hasMarked ? null : slot;
+    })
+  );
+
+  // Remove null values (slots where student has marked attendance)
+  const availableSlots = filteredSlots.filter(Boolean);
+
+    // Convert times to IST for display
+    const slotsWithISTTimes = availableSlots.map(slot => {
+      return {
+        ...slot.toObject(),
+        startTime: new Date(slot.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+        endTime: new Date(slot.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: slotsWithISTTimes.length,
+      data: slotsWithISTTimes
+    });
 });
 
 // @desc    Mark attendance
