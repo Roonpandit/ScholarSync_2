@@ -12,11 +12,14 @@ import {
   X as XIcon, 
   User,
   Trash2,
+  Camera,
 } from "lucide-react"; 
 import Modal from "./Modal"; 
 import PropTypes from "prop-types"; 
  
 const AttendanceSlots = () => {
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   // Function to export slot attendance to Excel
   const exportSlotAttendance = () => {
     if (!currentSlot) return;
@@ -693,125 +696,128 @@ const AttendanceSlots = () => {
             )} 
           </div> 
         ) : ( 
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
+<div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle border-b border-gray-200 sm:rounded-lg shadow ring-1 ring-black ring-opacity-5">
-              <table className="min-w-full divide-y divide-gray-300"> 
-                <thead className="bg-gray-50"> 
-                  <tr> 
-                    <th 
-                      scope="col" 
-                      className="py-3.5 pl-4 pr-3 text-left text-xs sm:text-sm font-semibold text-gray-900 sm:pl-6" 
-                    > 
-                      Date & Time 
-                    </th> 
-                    <th 
-                      scope="col" 
-                      className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden sm:table-cell" 
-                    > 
-                      Shift 
-                    </th> 
-                    <th 
-                      scope="col" 
-                      className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900" 
-                    > 
-                      Status 
-                    </th> 
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"> 
-                      <span className="sr-only">Actions</span>
-                    </th> 
-                  </tr> 
-                </thead> 
-                <tbody className="divide-y divide-gray-200 bg-white"> 
-                  {slots 
-                    .filter((slot) => { 
-                      if (!filterDate) return true; 
-                      const slotDate = new Date(slot.date); 
-                      const filterDateObj = new Date(filterDate); 
-                      return ( 
-                        slotDate.getFullYear() === filterDateObj.getFullYear() && 
-                        slotDate.getMonth() === filterDateObj.getMonth() && 
-                        slotDate.getDate() === filterDateObj.getDate() 
-                      ); 
-                    }) 
-                    .map((slot) => ( 
-                      <tr 
-                        key={slot._id} 
-                        className={`hover:bg-gray-50 ${ 
-                          slot.isExpired ? "opacity-70" : "" 
-                        }`} 
+              {/* Added fixed height container with vertical scrolling */}
+              <div className="max-h-96 overflow-y-auto">
+                <table className="min-w-full divide-y divide-gray-300"> 
+                  <thead className="bg-gray-50 sticky top-0 z-10"> 
+                    <tr> 
+                      <th 
+                        scope="col" 
+                        className="py-3.5 pl-4 pr-3 text-left text-xs sm:text-sm font-semibold text-gray-900 sm:pl-6" 
                       > 
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-xs sm:text-sm sm:pl-6"> 
-                          <div className="flex items-center"> 
-                            <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-50"> 
-                              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" /> 
-                            </div> 
-                            <div className="ml-2 sm:ml-4"> 
-                              <div className="font-medium text-gray-900"> 
-                                {slot.formattedDate} 
+                        Date & Time 
+                      </th> 
+                      <th 
+                        scope="col" 
+                        className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden sm:table-cell" 
+                      > 
+                        Shift 
+                      </th> 
+                      <th 
+                        scope="col" 
+                        className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900" 
+                      > 
+                        Status 
+                      </th> 
+                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"> 
+                        <span className="sr-only">Actions</span>
+                      </th> 
+                    </tr> 
+                  </thead> 
+                  <tbody className="divide-y divide-gray-200 bg-white"> 
+                    {slots 
+                      .filter((slot) => { 
+                        if (!filterDate) return true; 
+                        const slotDate = new Date(slot.date); 
+                        const filterDateObj = new Date(filterDate); 
+                        return ( 
+                          slotDate.getFullYear() === filterDateObj.getFullYear() && 
+                          slotDate.getMonth() === filterDateObj.getMonth() && 
+                          slotDate.getDate() === filterDateObj.getDate() 
+                        ); 
+                      }) 
+                      .map((slot) => ( 
+                        <tr 
+                          key={slot._id} 
+                          className={`hover:bg-gray-50 ${ 
+                            slot.isExpired ? "opacity-70" : "" 
+                          }`} 
+                        > 
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-xs sm:text-sm sm:pl-6"> 
+                            <div className="flex items-center"> 
+                              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-50"> 
+                                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" /> 
                               </div> 
-                              <div className="text-gray-500"> 
-                                {slot.formattedTime} 
-                              </div>
-                              <div className="text-gray-500 sm:hidden mt-1">
-                                <span
-                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getShiftColor(
-                                    slot.shift
-                                  )}`}
-                                >
-                                  {slot.shift.charAt(0).toUpperCase() +
-                                    slot.shift.slice(1)}
-                                </span>
-                              </div>
+                              <div className="ml-2 sm:ml-4"> 
+                                <div className="font-medium text-gray-900"> 
+                                  {slot.formattedDate} 
+                                </div> 
+                                <div className="text-gray-500"> 
+                                  {slot.formattedTime} 
+                                </div>
+                                <div className="text-gray-500 sm:hidden mt-1">
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getShiftColor(
+                                      slot.shift
+                                    )}`}
+                                  >
+                                    {slot.shift.charAt(0).toUpperCase() +
+                                      slot.shift.slice(1)}
+                                  </span>
+                                </div>
+                              </div> 
                             </div> 
-                          </div> 
-                        </td> 
-                        <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-500 hidden sm:table-cell"> 
-                          <span 
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getShiftColor( 
-                              slot.shift 
-                            )}`} 
-                          > 
-                            {slot.shift.charAt(0).toUpperCase() + 
-                              slot.shift.slice(1)} 
-                          </span> 
-                        </td> 
-                        <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm"> 
-                          {getStatusBadge(slot)} 
-                        </td> 
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-xs sm:text-sm font-medium sm:pr-6"> 
-                          <div className="flex justify-end space-x-3"> 
-                            <button 
-                              onClick={() => handleViewAttendance(slot)} 
-                              className="text-blue-600 hover:text-blue-900 flex items-center" 
-                              title="View Attendance" 
+                          </td> 
+                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-500 hidden sm:table-cell"> 
+                            <span 
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getShiftColor( 
+                                slot.shift 
+                              )}`} 
                             > 
-                              <Users className="h-4 w-4 mr-1" /> 
-                              <span className="hidden sm:inline">View</span> 
-                            </button> 
-                            <button 
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this attendance slot?')) {
-                                  handleDeleteSlot(slot._id);
-                                }
-                              }} 
-                              className="text-red-600 hover:text-red-900 flex items-center" 
-                              title="Delete Slot" 
-                            > 
-                              <Trash2 className="h-4 w-4 mr-1" /> 
-                              <span className="hidden sm:inline">Delete</span> 
-                            </button>
-                          </div> 
-                        </td> 
-                      </tr> 
-                    ))} 
-                </tbody> 
-              </table> 
+                              {slot.shift.charAt(0).toUpperCase() + 
+                                slot.shift.slice(1)} 
+                            </span> 
+                          </td> 
+                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm"> 
+                            {getStatusBadge(slot)} 
+                          </td> 
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-xs sm:text-sm font-medium sm:pr-6"> 
+                            <div className="flex justify-end space-x-3"> 
+                              <button 
+                                onClick={() => handleViewAttendance(slot)} 
+                                className="text-blue-600 hover:text-blue-900 flex items-center" 
+                                title="View Attendance" 
+                              > 
+                                <Users className="h-4 w-4 mr-1" /> 
+                                <span className="hidden sm:inline">View</span> 
+                              </button> 
+                              <button 
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this attendance slot?')) {
+                                    handleDeleteSlot(slot._id);
+                                  }
+                                }} 
+                                className="text-red-600 hover:text-red-900 flex items-center" 
+                                title="Delete Slot" 
+                              > 
+                                <Trash2 className="h-4 w-4 mr-1" /> 
+                                <span className="hidden sm:inline">Delete</span> 
+                              </button>
+                            </div> 
+                          </td> 
+                        </tr> 
+                      ))} 
+                  </tbody> 
+                </table>
+              </div> 
             </div>
-          </div> 
+          </div>
         )} 
       </div> 
  {/* Attendance Modal */}
-<Modal
+ <Modal
   isOpen={showAttendanceModal}
   onClose={() => setShowAttendanceModal(false)}
   title={`Attendance for ${
@@ -821,14 +827,14 @@ const AttendanceSlots = () => {
   size="xl"
 >
   {currentSlot && (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-[70vh] flex flex-col">
       {loadingAttendance ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0 sticky top-0 bg-white pt-2 pb-2 z-10">
             <div className="text-sm text-gray-500">
               {formatTime(currentSlot.startTime)} - {formatTime(currentSlot.endTime)}
             </div>
@@ -848,111 +854,146 @@ const AttendanceSlots = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Student Code
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Student Name
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Status
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell"
-                  >
-                    Location
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Photo
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {students.length === 0 ? (
+          <div className="overflow-y-auto flex-grow border border-gray-200 rounded-lg custom-scrollbar pr-1">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="px-2 sm:px-6 py-4 text-center text-sm text-gray-500"
+                    <th
+                      scope="col"
+                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
-                      No attendance records found
-                    </td>
+                      Student Code
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Student Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Status
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell"
+                    >
+                      Location
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Photo
+                    </th>
                   </tr>
-                ) : (
-                  students.map((student) => {
-                    const studentAttendance = attendance[student._id];
-                    const isPresent = studentAttendance?.isPresent;
-                    const markedAt = studentAttendance?.markedAt;
-                    const location = studentAttendance?.location;
-                    const photo = studentAttendance?.photo;
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {students.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="px-2 sm:px-6 py-4 text-center text-sm text-gray-500"
+                      >
+                        No attendance records found
+                      </td>
+                    </tr>
+                  ) : (
+                    students.map((student) => {
+                      const studentAttendance = attendance[student._id];
+                      const isPresent = studentAttendance?.isPresent;
+                      const markedAt = studentAttendance?.markedAt;
+                      const location = studentAttendance?.location;
+                      const photo = studentAttendance?.photo;
 
-                    return (
-                      <tr key={student._id} className="hover:bg-gray-50">
-                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                          {student.studentCode || "N/A"}
-                        </td>
-                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                          <div className="text-xs sm:text-sm font-medium text-gray-900">
-                            {student.name}
-                          </div>
-                          <div className="text-xs sm:text-sm text-gray-500 hidden sm:block">
-                            {student.email}
-                          </div>
-                        </td>
-                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              isPresent
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-200 text-gray-800"
-                            }`}
-                          >
-                            {isPresent ? "Present" : "Absent"}
-                          </span>
-                        </td>
-
-                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden md:table-cell">
-                          {location?.address || "N/A"}
-                        </td>
-                        <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          {photo?.url ? (
-                            <a
-                              href={photo.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800"
+                      return (
+                        <tr key={student._id} className="hover:bg-gray-50">
+                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                            {student.studentCode || "N/A"}
+                          </td>
+                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                            <div className="text-xs sm:text-sm font-medium text-gray-900">
+                              {student.name}
+                            </div>
+                            <div className="text-xs sm:text-sm text-gray-500 hidden sm:block">
+                              {student.email}
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                isPresent
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-200 text-gray-800"
+                              }`}
                             >
-                              View
-                            </a>
-                          ) : (
-                            "N/A"
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                              {isPresent ? "Present" : "Absent"}
+                            </span>
+                          </td>
+
+                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden md:table-cell">
+                            {location?.address || "N/A"}
+                          </td>
+                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                            {photo?.url ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedPhoto(photo.url);
+                                  setPhotoModalOpen(true);
+                                }}
+                                className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              >
+                                <Camera className="w-3 h-3 mr-1" />
+                                View
+                              </button>
+                            ) : (
+                              "N/A"
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}
+    </div>
+  )}
+  
+  {/* Photo Modal */}
+  {photoModalOpen && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-md w-11/12 sm:w-96 max-h-[80vh] overflow-auto">
+        <div className="flex justify-between items-center p-3 border-b">
+          <h3 className="text-sm font-medium">Student Photo</h3>
+          <button
+            onClick={() => setPhotoModalOpen(false)}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-3">
+          {selectedPhoto ? (
+            <img
+              src={selectedPhoto}
+              alt="Student"
+              className="w-full max-h-[60vh] object-contain rounded-lg"
+            />
+          ) : (
+            <div className="text-center text-gray-500 py-6">
+              <Camera className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm">No photo available</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )}
 </Modal>

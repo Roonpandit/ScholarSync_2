@@ -177,7 +177,7 @@ const AbsentStudents = () => {
       
       {/* Results */}
       <div className="bg-white rounded-lg">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pt-2 pb-2 z-10">
           <h2 className="font-medium text-gray-700 flex items-center text-sm md:text-base">
             Students with {filters.threshold}+ Absences
             <span className="ml-2 bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
@@ -187,118 +187,120 @@ const AbsentStudents = () => {
         </div>
         
         {filteredStudents.length > 0 ? (
-          <>
-            {/* Desktop view - Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student Code
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Absent Count
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Absent Dates
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStudents.map((record) => (
-                    <tr key={record.student._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-800">
-                              {record.student.name.charAt(0)}
-                            </span>
+          <div className="max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
+            <>
+              {/* Desktop view - Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Student
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Student Code
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Absent Count
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Absent Dates
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredStudents.map((record) => (
+                      <tr key={record.student._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-800">
+                                {record.student.name.charAt(0)}
+                              </span>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{record.student.name}</div>
+                            </div>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{record.student.name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{record.student.studentCode}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            {record.absentCount}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            {record.absentDates.map((date, index) => (
+                              <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                                <Calendar size={12} className="mr-1" />
+                                {formatDate(date.date)}
+                                <span className="mx-1">•</span>
+                                <Clock size={12} className="mr-1" />
+                                {date.shift}
+                              </span>
+                            ))}
                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Mobile view - Card list */}
+              <div className="md:hidden space-y-3">
+                {filteredStudents.map((record) => (
+                  <div key={record.student._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleExpandStudent(record.student._id)}
+                    >
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-800">
+                            {record.student.name.charAt(0)}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{record.student.studentCode}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-gray-900">{record.student.name}</div>
+                          <div className="text-xs text-gray-500">{record.student.studentCode}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="px-2 py-1 mr-2 text-xs font-semibold rounded-full bg-red-100 text-red-800">
                           {record.absentCount}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2">
+                        <ChevronRight 
+                          size={18} 
+                          className={`text-gray-400 transition-transform ${expandedStudent === record.student._id ? 'rotate-90' : ''}`} 
+                        />
+                      </div>
+                    </div>
+                    
+                    {expandedStudent === record.student._id && (
+                      <div className="px-4 pb-4 pt-1 bg-gray-50">
+                        <h3 className="text-xs font-medium text-gray-500 mb-2">Absent Dates:</h3>
+                        <div className="flex flex-col gap-2">
                           {record.absentDates.map((date, index) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                              <Calendar size={12} className="mr-1" />
+                            <span key={index} className="inline-flex items-center px-2 py-1.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                              <Calendar size={12} className="mr-1 flex-shrink-0" />
                               {formatDate(date.date)}
                               <span className="mx-1">•</span>
-                              <Clock size={12} className="mr-1" />
+                              <Clock size={12} className="mr-1 flex-shrink-0" />
                               {date.shift}
                             </span>
                           ))}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Mobile view - Card list */}
-            <div className="md:hidden space-y-3">
-              {filteredStudents.map((record) => (
-                <div key={record.student._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                  <div 
-                    className="p-4 flex items-center justify-between cursor-pointer"
-                    onClick={() => toggleExpandStudent(record.student._id)}
-                  >
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-800">
-                          {record.student.name.charAt(0)}
-                        </span>
                       </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{record.student.name}</div>
-                        <div className="text-xs text-gray-500">{record.student.studentCode}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="px-2 py-1 mr-2 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                        {record.absentCount}
-                      </span>
-                      <ChevronRight 
-                        size={18} 
-                        className={`text-gray-400 transition-transform ${expandedStudent === record.student._id ? 'rotate-90' : ''}`} 
-                      />
-                    </div>
+                    )}
                   </div>
-                  
-                  {expandedStudent === record.student._id && (
-                    <div className="px-4 pb-4 pt-1 bg-gray-50">
-                      <h3 className="text-xs font-medium text-gray-500 mb-2">Absent Dates:</h3>
-                      <div className="flex flex-col gap-2">
-                        {record.absentDates.map((date, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                            <Calendar size={12} className="mr-1 flex-shrink-0" />
-                            {formatDate(date.date)}
-                            <span className="mx-1">•</span>
-                            <Clock size={12} className="mr-1 flex-shrink-0" />
-                            {date.shift}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
+                ))}
+              </div>
+            </>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 md:py-12 bg-gray-50 rounded-lg">
             <div className="bg-gray-200 p-3 rounded-full">

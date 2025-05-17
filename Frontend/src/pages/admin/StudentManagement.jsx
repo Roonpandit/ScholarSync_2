@@ -226,7 +226,7 @@ const StudentManagement = () => {
       
       {/* Students List */}
       <div className="bg-white rounded-lg">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pt-2 pb-2 z-10">
           <h2 className="font-medium text-gray-700 flex items-center text-sm md:text-base">
             Students List
             <span className="ml-2 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
@@ -236,91 +236,93 @@ const StudentManagement = () => {
         </div>
         
         {filteredStudents.length > 0 ? (
-          <>
-            {/* Desktop view - Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student Code
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created At
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStudents.map((student) => (
-                    <tr key={student._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-blue-800">
-                              {student.name.charAt(0)}
-                            </span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{student.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                          {student.studentCode}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Calendar size={14} className="mr-1 text-gray-400" />
-                          {formatDate(student.createdAt)}
-                        </div>
-                      </td>
+          <div className="max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
+            <>
+              {/* Desktop view - Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Student Code
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created At
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Mobile view - Card list */}
-            <div className="md:hidden space-y-3">
-              {filteredStudents.map((student) => (
-                <div key={student._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden p-4">
-                  <div className="flex items-center mb-3">
-                    <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-800">
-                        {student.name.charAt(0)}
-                      </span>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredStudents.map((student) => (
+                      <tr key={student._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-800">
+                                {student.name.charAt(0)}
+                              </span>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{student.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                            {student.studentCode}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500 flex items-center">
+                            <Calendar size={14} className="mr-1 text-gray-400" />
+                            {formatDate(student.createdAt)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Mobile view - Card list */}
+              <div className="md:hidden space-y-3">
+                {filteredStudents.map((student) => (
+                  <div key={student._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden p-4">
+                    <div className="flex items-center mb-3">
+                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-blue-800">
+                          {student.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="ml-3">
+                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                        <div className="text-xs text-gray-500">{student.studentCode}</div>
+                      </div>
                     </div>
-                    <div className="ml-3">
-                      <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                      <div className="text-xs text-gray-500">{student.studentCode}</div>
+                    
+                    <div className="space-y-2 pl-1">
+                      <div className="flex items-center text-sm">
+                        <Mail size={14} className="mr-2 text-gray-400" />
+                        <span className="text-gray-600">{student.email}</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <Calendar size={14} className="mr-2 text-gray-400" />
+                        <span className="text-gray-500 text-xs">Created: {formatDate(student.createdAt)}</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2 pl-1">
-                    <div className="flex items-center text-sm">
-                      <Mail size={14} className="mr-2 text-gray-400" />
-                      <span className="text-gray-600">{student.email}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Calendar size={14} className="mr-2 text-gray-400" />
-                      <span className="text-gray-500 text-xs">Created: {formatDate(student.createdAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+                ))}
+              </div>
+            </>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 md:py-12 bg-gray-50 rounded-lg">
             <div className="bg-gray-200 p-3 rounded-full">

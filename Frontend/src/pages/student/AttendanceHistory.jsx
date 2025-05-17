@@ -13,16 +13,19 @@ import {
   ChevronRight,
   Filter,
   BarChart2,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 
 const AttendanceHistory = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    month: new Date().getMonth() + 1, // Current month
-    year: new Date().getFullYear() // Current year
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear()
   });
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
 
   useEffect(() => {
     fetchAttendanceHistory();
@@ -83,6 +86,36 @@ const AttendanceHistory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Photo Modal */}
+      {photoModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-medium">Attendance Photo</h3>
+              <button
+                onClick={() => setPhotoModalOpen(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              {selectedPhoto ? (
+                <img
+                  src={selectedPhoto}
+                  alt="Attendance"
+                  className="w-full max-h-[80vh] object-contain"
+                />
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  <Camera className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p>No photo available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-4 sm:mb-6">
@@ -228,32 +261,21 @@ const AttendanceHistory = () => {
                     
                     <div className="flex space-x-2">
                       <button
-                        className="flex-1 inline-flex items-center justify-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         onClick={() => {
-                          toast.info('Photo viewer not implemented yet');
+                          setSelectedPhoto(record.photo?.url);
+                          setPhotoModalOpen(true);
                         }}
                       >
-                        <Camera className="w-3 h-3 mr-1" />
-                        Photo
-                      </button>
-                      <button
-                        className="flex-1 inline-flex items-center justify-center px-2 py-1 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        onClick={() => {
-                          toast.info(`Location: ${record.location.coordinates.join(', ')}`);
-                        }}
-                      >
-                        <MapPin className="w-3 h-3 mr-1" />
-                        Location
+                        <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                        View
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="rounded-full bg-yellow-100 p-2 mb-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                </div>
+              <div className="p-4">
                 <h3 className="text-base font-medium text-gray-900">No Records Found</h3>
                 <p className="mt-1 text-xs text-gray-500">
                   No attendance records found for {getMonthName(filters.month)} {filters.year}.
@@ -276,9 +298,6 @@ const AttendanceHistory = () => {
                         Shift
                       </th>
                       <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                      <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Photo
                       </th>
                       <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -295,36 +314,33 @@ const AttendanceHistory = () => {
                             {new Date(record.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 capitalize">
-                          {record.shift}
-                        </td>
-                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                           <div className="flex items-center">
-                            <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2" />
-                            {new Date(record.markedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            <button
+                              className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              onClick={() => {
+                                setSelectedPhoto(record.photo?.url);
+                                setPhotoModalOpen(true);
+                              }}
+                            >
+                              <Camera className="w-3 h-3 mr-1 sm:mr-2" />
+                              View
+                            </button>
                           </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          <button
-                            className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            onClick={() => {
-                              toast.info('Photo viewer not implemented yet');
-                            }}
-                          >
-                            <Camera className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
-                            <span>View Photo</span>
-                          </button>
-                        </td>
-                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          <button
-                            className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            onClick={() => {
-                              toast.info(`Location: ${record.location.coordinates.join(', ')}`);
-                            }}
-                          >
-                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
-                            <span>View Location</span>
-                          </button>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                          <div className="flex items-center">
+                            <button
+                              className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                              onClick={() => {
+                                toast.info(`Location: ${record.location.coordinates.join(', ')}`);
+                              }}
+                            >
+                              <MapPin className="w-3 h-3 mr-1 sm:mr-2" />
+                              View
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

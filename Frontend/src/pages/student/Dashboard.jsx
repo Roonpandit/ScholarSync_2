@@ -268,7 +268,6 @@ const StudentDashboard = () => {
                     <tr>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
@@ -276,8 +275,7 @@ const StudentDashboard = () => {
                     {recentAttendance.map((record) => (
                       <tr key={record._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(record.date)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatTime(record.markedAt)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             Present
