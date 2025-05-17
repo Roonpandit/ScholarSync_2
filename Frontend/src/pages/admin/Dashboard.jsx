@@ -178,7 +178,8 @@ const AdminDashboard = () => {
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{record.studentCode}</td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {record.shift.charAt(0)?.toUpperCase()}
+                            {record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}
+
                           </span>
                         </td>
                       </tr>
