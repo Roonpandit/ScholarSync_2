@@ -816,7 +816,8 @@ const AttendanceSlots = () => {
   onClose={() => setShowAttendanceModal(false)}
   title={`Attendance for ${
     currentSlot ? formatDate(currentSlot.date) : ""
-  } - ${currentSlot?.shift || ""}`}
+  } - ${currentSlot?.shift ? currentSlot.shift.charAt(0).toUpperCase() + currentSlot.shift.slice(1) : ""}
+`}
   size="xl"
 >
   {currentSlot && (
