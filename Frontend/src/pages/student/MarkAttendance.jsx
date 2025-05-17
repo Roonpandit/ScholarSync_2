@@ -299,31 +299,27 @@ const MarkAttendance = () => {
       const endTime = new Date(slot.endTime);
       
       if (currentTime < startTime) {
-        newErrors.slotTime = 'Attendance slot has not started yet';
-        toast.warning(`Attendance slot will be available from ${formatTime24h(slot.startTime)}`);
+        newErrors.slotTime = `Attendance slot will be active from ${formatTime24h(startTime)}`;
+        toast.warning(newErrors.slotTime);
         return; // Return early if slot hasn't started
       } else if (currentTime > endTime) {
-        newErrors.slotTime = 'Attendance slot has expired';
-        toast.error(`Attendance slot has expired. It was available until ${formatTime24h(slot.endTime)}`);
+        newErrors.slotTime = `Attendance slot expired at ${formatTime24h(endTime)}`;
+        toast.error(newErrors.slotTime);
         return; // Return early if slot has expired
       }
     }
     
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    // If we reach here, slot time is valid
+    // Create form data only if all validations pass
+    const formData = new FormData();
+    formData.append('slotId', slotId);
+    formData.append('latitude', location_.latitude);
+    formData.append('longitude', location_.longitude);
+    formData.append('photo', photo, 'selfie.jpg');
+    formData.append('hasReadInstructions', hasReadInstructions);
 
     try {
       setSubmitting(true);
-      
-      // Create form data
-      const formData = new FormData();
-      formData.append('slotId', slotId);
-      formData.append('latitude', location_.latitude);
-      formData.append('longitude', location_.longitude);
-      formData.append('photo', photo, 'selfie.jpg');
-      formData.append('hasReadInstructions', hasReadInstructions);
 
       const res = await axios.post('/students/attendance', formData, {
         headers: {
