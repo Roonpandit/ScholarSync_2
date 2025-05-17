@@ -283,7 +283,39 @@ const MarkAttendance = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // First get location if not available
+    // First check if slot is selected
+    if (!slotId) {
+      toast.error('Please select an attendance slot first');
+      return;
+    }
+
+    // Check if slot time is valid (highest priority)
+    if (slot) {
+      const currentTime = new Date();
+      const startTime = new Date(slot.startTime);
+      const endTime = new Date(slot.endTime);
+      
+      if (currentTime < startTime) {
+        toast.warning(`Attendance slot will be active from ${formatTime24h(startTime)}`);
+        return; // Return early if slot hasn't started
+      } else if (currentTime > endTime) {
+        toast.error(`Attendance slot expired at ${formatTime24h(endTime)}`);
+        return; // Return early if slot has expired
+      }
+    }
+
+    // If we reach here, slot time is valid
+    // Now check other validations
+    const newErrors = {};
+    
+    // Check photo
+    if (!photo) {
+      newErrors.photo = 'Photo is required';
+      toast.error('Please take a selfie before submitting');
+      return;
+    }
+
+    // Check location
     if (!location_.latitude || !location_.longitude) {
       try {
         const location = await getLocation();
@@ -294,51 +326,33 @@ const MarkAttendance = () => {
         toast.error(error.message);
         return;
       }
+
+      // Check again after getting location
+      if (!location_.latitude || !location_.longitude) {
+        newErrors.location = 'Location is required';
+        toast.error('Please get your location before submitting');
+        return;
+      }
     }
 
-    // Validation
-    const newErrors = {};
-    if (!photo) {
-      newErrors.photo = 'Photo is required';
-      toast.error('Please take a selfie before submitting');
-    }
-    if (!location_.latitude) {
-      newErrors.location = 'Location is required';
-      toast.error('Please get your location before submitting');
-    }
+    // Check instructions
     if (!hasReadInstructions) {
       newErrors.readInstructions = 'Please confirm that you have read the instructions';
       toast.error('Please confirm you have read the instructions');
+      return;
     }
 
-    // Check if slot time is valid
-    if (slot) {
-      const currentTime = new Date();
-      const startTime = new Date(slot.startTime);
-      const endTime = new Date(slot.endTime);
-      
-      if (currentTime < startTime) {
-        newErrors.slotTime = `Attendance slot will be active from ${formatTime24h(startTime)}`;
-        toast.warning(newErrors.slotTime);
-        return; // Return early if slot hasn't started
-      } else if (currentTime > endTime) {
-        newErrors.slotTime = `Attendance slot expired at ${formatTime24h(endTime)}`;
-        toast.error(newErrors.slotTime);
-        return; // Return early if slot has expired
-      }
-    }
-    
-    // If we reach here, slot time is valid
-    // Create form data only if all validations pass
-    const formData = new FormData();
-    formData.append('slotId', slotId);
-    formData.append('latitude', location_.latitude);
-    formData.append('longitude', location_.longitude);
-    formData.append('photo', photo, 'selfie.jpg');
-    formData.append('hasReadInstructions', hasReadInstructions);
-
+    // If we reach here, all validations have passed
     try {
       setSubmitting(true);
+      
+      // Create form data only if all validations pass
+      const formData = new FormData();
+      formData.append('slotId', slotId);
+      formData.append('latitude', location_.latitude);
+      formData.append('longitude', location_.longitude);
+      formData.append('photo', photo, 'selfie.jpg');
+      formData.append('hasReadInstructions', hasReadInstructions);
 
       const res = await axios.post('/students/attendance', formData, {
         headers: {
@@ -595,10 +609,15 @@ const MarkAttendance = () => {
             <div>
               <button
                 type="submit"
-                className={`w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${
+                className={`w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-md shadow-sm text-white transition-colors ${
+                  !location_.latitude || !photo || !hasReadInstructions ? "bg-gray-400 hover:bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                } ${
                   submitting ? "opacity-70 cursor-not-allowed" : ""
                 }`}
-                disabled={submitting}
+                disabled={submitting || !location_.latitude || !photo || !hasReadInstructions}
+                style={{
+                  cursor: !location_.latitude || !photo || !hasReadInstructions ? 'not-allowed' : 'pointer'
+                }}
               >
                 {submitting ? (
                   <>
