@@ -221,11 +221,11 @@ const AttendanceStats = () => {
           <div className="px-4 pb-4 pt-1 bg-gray-50">
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div className="bg-white p-2 rounded-md border border-gray-200">
-                <div className="text-xs text-gray-500 mb-1">Present Days</div>
+                <div className="text-xs text-gray-500 mb-1">Presents</div>
                 <div className="font-medium text-green-600 text-lg">{present}</div>
               </div>
               <div className="bg-white p-2 rounded-md border border-gray-200">
-                <div className="text-xs text-gray-500 mb-1">Absent Days</div>
+                <div className="text-xs text-gray-500 mb-1">Absents</div>
                 <div className="font-medium text-red-600 text-lg">{absent}</div>
               </div>
             </div>
