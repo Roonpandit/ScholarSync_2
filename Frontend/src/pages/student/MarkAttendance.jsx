@@ -401,6 +401,57 @@ const MarkAttendance = () => {
                 </div>
               </div>
             </div>
+                        {/* Location Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Location
+              </label>
+              <button
+                type="button"
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                onClick={getLocation}
+              >
+                <MapPin className="h-5 w-5 mr-2" />
+                Get Current Location
+              </button>
+              
+              {location_.latitude && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <CheckCircle className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">Location Detected</h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        <p>Latitude: {location_.latitude}</p>
+                        <p>Longitude: {location_.longitude}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {location_.error && (
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Location Error</h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>{location_.error}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {errors.location && (
+                <p className="mt-2 text-sm text-red-600">{errors.location}</p>
+              )}
+            </div>
 
             {/* Selfie Section */}
             <div className="mb-6">
@@ -470,57 +521,7 @@ const MarkAttendance = () => {
               )}
             </div>
 
-            {/* Location Section */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location
-              </label>
-              <button
-                type="button"
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                onClick={getLocation}
-              >
-                <MapPin className="h-5 w-5 mr-2" />
-                Get Current Location
-              </button>
-              
-              {location_.latitude && (
-                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <CheckCircle className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">Location Detected</h3>
-                      <div className="mt-2 text-sm text-blue-700">
-                        <p>Latitude: {location_.latitude}</p>
-                        <p>Longitude: {location_.longitude}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {location_.error && (
-                <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">Location Error</h3>
-                      <div className="mt-2 text-sm text-red-700">
-                        <p>{location_.error}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {errors.location && (
-                <p className="mt-2 text-sm text-red-600">{errors.location}</p>
-              )}
-            </div>
+
 
             {/* Instructions Confirmation */}
             <div className="mb-6">
