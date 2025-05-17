@@ -83,20 +83,11 @@ const MarkAttendance = () => {
     try {
       setLoading(true)
       const res = await axios.get('/students/attendance-slots')
-      const slots = res.data.data || []
-      
-      // Filter slots based on status
-      const upcomingSlots = slots.filter(slot => slot.status === 'upcoming')
-      const activeSlots = slots.filter(slot => slot.status === 'active')
-      const expiredSlots = slots.filter(slot => slot.status === 'expired')
-      
-      // Sort slots: active first, then upcoming, then expired
-      const sortedSlots = [...activeSlots, ...upcomingSlots, ...expiredSlots]
-      setActiveSlots(sortedSlots)
+      setActiveSlots(res.data.data || [])
       
       // If no slotId is set and there are active slots, set the first one
-      if (!slotId && activeSlots.length > 0) {
-        setSlotId(activeSlots[0]._id)
+      if (!slotId && res.data.data && res.data.data.length > 0) {
+        setSlotId(res.data.data[0]._id)
       }
     } catch (error) {
       console.error('Error fetching active slots:', error)
@@ -181,14 +172,18 @@ const MarkAttendance = () => {
     if (!location_.latitude) newErrors.location = 'Location is required';
     if (!hasReadInstructions) newErrors.readInstructions = 'Please confirm that you have read the instructions';
 
-    // Check slot status
+    // Check if slot time is valid
     if (slot) {
-      if (slot.status === 'upcoming') {
+      const currentTime = new Date();
+      const startTime = new Date(slot.startTime);
+      const endTime = new Date(slot.endTime);
+      
+      if (currentTime < startTime) {
         newErrors.slotTime = 'Attendance slot has not started yet';
         toast.warning(`Attendance slot will be available from ${formatTime24h(slot.startTime)}`);
-      } else if (slot.status === 'expired') {
+      } else if (currentTime > endTime) {
         newErrors.slotTime = 'Attendance slot has expired';
-        toast.error(`Attendance slot has expired`);
+        toast.error(`Attendance slot has expired. It was available until ${formatTime24h(slot.endTime)}`);
       }
     }
     
