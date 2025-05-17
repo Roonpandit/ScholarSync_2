@@ -116,6 +116,12 @@ const uploadToCloudinary = async (file) => {
 // @access  Private/Student
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
   try {
+    // Log the user ID for debugging
+    if (!req.user || !req.user._id) {
+      throw new Error('User ID not found in request');
+    }
+    console.log('Fetching slots for user:', req.user._id);
+
     const now = new Date();
     
     // Get all slots for today and future
@@ -127,44 +133,51 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
     .populate('students', 'name rollNumber photo')
     .sort({ startTime: 1 });
 
+    console.log('Found slots:', slots.length);
+
     // Filter slots based on status and current time
     const availableSlots = await Promise.all(
       slots.map(async slot => {
-        // Skip if student has already marked attendance
-        const hasMarked = await Attendance.findOne({
-          student: req.user._id,
-          slot: slot._id,
-          date: slot.date,
-          shift: slot.shift
-        });
-        
-        if (hasMarked) return null;
+        try {
+          // Skip if student has already marked attendance
+          const hasMarked = await Attendance.findOne({
+            student: req.user._id,
+            slot: slot._id,
+            date: slot.date,
+            shift: slot.shift
+          });
+          
+          if (hasMarked) return null;
 
-        // For upcoming slots, don't show attendance status
-        if (slot.status === 'upcoming') {
-          return {
-            ...slot.toObject(),
-            status: 'upcoming',
-            attendance: null // No attendance status for upcoming slots
-          };
+          // For upcoming slots, don't show attendance status
+          if (slot.status === 'upcoming') {
+            return {
+              ...slot.toObject(),
+              status: 'upcoming',
+              attendance: null // No attendance status for upcoming slots
+            };
+          }
+
+          // For active slots, show attendance status
+          if (slot.status === 'active') {
+            return {
+              ...slot.toObject(),
+              status: 'active',
+              attendance: await Attendance.findOne({
+                student: req.user._id,
+                slot: slot._id,
+                date: slot.date,
+                shift: slot.shift
+              })
+            };
+          }
+
+          // For completed slots, don't show
+          return null;
+        } catch (error) {
+          console.error('Error processing slot:', slot._id, error);
+          return null;
         }
-
-        // For active slots, show attendance status
-        if (slot.status === 'active') {
-          return {
-            ...slot.toObject(),
-            status: 'active',
-            attendance: await Attendance.findOne({
-              student: req.user._id,
-              slot: slot._id,
-              date: slot.date,
-              shift: slot.shift
-            })
-          };
-        }
-
-        // For completed slots, don't show
-        return null;
       })
     );
 
@@ -180,6 +193,7 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
       };
     });
 
+    console.log('Returning slots:', slotsWithISTTimes.length);
     return res.status(200).json({
       success: true,
       data: slotsWithISTTimes
@@ -188,7 +202,8 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
     console.error('Error getting active attendance slots:', error);
     return res.status(500).json({
       success: false,
-      message: 'Server error getting attendance slots'
+      message: 'Server error getting attendance slots',
+      error: error.message
     });
   }
 });
