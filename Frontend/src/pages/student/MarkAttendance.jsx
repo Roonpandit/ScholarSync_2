@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
-import { AlertCircle, CheckCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -13,6 +13,8 @@ const MarkAttendance = () => {
   const [loading, setLoading] = useState(true)
   const [photo, setPhoto] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [cameraStream, setCameraStream] = useState(null)
+  const [showCamera, setShowCamera] = useState(false)
   const [location_, setLocation_] = useState({
     latitude: null,
     longitude: null,
@@ -110,6 +112,53 @@ const MarkAttendance = () => {
     }
   }
 
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      setCameraStream(stream);
+      setShowCamera(true);
+      
+      // Set the stream to the video element
+      setTimeout(() => {
+        const videoElement = document.getElementById('cameraVideo');
+        if (videoElement) {
+          videoElement.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      toast.error('Failed to access camera. Please check camera permissions.');
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!cameraStream) return;
+
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    canvas.toBlob((blob) => {
+      setPhoto(blob);
+      setPreviewUrl(URL.createObjectURL(blob));
+      setShowCamera(false);
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        setCameraStream(null);
+      }
+    }, 'image/jpeg', 0.8);
+  };
+
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -142,9 +191,9 @@ const MarkAttendance = () => {
         ...location_,
         error: 'Geolocation is not supported by your browser'
       })
-      return
+      return;
     }
-    
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocation_({
@@ -152,15 +201,20 @@ const MarkAttendance = () => {
           longitude: position.coords.longitude,
           address: 'Location detected',
           error: null
-        })
+        });
       },
       (error) => {
         setLocation_({
           ...location_,
           error: `Error getting location: ${error.message}`
-        })
+        });
+      },
+      { 
+        enableHighAccuracy: true, 
+        timeout: 10000, 
+        maximumAge: 0 
       }
-    )
+    );
   }
 
   const handleSubmit = async (e) => {
@@ -168,9 +222,18 @@ const MarkAttendance = () => {
     
     // Validation
     const newErrors = {};
-    if (!photo) newErrors.photo = 'Photo is required';
-    if (!location_.latitude) newErrors.location = 'Location is required';
-    if (!hasReadInstructions) newErrors.readInstructions = 'Please confirm that you have read the instructions';
+    if (!photo) {
+      newErrors.photo = 'Photo is required';
+      toast.error('Please take a selfie before submitting');
+    }
+    if (!location_.latitude) {
+      newErrors.location = 'Location is required';
+      toast.error('Please get your location before submitting');
+    }
+    if (!hasReadInstructions) {
+      newErrors.readInstructions = 'Please confirm that you have read the instructions';
+      toast.error('Please confirm you have read the instructions');
+    }
 
     // Check if slot time is valid
     if (slot) {
@@ -200,101 +263,259 @@ const MarkAttendance = () => {
       formData.append('slotId', slotId)
       formData.append('latitude', location_.latitude)
       formData.append('longitude', location_.longitude)
-      formData.append('address', location_.address)
-      formData.append('photo', photo)
-      formData.append('markedAt', getCurrentTimeIST())
-      
+      formData.append('photo', photo, 'selfie.jpg') // Specify filename
+      formData.append('hasReadInstructions', hasReadInstructions)
+
+      // Add metadata to form data
+      const metadata = {
+        timestamp: new Date().toISOString(),
+        location: {
+          latitude: location_.latitude,
+          longitude: location_.longitude
+        }
+      }
+      formData.append('metadata', JSON.stringify(metadata))
+
       const res = await axios.post('/students/attendance', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
       
-      if (res.data.success) {
-        toast.success('Attendance marked successfully')
-        navigate('/student')
-      }
+      toast.success('Attendance marked successfully!')
+      navigate('/student')
     } catch (error) {
       console.error('Error marking attendance:', error)
-      toast.error(error.response?.data?.message || 'Failed to mark attendance')
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message)
+      } else {
+        toast.error('Failed to mark attendance')
+      }
     } finally {
       setSubmitting(false)
     }
-  }
+  };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-        <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-600 font-medium">Loading attendance slots...</p>
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     )
   }
 
   if (activeSlots.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8 bg-white shadow-md rounded-lg my-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Mark Attendance</h1>
-        <div className="bg-gray-50 rounded-lg p-6 text-center">
-          <p className="text-gray-700 text-lg mb-4">No active attendance slots available at the moment.</p>
-          <button 
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition duration-200 ease-in-out"
-            onClick={() => navigate('/student')}
-          >
-            Back to Dashboard
-          </button>
+      <div className="max-w-3xl mx-auto mt-8 px-4">
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                No active attendance slots available at the moment.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 bg-white shadow-lg rounded-lg my-6 md:my-8">
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b pb-3">Mark Attendance</h1>
-      
-      <div className="attendance-form-container">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="form-group">
-            <label htmlFor="slotId" className="block text-sm font-medium text-gray-700 mb-1">
-              Select Attendance Slot
-            </label>
-            <select
-              id="slotId"
-              value={slotId}
-              onChange={(e) => setSlotId(e.target.value)}
-              required
-              disabled={photo !== null}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select a slot</option>
-              {activeSlots.map((slot) => (
-                <option key={slot._id} value={slot._id}>
-                  {slot.shift} - {new Date(slot.date).toLocaleDateString()} ({new Date(slot.startTime).toLocaleTimeString()} - {new Date(slot.endTime).toLocaleTimeString()})
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {slot && (
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md">
-              <h3 className="text-lg font-medium text-blue-800 mb-2">Selected Slot Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <p className="text-gray-700"><span className="font-medium">Shift:</span> {slot.shift}</p>
-                <p className="text-gray-700"><span className="font-medium">Date:</span> {new Date(slot.date).toLocaleDateString()}</p>
-                <p className="text-gray-700"><span className="font-medium">Time:</span> {new Date(slot.startTime).toLocaleTimeString()} - {new Date(slot.endTime).toLocaleTimeString()}</p>
+    <div className="max-w-3xl mx-auto px-4 py-8 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
+          <h3 className="text-xl font-bold text-white">Mark Attendance</h3>
+        </div>
+        <div className="p-6">
+          <form onSubmit={handleSubmit}>
+            {/* Attendance Slot Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="attendance-slot">
+                Select Attendance Slot
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Calendar className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  id="attendance-slot"
+                  className="block w-full pl-10 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm"
+                  value={slotId}
+                  onChange={(e) => setSlotId(e.target.value)}
+                  required
+                >
+                  <option value="">Select a slot</option>
+                  {activeSlots.map((slot) => (
+                    <option key={slot._id} value={slot._id}>
+                      {formatDateDisplay(slot.date)} - {formatTime24h(slot.startTime)} to {formatTime24h(slot.endTime)}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <Clock className="h-5 w-5 text-gray-400" />
+                </div>
               </div>
             </div>
-          )}
-          
-          <div className="space-y-4">
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded">
+
+            {/* Selfie Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Take Selfie
+              </label>
+              <div className="camera-container">
+                {showCamera ? (
+                  <div className="bg-black rounded-lg overflow-hidden">
+                    <video
+                      id="cameraVideo"
+                      autoPlay
+                      playsInline
+                      className="w-full h-auto transform scale-x-[-1] max-w-full rounded-lg"
+                    />
+                    <div className="bg-gray-800 p-4 flex justify-center space-x-4">
+                      <button
+                        type="button"
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        onClick={capturePhoto}
+                      >
+                        <Camera className="h-5 w-5 mr-2" />
+                        Take Selfie
+                      </button>
+                      <button
+                        type="button"
+                        className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                        onClick={() => {
+                          setShowCamera(false);
+                          if (cameraStream) {
+                            cameraStream.getTracks().forEach(track => track.stop());
+                            setCameraStream(null);
+                          }
+                        }}
+                      >
+                        <X className="h-5 w-5 mr-2" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      onClick={startCamera}
+                    >
+                      <Camera className="h-5 w-5 mr-2" />
+                      Open Camera
+                    </button>
+                    
+                    {previewUrl && (
+                      <div className="mt-4 bg-gray-100 p-4 rounded-lg">
+                        <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                        <img
+                          src={previewUrl}
+                          alt="Selfie Preview"
+                          className="max-w-xs mx-auto rounded-md shadow-md"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              {errors.photo && (
+                <p className="mt-2 text-sm text-red-600">{errors.photo}</p>
+              )}
+            </div>
+
+            {/* Location Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Location
+              </label>
+              <button
+                type="button"
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                onClick={getLocation}
+              >
+                <MapPin className="h-5 w-5 mr-2" />
+                Get Current Location
+              </button>
+              
+              {location_.latitude && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <CheckCircle className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">Location Detected</h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        <p>Latitude: {location_.latitude}</p>
+                        <p>Longitude: {location_.longitude}</p>
+                        {location_.address && <p>Address: {location_.address}</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {location_.error && (
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Location Error</h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>{location_.error}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {errors.location && (
+                <p className="mt-2 text-sm text-red-600">{errors.location}</p>
+              )}
+            </div>
+
+            {/* Instructions Confirmation */}
+            <div className="mb-6">
+              <div className="flex items-start">
+                <div className="flex items-center h-5">
+                  <input
+                    id="readInstructions"
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={hasReadInstructions}
+                    onChange={(e) => setHasReadInstructions(e.target.checked)}
+                    required
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <label htmlFor="readInstructions" className="font-medium text-gray-700">
+                    I have read and understood the attendance instructions
+                  </label>
+                </div>
+              </div>
+              {errors.readInstructions && (
+                <p className="mt-2 text-sm text-red-600">{errors.readInstructions}</p>
+              )}
+            </div>
+
+            {/* Important Instructions */}
+            <div className="mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-md">
               <div className="flex">
-                <AlertCircle className="flex-shrink-0 h-5 w-5 text-red-700" />
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-5 w-5 text-amber-400" />
+                </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
+                  <h3 className="text-sm font-medium text-amber-800">
                     Important Photo Upload Instructions
                   </h3>
-                  <div className="mt-2 text-sm text-red-700">
+                  <div className="mt-2 text-sm text-amber-700">
                     <ul className="list-disc list-inside space-y-1">
                       <li>Only upload selfies taken in Masai office</li>
                       <li>Photo must be taken with timestamp camera</li>
@@ -306,144 +527,33 @@ const MarkAttendance = () => {
               </div>
             </div>
 
-            <label className="block text-sm font-medium text-gray-700">
-              Upload Photo
-            </label>
-            <div className="flex flex-col md:flex-row gap-4 items-start">
-              <div className="flex-1">
-                <div className={`border-2 border-dashed rounded-lg p-4 text-center ${previewUrl ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'}`}>
-                  <input
-                    type="file"
-                    id="photo"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    required
-                    disabled={submitting}
-                    className="hidden"
-                  />
-                  <label 
-                    htmlFor="photo" 
-                    className="cursor-pointer flex flex-col items-center justify-center"
-                  >
-                    <div className="w-12 h-12 mb-2 rounded-full bg-blue-100 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <span className="text-sm text-gray-600">
-                      {previewUrl ? 'Change photo' : 'Click to upload photo'}
-                    </span>
-                    <span className="text-xs text-gray-500 mt-1">
-                      (Max size: 5MB)
-                    </span>
-                  </label>
-                </div>
-              </div>
-              {previewUrl && (
-                <div className="w-full md:w-40 h-40 relative">
-                  <img 
-                    src={previewUrl} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover rounded-lg shadow-md" 
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPhoto(null);
-                      setPreviewUrl(null);
-                    }}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            {/* Submit Button */}
+            <div>
+              <button
+                type="submit"
+                className={`w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${
+                  submitting ? "opacity-70 cursor-not-allowed" : ""
+                }`}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                  </button>
-                </div>
-              )}
+                    Submitting...
+                  </>
+                ) : (
+                  "Mark Attendance"
+                )}
+              </button>
             </div>
-          </div>
-          
-          <div className="form-group">
-            <button
-              type="button"
-              onClick={getLocation}
-              disabled={submitting}
-              className={`w-full md:w-auto px-4 py-2 rounded-md font-medium shadow-sm ${
-                location_.latitude 
-                  ? 'bg-green-500 hover:bg-green-600 text-white' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              } transition duration-200 ease-in-out flex items-center justify-center`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {location_.latitude ? 'Location Detected' : 'Get Location'}
-            </button>
-            {location_.latitude && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-sm text-green-700 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Location successfully captured
-                </p>
-              </div>
-            )}
-            {location_.error && (
-              <p className="mt-2 text-sm text-red-600 p-2 bg-red-50 border border-red-200 rounded-md">
-                {location_.error}
-              </p>
-            )}
-          </div>
-          
-          <div className="flex items-start">
-            <div className="flex items-center h-5">
-              <input
-                id="read-instructions"
-                name="read-instructions"
-                type="checkbox"
-                checked={hasReadInstructions}
-                onChange={(e) => setHasReadInstructions(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-            </div>
-            <div className="ml-3 text-sm">
-              <label htmlFor="read-instructions" className="font-medium text-gray-700">
-                I have read and understood all the instructions above
-              </label>
-              {errors.readInstructions && (
-                <p className="mt-1 text-sm text-red-600">{errors.readInstructions}</p>
-              )}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className={`w-full px-6 py-3 text-white font-medium rounded-md shadow-md ${
-              !photo || !location_.latitude || !hasReadInstructions || submitting
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            } transition duration-200 ease-in-out flex items-center justify-center`}
-            disabled={!photo || !location_.latitude || !hasReadInstructions || submitting}
-          >
-            {submitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Marking Attendance...
-              </>
-            ) : (
-              'Mark Attendance'
-            )}
-          </button>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default MarkAttendance
+export default MarkAttendance;
