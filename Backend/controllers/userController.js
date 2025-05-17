@@ -209,17 +209,27 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     });
   }
   
-  // Check if the slot is active
-  if (!slot.isActive) {
+  // Check slot status and time window
+  const now = new Date();
+  
+  // For upcoming slots, don't allow marking attendance
+  if (slot.status === 'upcoming') {
     return res.status(400).json({
       success: false,
-      message: 'This attendance slot is no longer active',
+      message: 'This attendance slot is not yet active. It will start at ' + slot.startTime.toLocaleString(),
     });
   }
   
-  // Check if the current time is within the slot timeframe
-  const now = new Date();
-  if (now < slot.startTime || now > slot.endTime) {
+  // For completed slots, don't allow marking attendance
+  if (slot.status === 'completed') {
+    return res.status(400).json({
+      success: false,
+      message: 'This attendance slot has already ended',
+    });
+  }
+  
+  // For active slots, check if within time window
+  if (slot.status === 'active' && (now < slot.startTime || now > slot.endTime)) {
     return res.status(400).json({
       success: false,
       message: 'Attendance can only be marked during the active time window',
