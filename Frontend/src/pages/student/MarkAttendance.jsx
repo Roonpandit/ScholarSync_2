@@ -121,8 +121,6 @@ const MarkAttendance = () => {
           height: { ideal: 720 }
         }
       });
-      setCameraStream(stream);
-      setShowCamera(true);
       
       // Set the stream to the video element
       setTimeout(() => {
@@ -131,66 +129,25 @@ const MarkAttendance = () => {
           videoElement.srcObject = stream;
         }
       }, 100);
+      
+      setCameraStream(stream);
+      setShowCamera(true);
     } catch (err) {
       console.error('Error accessing camera:', err);
-      toast.error('Failed to access camera. Please check camera permissions.');
+      if (err.name === 'NotAllowedError') {
+        toast.error('Camera permission denied. Please allow camera access in your browser settings.');
+      } else {
+        toast.error('Failed to access camera. Please check camera permissions.');
+      }
     }
   };
-
-  const capturePhoto = () => {
-    if (!cameraStream) return;
-
-    const video = document.getElementById('cameraVideo');
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-    
-    canvas.toBlob((blob) => {
-      setPhoto(blob);
-      setPreviewUrl(URL.createObjectURL(blob));
-      setShowCamera(false);
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        setCameraStream(null);
-      }
-    }, 'image/jpeg', 0.8);
-  };
-
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file')
-        return
-      }
-
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB')
-        return
-      }
-
-      setPhoto(file)
-      
-      // Create preview URL
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   const getLocation = () => {
     if (!navigator.geolocation) {
       setLocation_({
         ...location_,
         error: 'Geolocation is not supported by your browser'
-      })
+      });
       return;
     }
 
@@ -215,11 +172,121 @@ const MarkAttendance = () => {
         maximumAge: 0 
       }
     );
-  }
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      setPhoto(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const capturePhoto = async () => {
+    if (!cameraStream) return;
+
+    try {
+      // Check if we have location data in state
+      if (!location_.latitude || !location_.longitude) {
+        throw new Error('Location data not available. Please get your location first.');
+      }
+
+      const video = document.getElementById('cameraVideo');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      
+      // Draw the video frame
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Add location overlay
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.font = '18px Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      
+      // Add location text overlay
+      const locationText = `Location: ${location_.latitude}, ${location_.longitude}`;
+      const timestamp = new Date().toLocaleString();
+      
+      // Create a semi-transparent overlay
+      ctx.fillRect(10, canvas.height - 120, canvas.width - 20, 100);
+      
+      // Add location and timestamp text
+      ctx.fillStyle = 'white';
+      ctx.fillText(locationText, 20, canvas.height - 110);
+      ctx.fillText(timestamp, 20, canvas.height - 80);
+      
+      // Add Masai logo or watermark
+      ctx.fillStyle = '#007bff';
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText('Masai School', 20, canvas.height - 50);
+      
+      // Create final image with overlay
+      canvas.toBlob((blob) => {
+        // Add metadata to the image
+        const metadata = {
+          latitude: location_.latitude,
+          longitude: location_.longitude,
+          timestamp: new Date().toISOString(),
+          locationText
+        };
+        
+        // Create a new blob with metadata
+        const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+        const photoBlob = new Blob([blob, metadataBlob], { type: 'image/jpeg' });
+        
+        setPhoto(photoBlob);
+        setPreviewUrl(URL.createObjectURL(photoBlob));
+        setShowCamera(false);
+        
+        if (cameraStream) {
+          cameraStream.getTracks().forEach(track => track.stop());
+          setCameraStream(null);
+        }
+      }, 'image/jpeg', 0.8);
+    } catch (error) {
+      console.error('Error capturing photo:', error);
+      toast.error(error.message || 'Failed to capture photo. Please try again.');
+    }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     
+    // First get location if not available
+    if (!location_.latitude || !location_.longitude) {
+      try {
+        const location = await getLocation();
+        if (!location.latitude || !location.longitude) {
+          throw new Error('Failed to get location data');
+        }
+      } catch (error) {
+        toast.error(error.message);
+        return;
+      }
+    }
+
     // Validation
     const newErrors = {};
     if (!photo) {
@@ -453,7 +520,6 @@ const MarkAttendance = () => {
                       <div className="mt-2 text-sm text-blue-700">
                         <p>Latitude: {location_.latitude}</p>
                         <p>Longitude: {location_.longitude}</p>
-                        {location_.address && <p>Address: {location_.address}</p>}
                       </div>
                     </div>
                   </div>
