@@ -629,6 +629,8 @@ exports.closeAttendanceSlot = asyncHandler(async (req, res) => {
   }
 });
 
+const cloudinary = require('../config/cloudinary');
+
 // @desc    Delete an attendance slot and its associated records
 // @route   DELETE /api/admin/attendance-slots/:id
 // @access  Private/Admin
@@ -645,6 +647,20 @@ exports.deleteAttendanceSlot = asyncHandler(async (req, res) => {
       });
     }
 
+    // Get all attendance records for this slot
+    const attendanceRecords = await Attendance.find({ slot: slot._id });
+
+    // Delete photos from Cloudinary
+    const photoDeletePromises = attendanceRecords.map(record => {
+      if (record.photo && record.photo.public_id) {
+        return cloudinary.uploader.destroy(record.photo.public_id);
+      }
+      return Promise.resolve();
+    });
+
+    // Wait for all photo deletions to complete
+    await Promise.all(photoDeletePromises);
+
     // Delete all attendance records associated with this slot
     await Attendance.deleteMany({ slot: slot._id });
 
@@ -653,7 +669,7 @@ exports.deleteAttendanceSlot = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Attendance slot and associated records deleted successfully'
+      message: 'Attendance slot and associated records deleted successfully. Photos removed from Cloudinary.'
     });
   } catch (error) {
     console.error('Error in deleteAttendanceSlot:', error);
