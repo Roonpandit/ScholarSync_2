@@ -171,6 +171,19 @@ const MarkAttendance = () => {
     if (!photo) newErrors.photo = 'Photo is required';
     if (!location_.latitude) newErrors.location = 'Location is required';
     if (!hasReadInstructions) newErrors.readInstructions = 'Please confirm that you have read the instructions';
+
+    // Check if slot time is valid
+    if (slot) {
+      const currentTime = new Date();
+      const startTime = new Date(slot.startTime);
+      const endTime = new Date(slot.endTime);
+      
+      if (currentTime < startTime) {
+        newErrors.slotTime = 'Attendance slot has not started yet';
+      } else if (currentTime > endTime) {
+        newErrors.slotTime = 'Attendance slot has expired';
+      }
+    }
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
