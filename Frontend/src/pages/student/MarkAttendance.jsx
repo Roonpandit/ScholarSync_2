@@ -180,8 +180,10 @@ const MarkAttendance = () => {
       
       if (currentTime < startTime) {
         newErrors.slotTime = 'Attendance slot has not started yet';
+        toast.warning(`Attendance slot will be available from ${formatTime24h(slot.startTime)}`);
       } else if (currentTime > endTime) {
         newErrors.slotTime = 'Attendance slot has expired';
+        toast.error(`Attendance slot has expired. It was available until ${formatTime24h(slot.endTime)}`);
       }
     }
     
