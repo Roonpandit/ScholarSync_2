@@ -174,31 +174,6 @@ const MarkAttendance = () => {
     );
   };
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return;
-      }
-
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        return;
-      }
-
-      setPhoto(file);
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const capturePhoto = async () => {
     if (!cameraStream) return;
