@@ -115,97 +115,63 @@ const uploadToCloudinary = async (file) => {
 // @route   GET /api/students/attendance-slots
 // @access  Private/Student
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
-  try {
-    // Log the user ID for debugging
-    if (!req.user || !req.user._id) {
-      throw new Error('User ID not found in request');
-    }
-    console.log('Fetching slots for user:', req.user._id);
+  const now = new Date();
+  
+  // Get current time in UTC
+  const nowUTC = new Date();
 
-    const now = new Date();
-    
-    // Get all slots for today and future
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    const slots = await AttendanceSlot.find({
-      date: { $gte: today }
-    })
-    .populate('students', 'name rollNumber photo')
-    .sort({ startTime: 1 });
-
-    console.log('Found slots:', slots.length);
-
-    // Filter slots based on status and current time
-    const availableSlots = await Promise.all(
-      slots.map(async slot => {
-        try {
-          // Skip if student has already marked attendance
-          const hasMarked = await Attendance.findOne({
-            student: req.user._id,
-            slot: slot._id,
-            date: slot.date,
-            shift: slot.shift
-          });
-          
-          if (hasMarked) return null;
-
-          // For upcoming slots, don't show attendance status
-          if (slot.status === 'upcoming') {
-            return {
-              ...slot.toObject(),
-              status: 'upcoming',
-              attendance: null // No attendance status for upcoming slots
-            };
-          }
-
-          // For active slots, show attendance status
-          if (slot.status === 'active') {
-            return {
-              ...slot.toObject(),
-              status: 'active',
-              attendance: await Attendance.findOne({
-                student: req.user._id,
-                slot: slot._id,
-                date: slot.date,
-                shift: slot.shift
-              })
-            };
-          }
-
-          // For completed slots, don't show
-          return null;
-        } catch (error) {
-          console.error('Error processing slot:', slot._id, error);
-          return null;
+  // Get all active slots that are either:
+  // 1. Currently active (startTime <= now <= endTime), OR
+  // 2. Upcoming (startTime > now)
+  const activeSlots = await AttendanceSlot.find({
+    isActive: true,
+    $or: [
+      {
+        // Currently active slots
+        startTime: { $lte: nowUTC },
+        endTime: { $gte: nowUTC }
+      },
+      {
+        // Upcoming slots (within the next 12 hours)
+        startTime: { 
+          $gt: nowUTC,
+          $lte: new Date(nowUTC.getTime() + (12 * 60 * 60 * 1000)) // Next 12 hours
         }
-      })
-    );
+      }
+    ]
+  }).sort({ startTime: 1 }); // Sort by start time ascending
 
-    // Remove null values (completed slots or marked attendance)
-    const filteredSlots = availableSlots.filter(slot => slot !== null);
+  // Filter out slots where student has already marked attendance
+  const filteredSlots = await Promise.all(
+    activeSlots.map(async (slot) => {
+      const hasMarked = await Attendance.findOne({
+        student: req.user._id,
+        slot: slot._id,
+        date: slot.date,
+        shift: slot.shift
+      });
+      
+      return hasMarked ? null : slot;
+    })
+  );
+
+  // Remove null values (slots where student has marked attendance)
+  const availableSlots = filteredSlots.filter(Boolean);
 
     // Convert times to IST for display
-    const slotsWithISTTimes = filteredSlots.map(slot => {
+    const slotsWithISTTimes = availableSlots.map(slot => {
       return {
-        ...slot,
+        ...slot.toObject(),
         startTime: new Date(slot.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
         endTime: new Date(slot.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
       };
     });
 
-    console.log('Returning slots:', slotsWithISTTimes.length);
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
+      count: slotsWithISTTimes.length,
       data: slotsWithISTTimes
     });
-  } catch (error) {
-    console.error('Error getting active attendance slots:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error getting attendance slots',
-      error: error.message
-    });
-  }
 });
 
 // @desc    Mark attendance
@@ -243,27 +209,17 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     });
   }
   
-  // Check slot status and time window
+  // Check if the slot is active
+  if (!slot.isActive) {
+    return res.status(400).json({
+      success: false,
+      message: 'This attendance slot is no longer active',
+    });
+  }
+  
+  // Check if the current time is within the slot timeframe
   const now = new Date();
-  
-  // For upcoming slots, don't allow marking attendance
-  if (slot.status === 'upcoming') {
-    return res.status(400).json({
-      success: false,
-      message: 'This attendance slot is not yet active. It will start at ' + slot.startTime.toLocaleString(),
-    });
-  }
-  
-  // For completed slots, don't allow marking attendance
-  if (slot.status === 'completed') {
-    return res.status(400).json({
-      success: false,
-      message: 'This attendance slot has already ended',
-    });
-  }
-  
-  // For active slots, check if within time window
-  if (slot.status === 'active' && (now < slot.startTime || now > slot.endTime)) {
+  if (now < slot.startTime || now > slot.endTime) {
     return res.status(400).json({
       success: false,
       message: 'Attendance can only be marked during the active time window',
@@ -393,8 +349,8 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     student: req.user._id
   });
   
-  // Calculate absences
-  const absences = [];
+  // Calculate absences and pending status
+  const attendanceStatus = [];
   
   slots.forEach(slot => {
     const isPresent = attendanceRecords.some(record => 
@@ -402,12 +358,28 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     );
     
     if (!isPresent) {
-      absences.push({
-        date: slot.date,
-        shift: slot.shift,
-        slotStartTime: slot.startTime,
-        slotEndTime: slot.endTime
-      });
+      const now = new Date();
+      const slotEndTime = new Date(slot.endTime);
+      
+      // If slot is upcoming or active, mark as pending
+      if (slot.status === 'upcoming' || slot.status === 'active') {
+        attendanceStatus.push({
+          date: slot.date,
+          shift: slot.shift,
+          status: 'pending',
+          slotStartTime: slot.startTime,
+          slotEndTime: slot.endTime
+        });
+      } else {
+        // If slot is expired and not marked, mark as absent
+        attendanceStatus.push({
+          date: slot.date,
+          shift: slot.shift,
+          status: 'absent',
+          slotStartTime: slot.startTime,
+          slotEndTime: slot.endTime
+        });
+      }
     }
   });
   
