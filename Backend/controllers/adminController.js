@@ -570,33 +570,21 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
     .sort({ date: -1, shift: 1 })
     .populate('createdBy', 'name email');
 
-  // Update slot statuses
+  // Check for and close expired slots
   const updatePromises = [];
   const updatedSlots = [];
 
-  attendanceSlots.forEach(slot => {
-    const now = new Date();
-    const slotStartTime = new Date(slot.startTime);
+  for (const slot of attendanceSlots) {
     const slotEndTime = new Date(slot.endTime);
     
-    // Determine status based on time
-    if (slotEndTime < now) {
-      // Slot has expired
-      if (slot.status !== 'expired') {
-        slot.status = 'expired';
-        updatePromises.push(slot.save());
-      }
-    } else if (slotStartTime <= now && slotEndTime >= now) {
-      // Slot is currently active
-      if (slot.status !== 'active') {
-        slot.status = 'active';
-        updatePromises.push(slot.save());
-      }
+    // If slot has ended and is still active, close it
+    if (slot.isActive && slotEndTime < now) {
+      slot.isActive = false;
+      updatePromises.push(slot.save());
     }
-    // Slot is upcoming by default (set in model)
-
+    
     updatedSlots.push(slot);
-  });
+  }
 
   // Wait for all updates to complete
   if (updatePromises.length > 0) {

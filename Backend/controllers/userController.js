@@ -349,8 +349,8 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     student: req.user._id
   });
   
-  // Calculate absences and pending status
-  const attendanceStatus = [];
+  // Calculate absences
+  const absences = [];
   
   slots.forEach(slot => {
     const isPresent = attendanceRecords.some(record => 
@@ -358,28 +358,12 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     );
     
     if (!isPresent) {
-      const now = new Date();
-      const slotEndTime = new Date(slot.endTime);
-      
-      // If slot is upcoming or active, mark as pending
-      if (slot.status === 'upcoming' || slot.status === 'active') {
-        attendanceStatus.push({
-          date: slot.date,
-          shift: slot.shift,
-          status: 'pending',
-          slotStartTime: slot.startTime,
-          slotEndTime: slot.endTime
-        });
-      } else {
-        // If slot is expired and not marked, mark as absent
-        attendanceStatus.push({
-          date: slot.date,
-          shift: slot.shift,
-          status: 'absent',
-          slotStartTime: slot.startTime,
-          slotEndTime: slot.endTime
-        });
-      }
+      absences.push({
+        date: slot.date,
+        shift: slot.shift,
+        slotStartTime: slot.startTime,
+        slotEndTime: slot.endTime
+      });
     }
   });
   

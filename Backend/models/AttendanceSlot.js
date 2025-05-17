@@ -41,11 +41,6 @@ const attendanceSlotSchema = new mongoose.Schema(
       default: 'Asia/Kolkata',
       required: true
     },
-    status: {
-      type: String,
-      enum: ['upcoming', 'active', 'expired'],
-      default: 'upcoming'
-    },
     isActive: {
       type: Boolean,
       default: true,
