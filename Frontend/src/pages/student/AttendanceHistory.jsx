@@ -227,7 +227,7 @@ const AttendanceHistory = () => {
         </div>
 
         {/* Attendance Records Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+<div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center">
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
@@ -241,7 +241,7 @@ const AttendanceHistory = () => {
           {/* Mobile View - Card Layout */}
           <div className="block sm:hidden">
             {attendanceRecords.length > 0 ? (
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
                 {attendanceRecords.map((record) => (
                   <div key={record._id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-center justify-between mb-2">
@@ -288,64 +288,66 @@ const AttendanceHistory = () => {
           {attendanceRecords.length > 0 ? (
             <div className="hidden sm:block overflow-x-auto">
               <div className="inline-block min-w-full align-middle">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Shift
-                      </th>
-                      <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Photo
-                      </th>
-                      <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Location
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {attendanceRecords.map((record) => (
-                      <tr key={record._id} className="hover:bg-gray-50">
-                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                          <div className="flex items-center">
-                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2" />
-                            {new Date(record.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}</td>
-                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                          <div className="flex items-center">
-                            <button
-                              className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                              onClick={() => {
-                                setSelectedPhoto(record.photo?.url);
-                                setPhotoModalOpen(true);
-                              }}
-                            >
-                              <Camera className="w-3 h-3 mr-1 sm:mr-2" />
-                              View
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                          <div className="flex items-center">
-                            <button
-                              className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                              onClick={() => {
-                                toast.info(`Location: ${record.location.coordinates.join(', ')}`);
-                              }}
-                            >
-                              <MapPin className="w-3 h-3 mr-1 sm:mr-2" />
-                              View
-                            </button>
-                          </div>
-                        </td>
+                <div className="max-h-96 overflow-y-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Shift
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Photo
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Location
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {attendanceRecords.map((record) => (
+                        <tr key={record._id} className="hover:bg-gray-50">
+                          <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                            <div className="flex items-center">
+                              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2" />
+                              {new Date(record.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}</td>
+                          <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                            <div className="flex items-center">
+                              <button
+                                className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                onClick={() => {
+                                  setSelectedPhoto(record.photo?.url);
+                                  setPhotoModalOpen(true);
+                                }}
+                              >
+                                <Camera className="w-3 h-3 mr-1 sm:mr-2" />
+                                View
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                            <div className="flex items-center">
+                              <button
+                                className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                onClick={() => {
+                                  toast.info(`Location: ${record.location.coordinates.join(', ')}`);
+                                }}
+                              >
+                                <MapPin className="w-3 h-3 mr-1 sm:mr-2" />
+                                View
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           ) : (
@@ -360,7 +362,6 @@ const AttendanceHistory = () => {
             </div>
           )}
         </div>
-
         {/* Help Section */}
         <div className="mt-4 sm:mt-6 bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-100 flex items-start sm:items-center">
           <div className="rounded-full bg-blue-100 p-1.5 sm:p-2 mr-3 sm:mr-4 flex-shrink-0">
