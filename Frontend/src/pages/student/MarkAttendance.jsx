@@ -172,18 +172,28 @@ const MarkAttendance = () => {
     if (!location_.latitude) newErrors.location = 'Location is required';
     if (!hasReadInstructions) newErrors.readInstructions = 'Please confirm that you have read the instructions';
 
-    // Check if slot time is valid
+    // Check slot status
     if (slot) {
-      const currentTime = new Date();
-      const startTime = new Date(slot.startTime);
-      const endTime = new Date(slot.endTime);
-      
-      if (currentTime < startTime) {
-        newErrors.slotTime = 'Attendance slot has not started yet';
+      // For upcoming slots
+      if (slot.status === 'upcoming') {
+        newErrors.slotTime = 'This slot is not yet active';
         toast.warning(`Attendance slot will be available from ${formatTime24h(slot.startTime)}`);
-      } else if (currentTime > endTime) {
-        newErrors.slotTime = 'Attendance slot has expired';
+      }
+      // For completed slots
+      else if (slot.status === 'completed') {
+        newErrors.slotTime = 'This slot has already ended';
         toast.error(`Attendance slot has expired. It was available until ${formatTime24h(slot.endTime)}`);
+      }
+      // For active slots, check time window
+      else if (slot.status === 'active') {
+        const currentTime = new Date();
+        const startTime = new Date(slot.startTime);
+        const endTime = new Date(slot.endTime);
+        
+        if (currentTime < startTime || currentTime > endTime) {
+          newErrors.slotTime = 'Outside active time window';
+          toast.error('Attendance can only be marked during the active time window');
+        }
       }
     }
     
