@@ -108,7 +108,18 @@ const MarkAttendance = () => {
   const fetchActiveSlots = async () => {
     try {
       setLoading(true)
-      const res = await axios.get('/students/attendance-slots')
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Authentication token not found')
+      }
+
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+
+      const res = await axios.get('/students/attendance-slots', config)
       setActiveSlots(res.data.data || [])
       
       // If no slotId is set and there are active slots, set the first one
@@ -117,7 +128,12 @@ const MarkAttendance = () => {
       }
     } catch (error) {
       console.error('Error fetching active slots:', error)
-      toast.error('Failed to load active attendance slots')
+      if (error.response?.status === 401) {
+        toast.error('Authentication failed. Please login again.')
+        navigate('/login')
+      } else {
+        toast.error('Failed to load active attendance slots')
+      }
     } finally {
       setLoading(false)
     }
