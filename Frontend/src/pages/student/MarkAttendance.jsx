@@ -177,6 +177,21 @@ const MarkAttendance = () => {
 
   const capturePhoto = async () => {
     if (!cameraStream) return;
+    
+    // Check if slot time is valid
+    if (slot) {
+      const currentTime = new Date();
+      const startTime = new Date(slot.startTime);
+      const endTime = new Date(slot.endTime);
+      
+      if (currentTime < startTime) {
+        toast.warning(`Attendance slot will be active from ${formatTime24h(startTime)}`);
+        return;
+      } else if (currentTime > endTime) {
+        toast.error(`Attendance slot expired at ${formatTime24h(endTime)}`);
+        return;
+      }
+    }
 
     try {
       // Check if we have location data in state
