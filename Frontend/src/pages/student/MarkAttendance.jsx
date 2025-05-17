@@ -177,7 +177,13 @@ const MarkAttendance = () => {
 
   const capturePhoto = async () => {
     if (!cameraStream) return;
-    
+
+    // Check if slot is selected
+    if (!slotId) {
+      toast.error('Please select an attendance slot first');
+      return;
+    }
+
     // Check if slot time is valid
     if (slot) {
       const currentTime = new Date();
@@ -194,7 +200,20 @@ const MarkAttendance = () => {
     }
 
     try {
-      // Check if we have location data in state
+      // First get location if not available
+      if (!location_.latitude || !location_.longitude) {
+        try {
+          const location = await getLocation();
+          if (!location.latitude || !location.longitude) {
+            throw new Error('Failed to get location data');
+          }
+        } catch (error) {
+          toast.error(error.message);
+          return;
+        }
+      }
+
+      // Check if we have location data
       if (!location_.latitude || !location_.longitude) {
         throw new Error('Location data not available. Please get your location first.');
       }
