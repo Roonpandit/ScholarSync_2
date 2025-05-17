@@ -1,7 +1,7 @@
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Configure toast
+// Toast configuration
 const toastConfig = {
   position: toast.POSITION.BOTTOM_CENTER,
   autoClose: 3000,
@@ -30,9 +30,7 @@ export const Toast = () => (
     newestOnTop={false}
     closeOnClick={toastConfig.closeOnClick}
     rtl={false}
-    pauseOnFocusLoss={toastConfig.pauseOnHover}
     draggable={toastConfig.draggable}
-    pauseOnHover={toastConfig.pauseOnHover}
     theme={toastConfig.theme}
   />
 );
