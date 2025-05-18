@@ -269,8 +269,8 @@ const MarkAttendance = () => {
       }));
       
       // Convert slot times from UTC to IST for comparison
-      const startTimeIST = new Date(slot.startTime);
-      const endTimeIST = new Date(slot.endTime);
+      const startTimeIST = subtract11Hours(new Date(slot.startTime));
+      const endTimeIST = subtract11Hours(new Date(slot.endTime));
       
       if (currentTimeIST < startTimeIST) {
         toast.warning(`Attendance slot will be active from ${formatTime24h(startTimeIST)}`);
