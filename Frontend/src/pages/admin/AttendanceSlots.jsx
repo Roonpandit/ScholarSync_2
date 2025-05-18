@@ -17,6 +17,13 @@ import {
 import Modal from "./Modal"; 
 import PropTypes from "prop-types"; 
  
+const toISTDate = (date) => {
+  if (!date) return null;
+  
+  // Convert UTC to IST by adding 5.5 hours
+  return new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
+};
+
 const AttendanceSlots = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -99,12 +106,9 @@ const AttendanceSlots = () => {
   const formatTime24h = (date) => {
     if (!date) return "";
     const d = new Date(date);
-    return d.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "Asia/Kolkata"
-    });
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   // Format date as 'Mon, 15 May' (IST)
@@ -162,9 +166,13 @@ const AttendanceSlots = () => {
  
       const now = new Date(); 
       const processedSlots = res.data.data.map((slot) => { 
-        const startTime = new Date(slot.startTime); 
-        const endTime = new Date(slot.endTime); 
-        const isExpired = endTime < now; 
+        // Convert times to IST
+        const startTimeIST = toISTDate(new Date(slot.startTime));
+        const endTimeIST = toISTDate(new Date(slot.endTime));
+        const nowIST = toISTDate(new Date());
+        
+        // Compare times in IST
+        const isExpired = endTimeIST < nowIST;
  
         // If slot is expired and still marked as active, it will be automatically closed by the backend 
         // but we'll handle it on the frontend as well for consistency 
@@ -178,10 +186,8 @@ const AttendanceSlots = () => {
           isExpired, 
           isActive, // This will be false if expired, regardless of the backend value 
           displayActive: isActive, 
-          formattedDate: formatDateDisplay(startTime), 
-          formattedTime: `${formatTime24h(startTime)} - ${formatTime24h( 
-            endTime 
-          )}`, 
+          formattedDate: formatDateDisplay(startTimeIST), 
+          formattedTime: `${formatTime24h(toISTDate(new Date(slot.startTime)))} - ${formatTime24h(toISTDate(new Date(slot.endTime)))}`, 
         }; 
       }); 
  
