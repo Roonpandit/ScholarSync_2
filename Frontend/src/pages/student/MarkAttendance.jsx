@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
-import { formatDateTime, formatDateDisplay, formatTime24h, convertToIST, getCurrentDateIST, getCurrentTimeIST, convertToUTC, subtractISTOffset } from '../../utils/timeUtils'
+import { formatDateTime, formatDateDisplay, formatTime24h, convertToIST, getCurrentDateIST, getCurrentTimeIST, convertToUTC, subtract11Hours } from '../../utils/timeUtils'
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -401,20 +401,11 @@ const MarkAttendance = () => {
                 >
                   <option value="">Select a slot</option>
                   {activeSlots.map((slot) => (
-                    <option key={slot._id} value={slot._id}>
-                      <div className="text-gray-500">
-                        {subtractISTOffset(new Date(slot.startTime)).toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })}{' '}
-                        -{' '}
-                        {subtractISTOffset(new Date(slot.endTime)).toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })}
-                      </div>
+                    <option key={slot._id} value={slot._id} className="text-gray-500">
+                      {formatDateDisplay(new Date(slot.date))} - 
+                      {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)} Shift - 
+                      {formatTime24h(subtract11Hours(new Date(slot.startTime)))} to 
+                      {formatTime24h(subtract11Hours(new Date(slot.endTime)))}
                     </option>
                   ))}
                 </select>

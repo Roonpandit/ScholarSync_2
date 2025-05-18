@@ -95,4 +95,17 @@ export const subtractISTOffset = (date) => {
   return new Date(date.getTime() - offsetMinutes * 60 * 1000);
 };
 
+// SUBTRACT specified hours from a date
+export const subtractHours = (date, hours) => {
+  if (!date) return null;
+  const millisecondsPerHour = 60 * 60 * 1000;
+  return new Date(date.getTime() - (hours * millisecondsPerHour));
+};
+
+// SUBTRACT 11 hours from a date
+export const subtract11Hours = (date) => {
+  if (!date) return null;
+  return subtractHours(date, 11);
+};
+
 

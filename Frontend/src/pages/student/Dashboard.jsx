@@ -4,11 +4,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import { Calendar, Clock, Mail } from "lucide-react";
-import {
-  formatDateDisplay,
-  formatToIST,
-  convertToIST,
-} from "../../utils/timeUtils";
+import { formatDateTime, formatDateDisplay, formatTime24h, convertToIST, getCurrentDateIST, getCurrentTimeIST, convertToUTC, subtract11Hours } from '../../utils/timeUtils';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -85,8 +81,9 @@ const StudentDashboard = () => {
 
   const formatDate = (date) => formatDateDisplay(convertToIST(new Date(date)));
   const formatTime = (time) => {
-    // Convert UTC time to IST using formatToIST
-    return formatToIST(time);
+    // Convert time to IST by subtracting 11 hours
+    const istTime = subtract11Hours(new Date(time));
+    return formatTime24h(istTime);
   };
   
   return (
