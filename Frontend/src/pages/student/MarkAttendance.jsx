@@ -154,10 +154,13 @@ const MarkAttendance = () => {
       const currentTimeIST = new Date(new Date().toLocaleString("en-US", {
         timeZone: "Asia/Kolkata"
       }));
+      console.log('Current time IST:', currentTimeIST);
       
       // Convert slot times from UTC to IST for comparison
-      const startTimeIST = new Date(slot.startTime);
-      const endTimeIST = new Date(slot.endTime);
+      const startTimeIST = subtract11Hours(new Date(slot.startTime));
+      const endTimeIST = subtract11Hours(new Date(slot.endTime));
+      console.log('Slot start time IST:', startTimeIST);
+      console.log('Slot end time IST:', endTimeIST);
       
       if (currentTimeIST < startTimeIST) {
         toast.warning(`Attendance slot will be active from ${formatTime24h(startTimeIST)}`);
