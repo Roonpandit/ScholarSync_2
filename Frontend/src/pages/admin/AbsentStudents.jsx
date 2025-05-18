@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { formatDateDisplay, convertToIST } from '../../utils/timeUtils';
 import { toast } from 'react-toastify';
 import { Calendar, Clock, AlertTriangle, ChevronRight, Search, Filter } from 'lucide-react';
 
@@ -8,8 +9,8 @@ const AbsentStudents = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     threshold: 2,
-    month: new Date().getMonth() + 1, // Current month
-    year: new Date().getFullYear(), // Current year
+    month: convertToIST(new Date()).getMonth() + 1, // Current month
+    year: convertToIST(new Date()).getFullYear(), // Current year
     search: ""
   });
   const [expandedStudent, setExpandedStudent] = useState(null);
@@ -87,12 +88,7 @@ const AbsentStudents = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric'
-    });
+    return formatDateDisplay(dateString);
   };
 
   if (loading) {
@@ -118,7 +114,7 @@ const AbsentStudents = () => {
         <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg w-full md:w-auto">
           <Calendar size={16} className="text-gray-500" />
           <span className="text-gray-600 text-sm">
-            {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
           </span>
         </div>
       </div>
@@ -241,7 +237,7 @@ const AbsentStudents = () => {
                         Absent Count
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Absent Dates
+                        Absent Slots
                       </th>
                     </tr>
                   </thead>
@@ -273,7 +269,7 @@ const AbsentStudents = () => {
                             {record.absentDates.map((date, index) => (
                               <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
                                 <Calendar size={12} className="mr-1" />
-                                {formatDate(date.date)}
+                                {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'short' })}
                                 <span className="mx-1">•</span>
                                 <Clock size={12} className="mr-1" />
                                 {date.shift}

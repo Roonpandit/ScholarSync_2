@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
+import { formatDateTime, formatDateDisplay, formatTime24h, convertToIST, getCurrentDateIST, getCurrentTimeIST, convertToUTC, subtractISTOffset } from '../../utils/timeUtils'
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -25,43 +26,6 @@ const MarkAttendance = () => {
   const [hasReadInstructions, setHasReadInstructions] = useState(false)
   const [errors, setErrors] = useState({})
 
-  // Format UTC time to 24-hour format in IST
-  const formatTime24h = (utcTime) => {
-    if (!utcTime) return "";
-    const d = new Date(utcTime);
-    return d.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "Asia/Kolkata"
-    });
-  };
-
-  // Format date as 'Mon, 15 May' (IST)
-  const formatDateDisplay = (date) => {
-    if (!date) return "";
-    const d = new Date(date);
-    return d.toLocaleDateString("en-US", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      timeZone: "Asia/Kolkata"
-    });
-  };
-
-  // Get current time in IST
-  const getCurrentTimeIST = () => {
-    return new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata"
-    });
-  };
-
-  // Get current date in IST
-  const getCurrentDateIST = () => {
-    return new Date().toLocaleDateString("en-US", {
-      timeZone: "Asia/Kolkata"
-    });
-  };
 
   useEffect(() => {
     // Get slotId from URL query params
@@ -186,15 +150,20 @@ const MarkAttendance = () => {
 
     // Check if slot time is valid
     if (slot) {
-      const currentTime = new Date();
-      const startTime = new Date(slot.startTime);
-      const endTime = new Date(slot.endTime);
+      // Get current time in IST
+      const currentTimeIST = new Date(new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata"
+      }));
       
-      if (currentTime < startTime) {
-        toast.warning(`Attendance slot will be active from ${formatTime24h(startTime)}`);
+      // Convert slot times from UTC to IST for comparison
+      const startTimeIST = new Date(slot.startTime);
+      const endTimeIST = new Date(slot.endTime);
+      
+      if (currentTimeIST < startTimeIST) {
+        toast.warning(`Attendance slot will be active from ${formatTime24h(startTimeIST)}`);
         return;
-      } else if (currentTime > endTime) {
-        toast.error(`Attendance slot expired at ${formatTime24h(endTime)}`);
+      } else if (currentTimeIST > endTimeIST) {
+        toast.error(`Attendance slot expired at ${formatTime24h(endTimeIST)}`);
         return;
       }
     }
@@ -236,7 +205,7 @@ const MarkAttendance = () => {
       
       // Add location text overlay
       const locationText = `Location: ${location_.latitude}, ${location_.longitude}`;
-      const timestamp = new Date().toLocaleString();
+      const timestamp = getCurrentTimeIST(); // Use IST timestamp
       
       // Create a semi-transparent overlay
       ctx.fillRect(10, canvas.height - 120, canvas.width - 20, 100);
@@ -257,7 +226,7 @@ const MarkAttendance = () => {
         const metadata = {
           latitude: location_.latitude,
           longitude: location_.longitude,
-          timestamp: new Date().toISOString(),
+          timestamp: convertToIST(new Date()).toISOString(),
           locationText
         };
         
@@ -291,15 +260,20 @@ const MarkAttendance = () => {
 
     // Check if slot time is valid (highest priority)
     if (slot) {
-      const currentTime = new Date();
-      const startTime = new Date(slot.startTime);
-      const endTime = new Date(slot.endTime);
+      // Get current time in IST
+      const currentTimeIST = new Date(new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata"
+      }));
       
-      if (currentTime < startTime) {
-        toast.warning(`Attendance slot will be active from ${formatTime24h(startTime)}`);
+      // Convert slot times from UTC to IST for comparison
+      const startTimeIST = new Date(slot.startTime);
+      const endTimeIST = new Date(slot.endTime);
+      
+      if (currentTimeIST < startTimeIST) {
+        toast.warning(`Attendance slot will be active from ${formatTime24h(startTimeIST)}`);
         return; // Return early if slot hasn't started
-      } else if (currentTime > endTime) {
-        toast.error(`Attendance slot expired at ${formatTime24h(endTime)}`);
+      } else if (currentTimeIST > endTimeIST) {
+        toast.error(`Attendance slot expired at ${formatTime24h(endTimeIST)}`);
         return; // Return early if slot has expired
       }
     }
@@ -428,7 +402,19 @@ const MarkAttendance = () => {
                   <option value="">Select a slot</option>
                   {activeSlots.map((slot) => (
                     <option key={slot._id} value={slot._id}>
-                      {formatDateDisplay(slot.date)} - {formatTime24h(slot.startTime)} to {formatTime24h(slot.endTime)}
+                      <div className="text-gray-500">
+                        {subtractISTOffset(new Date(slot.startTime)).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}{' '}
+                        -{' '}
+                        {subtractISTOffset(new Date(slot.endTime)).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}
+                      </div>
                     </option>
                   ))}
                 </select>

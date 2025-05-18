@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { formatDateDisplay, getCurrentDateIST, convertToIST } from '../../utils/timeUtils';
 import { 
   Calendar, 
   Clock, 
@@ -54,11 +56,9 @@ const AttendanceHistory = () => {
   };
 
   const getMonthName = (monthNum) => {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return months[monthNum - 1];
+    const date = new Date();
+    date.setMonth(monthNum - 1);
+    return formatDateDisplay(convertToIST(date));
   };
 
   // Calculate attendance statistics
@@ -247,7 +247,7 @@ const AttendanceHistory = () => {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center text-xs font-medium text-gray-900">
                         <Calendar className="w-3 h-3 text-gray-400 mr-1" />
-                        {new Date(record.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {formatDateDisplay(new Date(record.date))}
                       </div>
                       <div className="text-xs capitalize text-gray-500">
                         {record.shift}
@@ -256,7 +256,7 @@ const AttendanceHistory = () => {
                     
                     <div className="flex items-center mb-3 text-xs text-gray-500">
                       <Clock className="w-3 h-3 text-gray-400 mr-1" />
-                      {new Date(record.markedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {formatTime24h(record.markedAt)}
                     </div>
                     
                     <div className="flex space-x-2">
@@ -312,7 +312,7 @@ const AttendanceHistory = () => {
                           <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                             <div className="flex items-center">
                               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2" />
-                              {new Date(record.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {formatDateDisplay(record.date)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}</td>

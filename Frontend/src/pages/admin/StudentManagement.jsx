@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
+import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/timeUtils';
 import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -174,14 +176,7 @@ const StudentManagement = () => {
     student.studentCode.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric'
-    });
-  };
+  const formatDate = (date) => formatDateDisplay(convertToIST(new Date(date)));
 
   if (loading) {
     return (

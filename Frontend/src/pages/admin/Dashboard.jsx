@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { formatDateDisplay, formatTime24h, getCurrentDateIST, getCurrentTimeIST, convertToIST, isSameDate } from '../../utils/timeUtils'
 
 const AdminDashboard = () => {
+
+
   const [stats, setStats] = useState({
     totalStudents: 0,
     todayAttendance: 0,
@@ -18,8 +21,9 @@ const AdminDashboard = () => {
       try {
         setLoading(true)
         
-        // Get today's date in YYYY-MM-DD format
-        const today = new Date().toISOString().split('T')[0]
+        // Get today's date in YYYY-MM-DD format (IST)
+        const todayIST = convertToIST(new Date())
+        const today = todayIST.toISOString().split('T')[0]
         
         // Fetch students count
         const studentsRes = await axios.get('/admin/students')
@@ -29,20 +33,23 @@ const AdminDashboard = () => {
         
         // Fetch active slots
         const slotsRes = await axios.get('/admin/attendance-slots')
-        const now = new Date()
-        const currentHour = now.getHours()
-        const currentMinute = now.getMinutes()
+        const currentTimeIST = getCurrentTimeIST()
         
+        // Get current time in IST
+        const nowIST = convertToIST(new Date())
+        const currentHour = nowIST.getHours()
+        const currentMinute = nowIST.getMinutes()
+
         // Filter slots that are currently active based on time
         const activeSlots = slotsRes.data.data.filter(slot => {
-          const slotDate = new Date(slot.date)
-          const slotHour = slot.startTime.split(':')[0]
-          const slotMinute = slot.startTime.split(':')[1]
+          const slotDate = convertToIST(new Date(slot.date))
+          const slotStartTime = convertToIST(new Date(slot.startTime))
+          const slotEndTime = convertToIST(new Date(slot.endTime))
           
-          // Check if slot is today and within current hour
-          return slotDate.toDateString() === now.toDateString() &&
-            parseInt(slotHour) === currentHour &&
-            parseInt(slotMinute) <= currentMinute
+          // Check if slot is today and within current time
+          return isSameDate(slotDate, nowIST) &&
+            slotStartTime <= nowIST &&
+            nowIST <= slotEndTime
         })
         
         // Fetch absent students
@@ -88,7 +95,7 @@ const AdminDashboard = () => {
           <p className="text-gray-500 mt-1">Overview of attendance system</p>
         </div>
         <div className="flex items-center space-x-3 mt-4 md:mt-0">
-          <span className="text-sm text-gray-500">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <span className="text-sm text-gray-500">{new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             <span className="w-2 h-2 mr-1 bg-green-400 rounded-full"></span>
             System Online

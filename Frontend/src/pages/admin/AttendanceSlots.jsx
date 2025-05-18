@@ -13,18 +13,50 @@ import {
   User,
   Trash2,
   Camera,
+  CheckCircle,
+  XCircle,
 } from "lucide-react"; 
 import Modal from "./Modal"; 
 import PropTypes from "prop-types"; 
- 
-const toISTDate = (date) => {
-  if (!date) return null;
-  
-  // Convert UTC to IST by adding 5.5 hours
-  return new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
-};
+import { 
+  formatDateTime, 
+  formatDateDisplay, 
+  formatTime24h, 
+  getCurrentTimeIST, 
+  getCurrentDateIST,
+  convertToIST,
+  convertToUTC,
+  isDateBefore,
+  isSameDate
+} from "../../utils/timeUtils";
 
 const AttendanceSlots = () => {
+  // Helper function to get slot status badge
+  const getStatusBadge = (slot) => {
+    if (slot.isExpired) {
+      return (
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+          <XCircle className="h-4 w-4 mr-1" />
+          Expired
+        </span>
+      );
+    }
+    if (slot.isActive) {
+      return (
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="h-4 w-4 mr-1" />
+          Active
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800">
+        <Clock className="h-4 w-4 mr-1" />
+        Upcoming
+      </span>
+    );
+  };
+
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   // Function to export slot attendance to Excel
@@ -89,53 +121,18 @@ const AttendanceSlots = () => {
  
   const [formData, setFormData] = useState({ 
     shift: "morning", 
-    date: new Date().toISOString().split("T")[0], 
+    date: getCurrentDateIST().split("T")[0], 
     startTime: "", 
     endTime: "", 
   }); 
  
   const [filterDate, setFilterDate] = useState(""); 
  
-  const isSlotExpired = useCallback((slot) => { 
-    const now = new Date(); 
-    const endTime = new Date(slot.endTime); 
-    return endTime < now; 
+  const isSlotExpired = useCallback((slot) => {
+    return isDateBefore(slot.endTime, new Date());
   }, []); 
  
-  // Format time in 24-hour format (IST)
-  const formatTime24h = (date) => {
-    if (!date) return "";
-    const d = new Date(date);
-    const hours = d.getHours().toString().padStart(2, '0');
-    const minutes = d.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
-  // Format date as 'Mon, 15 May' (IST)
-  const formatDateDisplay = (date) => {
-    if (!date) return "";
-    const d = new Date(date);
-    return d.toLocaleDateString("en-US", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      timeZone: "Asia/Kolkata"
-    });
-  };
-
-  // Get current time in IST
-  const getCurrentTimeIST = () => {
-    return new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata"
-    });
-  };
-
-  // Get current date in IST
-  const getCurrentDateIST = () => {
-    return new Date().toLocaleDateString("en-US", {
-      timeZone: "Asia/Kolkata"
-    });
-  }; 
+ 
  
   const fetchSlots = async () => { 
     try { 
@@ -164,12 +161,11 @@ const AttendanceSlots = () => {
         throw new Error(res.data?.message || "Invalid response format"); 
       } 
  
-      const now = new Date(); 
+      const nowIST = convertToIST(new Date());
       const processedSlots = res.data.data.map((slot) => { 
-        // Convert times to IST
-        const startTimeIST = toISTDate(new Date(slot.startTime));
-        const endTimeIST = toISTDate(new Date(slot.endTime));
-        const nowIST = toISTDate(new Date());
+        // Convert times to IST using utility function
+        const startTimeIST = convertToIST(new Date(slot.startTime));
+        const endTimeIST = convertToIST(new Date(slot.endTime));
         
         // Compare times in IST
         const isExpired = endTimeIST < nowIST;
@@ -187,12 +183,12 @@ const AttendanceSlots = () => {
           isActive, // This will be false if expired, regardless of the backend value 
           displayActive: isActive, 
           formattedDate: formatDateDisplay(startTimeIST), 
-          formattedTime: `${formatTime24h(toISTDate(new Date(slot.startTime)))} - ${formatTime24h(toISTDate(new Date(slot.endTime)))}`, 
+          formattedTime: `${formatTime24h(startTimeIST)} - ${formatTime24h(endTimeIST)}`, 
         }; 
       }); 
  
-      processedSlots.sort( 
-        (a, b) => new Date(b.startTime) - new Date(a.startTime) 
+      processedSlots.sort(
+        (a, b) => convertToIST(new Date(b.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
       ); 
       setSlots(processedSlots); 
     } catch (error) { 
@@ -263,51 +259,49 @@ const AttendanceSlots = () => {
     e.preventDefault(); 
  
     try { 
-      // Parse the selected date and times 
-      const [year, month, day] = formData.date.split("-").map(Number); 
-      const [startHour, startMinute] = formData.startTime 
-        .split(":") 
-        .map(Number); 
-      const [endHour, endMinute] = formData.endTime.split(":").map(Number); 
- 
-      // Convert IST time to UTC
-      const convertISTToUTC = (hours, minutes) => {
-        const istDate = new Date(formData.date);
-        istDate.setHours(hours, minutes, 0, 0);
-        return istDate.toISOString();
-      };
+      // Parse the selected date and times
+    const [year, month, day] = formData.date.split("-").map(Number);
+    const [startHour, startMinute] = formData.startTime.split(":").map(Number);
+    const [endHour, endMinute] = formData.endTime.split(":").map(Number);
 
-      // Convert date to UTC timestamp
-      const dateUTC = new Date(formData.date).toISOString();
+    // Create dates in UTC timezone
+    const startDate = new Date(Date.UTC(year, month - 1, day, startHour, startMinute));
+    const endDate = new Date(Date.UTC(year, month - 1, day, endHour, endMinute));
 
-      const slotData = {
-        shift: formData.shift,
-        date: dateUTC, // UTC ISO string
-        startTime: convertISTToUTC(startHour, startMinute), // UTC ISO string
-        endTime: convertISTToUTC(endHour, endMinute), // UTC ISO string
-      }; 
- 
-      const token = localStorage.getItem("token"); 
-      const config = { 
-        headers: { 
-          Authorization: `Bearer ${token}`, 
-          "Content-Type": "application/json", 
-        }, 
-      }; 
- 
-      const res = await axios.post("/admin/attendance-slots", slotData, config); 
- 
-      if (res.data.success) { 
-        toast.success("Attendance slot created successfully"); 
-        setShowAddForm(false); 
-        fetchSlots(); 
-      } 
+    // Get ISO strings directly
+    const dateUTC = startDate.toISOString();
+    const startTimeUTC = startDate.toISOString();
+    const endTimeUTC = endDate.toISOString();
+
+    const slotData = {
+      date: dateUTC,
+      startTime: startTimeUTC,
+      endTime: endTimeUTC,
+      shift: formData.shift,
+      timezone: 'Asia/Kolkata'
+    };
+
+    const token = localStorage.getItem("token");
+    const config = { 
+      headers: { 
+        Authorization: `Bearer ${token}`, 
+        "Content-Type": "application/json", 
+      }, 
+    };
+
+    const res = await axios.post("/admin/attendance-slots", slotData, config);
+
+    if (res.data.success) { 
+      toast.success("Attendance slot created successfully"); 
+      setShowAddForm(false); 
+      fetchSlots(); 
+    }
     } catch (error) { 
       console.error("Error creating slot:", error); 
       toast.error( 
         error.response?.data?.message || "Failed to create attendance slot" 
       ); 
-    } 
+    }
   }; 
  
   const handleDeleteSlot = async (slotId) => {
@@ -433,81 +427,6 @@ const AttendanceSlots = () => {
     } 
   }; 
  
-  const handleCloseSlot = async (slotId) => { 
-    if ( 
-      window.confirm( 
-        "Are you sure you want to close this slot? This action cannot be undone." 
-      ) 
-    ) { 
-      try { 
-        const token = localStorage.getItem("token"); 
-        const config = { 
-          headers: { 
-            Authorization: `Bearer ${token}`, 
-            "Content-Type": "application/json", 
-          }, 
-        }; 
- 
-        const res = await axios.put( 
-          `/admin/attendance-slots/${slotId}/close`, 
-          {}, 
-          config 
-        ); 
- 
-        if (res.data.success) { 
-          toast.success("Attendance slot closed successfully"); 
-          fetchSlots(); 
-        } 
-      } catch (error) { 
-        console.error("Error closing slot:", error); 
-        toast.error( 
-          error.response?.data?.message || "Failed to close attendance slot" 
-        ); 
-      } 
-    } 
-  }; 
- 
-  const formatDate = useCallback((dateString) => { 
-    if (!dateString) return ""; 
-    const options = { year: "numeric", month: "short", day: "numeric" }; 
-    return new Date(dateString).toLocaleDateString("en-US", options); 
-  }, []); 
- 
-  const formatTime = useCallback((timeString) => { 
-    if (!timeString) return ""; 
-    const date = new Date(timeString); 
-    if (isNaN(date.getTime())) return ""; // Handle invalid date 
-    return date.toLocaleTimeString("en-US", { 
-      hour: "2-digit", 
-      minute: "2-digit", 
-      hour12: true, 
-    }); 
-  }, []); 
- 
-  const getStatusBadge = useCallback((slot) => { 
-    if (!slot.isActive) { 
-      return ( 
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"> 
-          Closed 
-        </span> 
-      ); 
-    } 
- 
-    if (slot.isExpired) { 
-      return ( 
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"> 
-          Expired 
-        </span> 
-      ); 
-    } 
- 
-    return ( 
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"> 
-        Active 
-      </span> 
-    ); 
-  }, []); 
- 
   const getShiftColor = useCallback((shift) => { 
     switch (shift) { 
       case "morning": 
@@ -618,7 +537,7 @@ const AttendanceSlots = () => {
                   type="date" 
                   id="date" 
                   name="date" 
-                  value={formData.date} 
+                  value={new Date().toISOString().split("T")[0]} 
                   onChange={handleInputChange} 
                   required 
                   className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
@@ -727,22 +646,19 @@ const AttendanceSlots = () => {
                       > 
                         Status 
                       </th> 
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"> 
-                        <span className="sr-only">Actions</span>
-                      </th> 
+                      <th 
+                        scope="col" 
+                        className="relative whitespace-nowrap px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900" 
+                      > 
+                        Action 
+                      </th>
                     </tr> 
                   </thead> 
                   <tbody className="divide-y divide-gray-200 bg-white"> 
                     {slots 
                       .filter((slot) => { 
                         if (!filterDate) return true; 
-                        const slotDate = new Date(slot.date); 
-                        const filterDateObj = new Date(filterDate); 
-                        return ( 
-                          slotDate.getFullYear() === filterDateObj.getFullYear() && 
-                          slotDate.getMonth() === filterDateObj.getMonth() && 
-                          slotDate.getDate() === filterDateObj.getDate() 
-                        ); 
+                        return isSameDate(slot.date, filterDate);
                       }) 
                       .map((slot) => ( 
                         <tr 
@@ -758,10 +674,24 @@ const AttendanceSlots = () => {
                               </div> 
                               <div className="ml-2 sm:ml-4"> 
                                 <div className="font-medium text-gray-900"> 
-                                  {slot.formattedDate} 
+                                  {new Date(slot.date).toLocaleDateString('en-US', { 
+                                    weekday: 'short',
+                                    day: 'numeric',
+                                    month: 'short'
+                                  })} 
                                 </div> 
                                 <div className="text-gray-500"> 
-                                  {slot.formattedTime} 
+                                  {new Date(slot.startTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: 'numeric',
+                                    hour12: false,
+                                    timeZone: 'Asia/Kolkata'
+                                  })} - {new Date(slot.endTime).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: 'numeric',
+                                    hour12: false,
+                                    timeZone: 'Asia/Kolkata'
+                                  })} 
                                 </div>
                                 <div className="text-gray-500 sm:hidden mt-1">
                                   <span
@@ -827,7 +757,7 @@ const AttendanceSlots = () => {
   isOpen={showAttendanceModal}
   onClose={() => setShowAttendanceModal(false)}
   title={`Attendance for ${
-    currentSlot ? formatDate(currentSlot.date) : ""
+    currentSlot ? formatDateDisplay(currentSlot.date) : ""
   } - ${currentSlot?.shift ? currentSlot.shift.charAt(0).toUpperCase() + currentSlot.shift.slice(1) : ""}
 `}
   size="xl"
@@ -842,7 +772,17 @@ const AttendanceSlots = () => {
         <>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0 sticky top-0 bg-white pt-2 pb-2 z-10">
             <div className="text-sm text-gray-500">
-              {formatTime(currentSlot.startTime)} - {formatTime(currentSlot.endTime)}
+             <strong>Slot Time: </strong>{new Date(currentSlot.startTime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: false,
+                timeZone: 'Asia/Kolkata'
+              })} - {new Date(currentSlot.endTime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: false,
+                timeZone: 'Asia/Kolkata'
+              })}
             </div>
             <div className="flex space-x-2">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">

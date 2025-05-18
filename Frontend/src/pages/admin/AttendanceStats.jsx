@@ -1,4 +1,4 @@
-import { useState, useEffect, Component } from "react";
+import React, { useState, useEffect, Component } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import {
@@ -10,6 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import PropTypes from "prop-types";
+import { formatDateDisplay, formatTime24h, convertToIST, isSameDate } from '../../utils/timeUtils';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -90,9 +91,11 @@ const AttendanceStats = () => {
         return;
       }
 
-      // Convert month and year to start and end dates
-      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+      // Get start and end dates in IST
+      const startDateIST = convertToIST(new Date(year, month - 1, 1));
+      const endDateIST = convertToIST(new Date(year, month, 0));
+      const startDate = startDateIST.toISOString().split('T')[0];
+      const endDate = endDateIST.toISOString().split('T')[0];
 
       const res = await axios.get(
         `/admin/attendance/stats?startDate=${startDate}&endDate=${endDate}&minAbsences=${
@@ -314,10 +317,7 @@ const AttendanceStats = () => {
         <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg w-full md:w-auto">
           <Calendar size={16} className="text-gray-500" />
           <span className="text-gray-600 text-sm">
-            {new Date().toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })}
+            {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
           </span>
         </div>
       </div>
@@ -336,13 +336,12 @@ const AttendanceStats = () => {
               onChange={handleFilterChange}
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                <option key={month} value={month}>
-                  {new Date(2000, month - 1, 1).toLocaleString("default", {
-                    month: "long",
-                  })}
-                </option>
-              ))}
+{Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+  <option key={month} value={month}>
+    {new Date(2000, month - 1, 1).toLocaleString("default", { month: "long" })}
+  </option>
+))}
+
             </select>
           </div>
 
