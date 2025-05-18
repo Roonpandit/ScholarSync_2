@@ -29,7 +29,21 @@ const AdminDashboard = () => {
         
         // Fetch active slots
         const slotsRes = await axios.get('/admin/attendance-slots')
-        const activeSlots = slotsRes.data.data.filter(slot => slot.isActive)
+        const now = new Date()
+        const currentHour = now.getHours()
+        const currentMinute = now.getMinutes()
+        
+        // Filter slots that are currently active based on time
+        const activeSlots = slotsRes.data.data.filter(slot => {
+          const slotDate = new Date(slot.date)
+          const slotHour = slot.startTime.split(':')[0]
+          const slotMinute = slot.startTime.split(':')[1]
+          
+          // Check if slot is today and within current hour
+          return slotDate.toDateString() === now.toDateString() &&
+            parseInt(slotHour) === currentHour &&
+            parseInt(slotMinute) <= currentMinute
+        })
         
         // Fetch absent students
         const absentRes = await axios.get('/admin/attendance/absent')

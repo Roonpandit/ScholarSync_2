@@ -4,6 +4,7 @@ import Login from './pages/Login.jsx'
 import AdminDashboard from './pages/admin/Dashboard.jsx'
 import StudentDashboard from './pages/student/Dashboard.jsx'
 import StudentManagement from './pages/admin/StudentManagement.jsx'
+import StudentDetails from './pages/admin/StudentDetails.jsx'
 import AttendanceSlots from './pages/admin/AttendanceSlots.jsx'
 import AttendanceStats from './pages/admin/AttendanceStats.jsx'
 import AbsentStudents from './pages/admin/AbsentStudents.jsx'
@@ -45,6 +46,14 @@ function App() {
         element={
           user && user.role === 'admin' ? 
           <Layout><StudentManagement /></Layout> : 
+          <Navigate to="/login" />
+        } 
+      />
+      <Route 
+        path="/admin/students/:studentId" 
+        element={
+          user && user.role === 'admin' ? 
+          <Layout><StudentDetails /></Layout> : 
           <Navigate to="/login" />
         } 
       />

@@ -7,6 +7,7 @@ import {
   BarChart,
   ArrowRight,
   AlertCircle,
+  Search,
 } from "lucide-react";
 import PropTypes from "prop-types";
 
@@ -67,13 +68,15 @@ const AttendanceStats = () => {
   const [filters, setFilters] = useState({
     month: new Date().getMonth() + 1, // Current month
     year: new Date().getFullYear(), // Current year
-    minAbsences: 0,
+    minAbsences: 5,
   });
   const [expandedStudent, setExpandedStudent] = useState(null);
 
   useEffect(() => {
+    // Initial fetch when component mounts
     fetchAttendanceStats();
-  }, [filters]);
+    // Remove the dependency on filters since we now use a search button
+  }, []);
 
   const fetchAttendanceStats = async () => {
     try {
@@ -87,14 +90,26 @@ const AttendanceStats = () => {
         return;
       }
 
+      // Convert month and year to start and end dates
+      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
       const res = await axios.get(
-        `/admin/attendance/stats?month=${month}&year=${year}&minAbsences=${
+        `/admin/attendance/stats?startDate=${startDate}&endDate=${endDate}&minAbsences=${
           minAbsences || 0
         }`
       );
 
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        setStats(res.data.data);
+      if (res.data?.success && res.data?.data?.stats) {
+        const statsData = res.data.data.stats;
+        // Convert the stats data to match our expected format
+        const formattedStats = statsData.studentsWithAbsences.map(student => ({
+          ...student,
+          present: student.present,
+          absent: student.absent,
+          totalDays: statsData.totalSlots
+        }));
+        setStats(formattedStats);
       } else {
         console.error("Invalid response format:", res.data);
         toast.error("Received invalid data from server");
@@ -117,6 +132,10 @@ const AttendanceStats = () => {
       ...filters,
       [name]: name === "minAbsences" ? parseInt(value) || 0 : value,
     });
+  };
+
+  const handleSearch = () => {
+    fetchAttendanceStats();
   };
 
   const toggleExpandStudent = (studentId) => {
@@ -364,10 +383,21 @@ const AttendanceStats = () => {
             />
           </div>
         </div>
+        
+        {/* Search Button */}
+        <div className="mt-4">
+          <button
+            onClick={handleSearch}
+            className="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <Search size={18} className="mr-2" />
+            Search
+          </button>
+        </div>
       </div>
 
       {/* Results */}
-<div className="bg-white rounded-lg">
+      <div className="bg-white rounded-lg">
         <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pt-2 pb-2 z-10">
           <h2 className="font-medium text-gray-700 flex items-center text-sm md:text-base">
             Student Attendance Summary

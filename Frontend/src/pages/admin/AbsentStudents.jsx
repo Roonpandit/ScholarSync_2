@@ -13,23 +13,47 @@ const AbsentStudents = () => {
     search: ""
   });
   const [expandedStudent, setExpandedStudent] = useState(null);
+  const [filteredStudents, setFilteredStudents] = useState([]);
 
   useEffect(() => {
+    // Initial fetch when component mounts
     fetchAbsentStudents();
-  }, [filters.threshold, filters.month, filters.year]);
+    // Removed dependency on filters since we now use a search button
+  }, []);
 
   const fetchAbsentStudents = async () => {
     try {
       setLoading(true);
       const { threshold, month, year } = filters;
       const res = await axios.get(`/admin/attendance/absent?threshold=${threshold}&month=${month}&year=${year}`);
-      setAbsentStudents(res.data.data);
+      const data = res.data.data;
+      setAbsentStudents(data);
+      
+      // Apply search filter to the fetched data
+      applySearchFilter(data);
     } catch (error) {
       console.error('Error fetching absent students:', error);
       toast.error('Failed to load absent students');
+      setAbsentStudents([]);
+      setFilteredStudents([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const applySearchFilter = (students) => {
+    const searchTerm = filters.search.toLowerCase();
+    if (!searchTerm) {
+      setFilteredStudents(students);
+      return;
+    }
+    
+    const filtered = students.filter(student => 
+      student.student.name.toLowerCase().includes(searchTerm) ||
+      student.student.studentCode.toLowerCase().includes(searchTerm)
+    );
+    
+    setFilteredStudents(filtered);
   };
 
   const handleFilterChange = (e) => {
@@ -45,6 +69,13 @@ const AbsentStudents = () => {
       ...filters,
       search: e.target.value
     });
+    
+    // We now only update the UI with search filter, but don't fetch new data
+    applySearchFilter(absentStudents);
+  };
+
+  const handleSearch = () => {
+    fetchAbsentStudents();
   };
 
   const toggleExpandStudent = (studentId) => {
@@ -54,11 +85,6 @@ const AbsentStudents = () => {
       setExpandedStudent(studentId);
     }
   };
-
-  const filteredStudents = absentStudents.filter(student => 
-    student.student.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-    student.student.studentCode.toLowerCase().includes(filters.search.toLowerCase())
-  );
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -172,6 +198,17 @@ const AbsentStudents = () => {
               <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
             </div>
           </div>
+        </div>
+        
+        {/* Search Button */}
+        <div className="mt-4">
+          <button
+            onClick={handleSearch}
+            className="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            <Search size={18} className="mr-2" />
+            Search
+          </button>
         </div>
       </div>
       

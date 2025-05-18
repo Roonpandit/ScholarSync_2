@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Users, Plus, X, Calendar, Mail, UserCheck, Search } from 'lucide-react';
+import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const StudentManagement = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,8 +17,76 @@ const StudentManagement = () => {
     name: '',
     email: '',
     studentCode: '',
-    password: ''
+    password: '',
+    confirmPassword: '',
+    phone: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      errors.email = 'Invalid email address';
+    }
+    
+    if (!formData.studentCode.trim()) {
+      errors.studentCode = 'Student code is required';
+    }
+    
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid 10-digit phone number';
+    }
+    
+    if (!formData.password.trim()) {
+      errors.password = 'Password is required';
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.password = 'Passwords do not match';
+      errors.confirmPassword = 'Passwords do not match';
+    } else {
+      const password = formData.password;
+      const hasUpperCase = /[A-Z]/.test(password);
+      const hasLowerCase = /[a-z]/.test(password);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      const isLongEnough = password.length >= 8;
+
+      if (!isLongEnough) {
+        errors.password = 'Password must be at least 8 characters long';
+      } else if (!hasUpperCase) {
+        errors.password = 'Password must contain at least one uppercase letter (A-Z)';
+      } else if (!hasLowerCase) {
+        errors.password = 'Password must contain at least one lowercase letter (a-z)';
+      } else if (!hasNumber) {
+        errors.password = 'Password must contain at least one number (0-9)';
+      } else if (!hasSpecialChar) {
+        errors.password = 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)';
+      }
+    }
+    
+    return errors;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    // Remove validation from handleInputChange
+  };
+  const [errors, setErrors] = useState({});
+
+  const viewStudentDetails = (studentId) => {
+    navigate(`/admin/students/${studentId}`);
+  };
 
   useEffect(() => {
     fetchStudents();
@@ -32,19 +105,49 @@ const StudentManagement = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+  const handleDelete = (studentId, studentName) => {
+    setStudentToDelete({ id: studentId, name: studentName });
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const res = await axios.delete(`/admin/students/${studentToDelete.id}`);
+      
+      if (res.data.success) {
+        toast.success(`Student ${studentToDelete.name} deleted successfully`);
+        setStudents(students.filter(student => student._id !== studentToDelete.id));
+      } else {
+        toast.error('Failed to delete student');
+      }
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete student');
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setStudentToDelete(null);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // First validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      Object.values(errors).forEach(error => {
+        toast.error(error);
+      });
+      setErrors(errors);
+      return;
+    }
+    
     try {
-      const res = await axios.post('/admin/students', formData);
+      // Create a copy of formData without confirmPassword
+      const { confirmPassword, ...postData } = formData;
+      const res = await axios.post('/admin/students', postData);
       
       if (res.data.success) {
         toast.success('Student added successfully');
@@ -53,13 +156,15 @@ const StudentManagement = () => {
           name: '',
           email: '',
           studentCode: '',
-          password: ''
+          password: '',
+          phone: ''
         });
         setShowAddForm(false);
       }
     } catch (error) {
       console.error('Error adding student:', error);
-      toast.error(error.response?.data?.message || 'Failed to add student');
+      const errorMessage = error.response?.data?.message || 'Failed to add student';
+      toast.error(errorMessage);
     }
   };
 
@@ -142,6 +247,9 @@ const StudentManagement = () => {
                   className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter student's full name"
                 />
+                {errors.name && (
+                  <p className="text-red-500 text-xs italic mt-1">{errors.name}</p>
+                )}
               </div>
               
               <div className="flex flex-col">
@@ -156,6 +264,9 @@ const StudentManagement = () => {
                   className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="student@example.com"
                 />
+                {errors.email && (
+                  <p className="text-red-500 text-xs italic mt-1">{errors.email}</p>
+                )}
               </div>
               
               <div className="flex flex-col">
@@ -170,20 +281,104 @@ const StudentManagement = () => {
                   className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g. STU12345"
                 />
+                {errors.studentCode && (
+                  <p className="text-red-500 text-xs italic mt-1">{errors.studentCode}</p>
+                )}
               </div>
               
-              <div className="flex flex-col">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div className="mb-4">
+                <label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
+                  Phone Number
+                </label>
                 <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleInputChange}
-                  required
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Set a secure password"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  placeholder="Enter 10-digit phone number"
+                  pattern="[0-9]{10}"
                 />
+                {errors.phone && (
+                  <p className="text-red-500 text-xs italic mt-1">{errors.phone}</p>
+                )}
+              </div>
+              
+              <div className="mb-4">
+                <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+                  Password
+                </label>
+                <div className="mt-1">
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
+                      placeholder="Enter password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <Eye size={20} className={`cursor-pointer ${showPassword ? 'opacity-50' : ''}`} />
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-xs italic mt-1">{errors.password}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-bold mb-2">
+                  Confirm Password
+                </label>
+                <div className="mt-1">
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
+                      placeholder="Confirm password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <Eye size={20} className={`cursor-pointer ${showPassword ? 'opacity-50' : ''}`} />
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-500 text-xs italic mt-1">{errors.confirmPassword}</p>
+                  )}
+                  <div className="mt-4 space-y-2">
+                    <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
+                      <CheckCircle size={16} className="mr-2" />
+                      <span>At least one lowercase letter (a-z)</span>
+                    </div>
+                    <div className={`flex items-center ${/[0-9]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
+                      <CheckCircle size={16} className="mr-2" />
+                      <span>At least one number (0-9)</span>
+                    </div>
+                    <div className={`flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
+                      <CheckCircle size={16} className="mr-2" />
+                      <span>At least one special character (!@#$%^&*(),.?&quot;:{}|&lt;&gt;)</span>
+                    </div>
+                    <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-500' : 'text-gray-500'}`}>
+                      <CheckCircle size={16} className="mr-2" />
+                      <span>At least 8 characters long</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -194,14 +389,6 @@ const StudentManagement = () => {
               >
                 <Plus size={16} className="mr-2" />
                 Add Student
-              </button>
-              <button 
-                type="button" 
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 inline-flex items-center justify-center"
-                onClick={() => setShowAddForm(false)}
-              >
-                <X size={16} className="mr-2" />
-                Cancel
               </button>
             </div>
           </form>
@@ -247,79 +434,112 @@ const StudentManagement = () => {
                         Name
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Student Code
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created At
+                        Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredStudents.map((student) => (
                       <tr key={student._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-800">
-                                {student.name.charAt(0)}
-                              </span>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                            </div>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-800">
+                              {student.name.charAt(0)}
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{student.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                            {student.studentCode}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 flex items-center">
-                            <Calendar size={14} className="mr-1 text-gray-400" />
-                            {formatDate(student.createdAt)}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{student.name}</div>
                           </div>
-                        </td>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                          {student.studentCode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => viewStudentDetails(student._id)}
+                            className="text-blue-600 hover:text-blue-900 flex items-center"
+                          >
+                            <Eye className="w-5 h-5 mr-1" />
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleDelete(student._id, student.name)}
+                            className="text-red-600 hover:text-red-900 flex items-center"
+                          >
+                            <Trash2 className="w-5 h-5 mr-1" />
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               
-              {/* Mobile view - Card list */}
-              <div className="md:hidden space-y-3">
-                {filteredStudents.map((student) => (
-                  <div key={student._id} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden p-4">
-                    <div className="flex items-center mb-3">
-                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-800">
-                          {student.name.charAt(0)}
-                        </span>
+              {/* Mobile view - List */}
+              <div className="md:hidden">
+                <ul>
+                  {filteredStudents.map((student) => (
+                    <li key={student._id} className="bg-white rounded-lg shadow-sm p-4 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-800">
+                              {student.name.charAt(0)}
+                            </span>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => viewStudentDetails(student._id)}
+                            className="text-blue-600 hover:text-blue-900 text-sm flex items-center"
+                            title="View Details"
+                          >
+                            <Eye size={18} className="inline-block mr-1" />
+                            View
+                          </button>
+                          <button
+                            onClick={() => handleDelete(student._id, student.name)}
+                            className="text-red-600 hover:text-red-900 text-sm flex items-center"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1" />
+                                Deleting...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 size={18} className="inline-block mr-1" />
+                                Delete
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                        <div className="text-xs text-gray-500">{student.studentCode}</div>
+                      <div className="text-sm text-gray-500 flex items-center mb-2">
+                        <Mail size={14} className="mr-1 text-gray-400" />
+                        {student.email}
                       </div>
-                    </div>
-                    
-                    <div className="space-y-2 pl-1">
-                      <div className="flex items-center text-sm">
-                        <Mail size={14} className="mr-2 text-gray-400" />
-                        <span className="text-gray-600">{student.email}</span>
+                      <div className="text-sm text-gray-500 flex items-center mb-2">
+                        <UserCheck size={14} className="mr-1 text-gray-400" />
+                        {student.studentCode}
                       </div>
-                      <div className="flex items-center text-sm">
-                        <Calendar size={14} className="mr-2 text-gray-400" />
-                        <span className="text-gray-500 text-xs">Created: {formatDate(student.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </>
           </div>
@@ -334,8 +554,54 @@ const StudentManagement = () => {
           </div>
         )}
       </div>
+    <div>
+      {/* Delete Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+          <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-lg w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Delete Student
+              </h3>
+              <button
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setStudentToDelete(null);
+                }}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-600">
+                Are you sure you want to delete {studentToDelete?.name}? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setStudentToDelete(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 };
 
-export default StudentManagement;
+export default StudentManagement; 
