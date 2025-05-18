@@ -24,10 +24,37 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: function(phone) {
+          // Validate Indian phone number format
+          return /^\d{10}$/.test(phone);
+        },
+        message: 'Please enter a valid 10-digit phone number'
+      }
+    },
     password: {
       type: String,
       required: [true, 'Please add a password'],
-      minlength: 6,
+      minlength: 8,
+      validate: {
+        validator: function(password) {
+          // Check for uppercase letters
+          const hasUpperCase = /[A-Z]/.test(password);
+          // Check for lowercase letters
+          const hasLowerCase = /[a-z]/.test(password);
+          // Check for numbers
+          const hasNumber = /[0-9]/.test(password);
+          // Check for special characters
+          const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+          
+          // Password must be at least 8 characters and meet all criteria
+          return (password.length >= 8 && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar);
+        },
+        message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*(),.?":{}|<>)'
+      },
       select: false,
     },
     role: {

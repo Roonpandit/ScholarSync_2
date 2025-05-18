@@ -340,13 +340,21 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     };
   }
   
-  // Get all slots within the date range
-  const slots = await AttendanceSlot.find(dateFilter);
+  // Get all slots within the date range, considering student join date
+  const slots = await AttendanceSlot.find({
+    ...dateFilter,
+    date: {
+      $gte: new Date(req.user.createdAt)
+    }
+  });
   
-  // Get all attendance records for the student within the date range
+  // Get all attendance records for the student within the date range, considering join date
   const attendanceRecords = await Attendance.find({
     ...dateFilter,
-    student: req.user._id
+    student: req.user._id,
+    date: {
+      $gte: new Date(req.user.createdAt)
+    }
   });
   
   // Calculate absences

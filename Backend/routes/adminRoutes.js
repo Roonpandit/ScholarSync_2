@@ -12,7 +12,10 @@ const {
   getAttendanceStats,
   getAbsentStudents,
   getAttendanceDetails,
-  deleteAttendanceSlot
+  deleteAttendanceSlot,
+  updateStudent,
+  getStudentDetailsWithAttendance,
+  deleteStudent
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -30,6 +33,13 @@ router.route('/students')
 // Get students by class ID
 router.get('/students/class', getStudentsByClass);
 
+// Update student details
+router.put('/students/:id', updateStudent);
+router.delete('/students/:id', deleteStudent);
+
+// Get student details with attendance history
+router.get('/students/:id/details', getStudentDetailsWithAttendance);
+
 // Attendance slot management routes
 router.route('/attendance-slots')
   .post(createAttendanceSlot)
@@ -38,6 +48,13 @@ router.route('/attendance-slots')
     console.log('Headers:', req.headers);
     next();
   }, getAllAttendanceSlots);
+
+// Attendance stats route
+router.get('/attendance/stats', (req, res, next) => {
+  console.log('GET /api/admin/attendance/stats called with query:', req.query);
+  console.log('Headers:', req.headers);
+  next();
+}, getAttendanceStats);
 
 router.put('/attendance-slots/:id/close', closeAttendanceSlot);
 router.delete('/attendance-slots/:id', deleteAttendanceSlot);
@@ -51,7 +68,6 @@ router.get('/attendance', (req, res) => {
   return getAttendanceByDate(req, res);
 });
 router.post('/attendance/mark', markAttendance);
-router.get('/attendance/stats', getAttendanceStats);
 router.get('/attendance/absent', getAbsentStudents);
 router.get('/attendance/details', getAttendanceDetails);
 
