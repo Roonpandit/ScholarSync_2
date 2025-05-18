@@ -1,46 +1,11 @@
 const mongoose = require('mongoose');
+const { convertToIST, convertToUTC } = require('../services/timeUtils');
 
 // Helper to convert IST time to UTC
-const toUTCDate = (date) => {
-  if (!date) return null;
-  
-  // If it's a string, try to parse it
-  if (typeof date === 'string') {
-    const d = new Date(date);
-    if (!isNaN(d.getTime())) {
-      // Convert to UTC by subtracting IST offset
-      return new Date(d.getTime() - (5.5 * 60 * 60 * 1000));
-    }
-    return null;
-  }
-  
-  // If it's already a Date object
-  if (date instanceof Date) {
-    if (!isNaN(date.getTime())) {
-      // Convert to UTC by subtracting IST offset
-      return new Date(date.getTime() - (5.5 * 60 * 60 * 1000));
-    }
-    return null;
-  }
-  
-  return null;
-};
+const toUTCDate = convertToUTC;
 
 // Helper to convert UTC to IST
-const toISTDate = (date) => {
-  if (!date) return null;
-  
-  // If it's already a Date object
-  if (date instanceof Date) {
-    if (!isNaN(date.getTime())) {
-      // Convert to IST by adding IST offset
-      return new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
-    }
-    return null;
-  }
-  
-  return null;
-};
+const toISTDate = convertToIST;
 
 const attendanceSlotSchema = new mongoose.Schema(
   {

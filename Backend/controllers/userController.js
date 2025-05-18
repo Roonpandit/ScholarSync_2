@@ -6,6 +6,7 @@ const cloudinary = require('../config/cloudinary');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
+const { convertToIST, getCurrentDateIST, isDateBefore, isSameDate, addDays, convertToUTC } = require('../services/timeUtils');
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -115,10 +116,9 @@ const uploadToCloudinary = async (file) => {
 // @route   GET /api/students/attendance-slots
 // @access  Private/Student
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
-  const now = new Date();
-  
-  // Get current time in UTC
-  const nowUTC = new Date();
+  // Get current time in IST
+  const nowIST = getCurrentDateIST();
+  const nowUTC = convertToUTC(nowIST);
 
   // Get all active slots that are either:
   // 1. Currently active (startTime <= now <= endTime), OR
@@ -135,7 +135,7 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
         // Upcoming slots (within the next 12 hours)
         startTime: { 
           $gt: nowUTC,
-          $lte: new Date(nowUTC.getTime() + (12 * 60 * 60 * 1000)) // Next 12 hours
+          $lte: addDays(nowUTC, 0.5) // Next 12 hours
         }
       }
     ]
@@ -162,8 +162,8 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
     const slotsWithISTTimes = availableSlots.map(slot => {
       return {
         ...slot.toObject(),
-        startTime: new Date(slot.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
-        endTime: new Date(slot.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+        startTime: convertToIST(new Date(slot.startTime)).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+        endTime: convertToIST(new Date(slot.endTime)).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
       };
     });
 
@@ -285,13 +285,17 @@ exports.getAttendanceHistory = asyncHandler(async (req, res) => {
   
   let dateFilter = { student: req.user._id };
   
-  // Apply date filters
+  // If specific dates are provided
   if (startDate && endDate) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
+    const start = convertToIST(new Date(startDate));
+    const end = convertToIST(new Date(endDate));
     
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format'
+      });
+    }
     
     dateFilter.date = {
       $gte: start,
@@ -325,59 +329,79 @@ exports.getAttendanceHistory = asyncHandler(async (req, res) => {
 exports.getAbsenceHistory = asyncHandler(async (req, res) => {
   const { month, year } = req.query;
   
-  let dateFilter = {};
-  
-  // Apply date filters
-  if (month && year) {
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+  try {
+    // Parse and validate month and year
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
     
-    dateFilter = {
-      date: {
-        $gte: startOfMonth,
-        $lte: endOfMonth
-      }
-    };
-  }
-  
-  // Get all slots within the date range, considering student join date
-  const slots = await AttendanceSlot.find({
-    ...dateFilter,
-    date: {
-      $gte: new Date(req.user.createdAt)
-    }
-  });
-  
-  // Get all attendance records for the student within the date range, considering join date
-  const attendanceRecords = await Attendance.find({
-    ...dateFilter,
-    student: req.user._id,
-    date: {
-      $gte: new Date(req.user.createdAt)
-    }
-  });
-  
-  // Calculate absences
-  const absences = [];
-  
-  slots.forEach(slot => {
-    const isPresent = attendanceRecords.some(record => 
-      record.slot.toString() === slot._id.toString()
-    );
-    
-    if (!isPresent) {
-      absences.push({
-        date: slot.date,
-        shift: slot.shift,
-        slotStartTime: slot.startTime,
-        slotEndTime: slot.endTime
+    if (isNaN(monthNum) || isNaN(yearNum) || monthNum < 1 || monthNum > 12) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid month or year'
       });
     }
-  });
-  
-  res.status(200).json({
-    success: true,
-    count: absences.length,
-    data: absences,
-  });
+    
+    // Use parsed numbers for date calculations
+    const startOfMonth = new Date(yearNum, monthNum - 1, 1);
+    const endOfMonth = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
+    
+    // Validate dates are valid
+    if (isNaN(startOfMonth) || isNaN(endOfMonth)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date range'
+      });
+    }
+    
+    const joinDate = new Date(req.user.createdAt);
+    const effectiveStartDate = new Date(Math.max(startOfMonth.getTime(), joinDate.getTime()));
+    
+    // Get all slots for the selected month and year
+    const slots = await AttendanceSlot.find({
+      date: {
+        $gte: effectiveStartDate,
+        $lte: endOfMonth
+      }
+    });
+    
+    // Get all attendance records for the student within the selected month and year
+    const attendanceRecords = await Attendance.find({
+      student: req.user._id,
+      date: {
+        $gte: effectiveStartDate,
+        $lte: endOfMonth
+      }
+    });
+    
+    // Calculate absences
+    const absences = [];
+    
+    slots.forEach(slot => {
+      const isPresent = attendanceRecords.some(record => 
+        record.slot.toString() === slot._id.toString()
+      );
+      
+      if (!isPresent) {
+        absences.push({
+          date: slot.date,
+          shift: slot.shift,
+          slotStartTime: slot.startTime,
+          slotEndTime: slot.endTime
+        });
+      }
+    });
+    
+    res.status(200).json({
+      success: true,
+      count: absences.length,
+      data: absences,
+      totalSlots: slots.length
+    });
+  } catch (error) {
+    console.error('Error in getAbsenceHistory:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
 });

@@ -4,10 +4,10 @@ const Slot = require('../models/AttendanceSlot');
 const User = require('../models/User');
 
 // Helper to convert a date to IST
-const toIST = (date) => {
-  const d = new Date(date);
-  return isNaN(d) ? null : new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
-};
+const { convertToIST, getCurrentDateIST, addMinutes } = require('../services/timeUtils');
+
+// Helper to convert a date to IST
+const toIST = convertToIST;
 
 // Schedule to run every minute in IST timezone
 const startSlotNotifications = () => {
@@ -15,14 +15,14 @@ const startSlotNotifications = () => {
     // Schedule the job using UTC time
     cron.schedule('* * * * *', async () => {
       try {
-        const nowUTC = new Date();
-        const nowIST = toIST(nowUTC);
+        const nowIST = getCurrentDateIST();
+        const nowUTC = convertToUTC(nowIST);
 
         const upcomingSlots = await Slot.find({
           notified: false,
           startTime: {
             $gte: nowIST,
-            $lte: new Date(nowIST.getTime() + 10 * 60 * 1000)
+            $lte: addMinutes(nowIST, 10)
           }
         });
 
@@ -33,8 +33,8 @@ const startSlotNotifications = () => {
             continue;
           }
 
-          const dateIST = toIST(slot.date);
-          const startTimeIST = toIST(slot.startTime);
+          const dateIST = convertToIST(slot.date);
+          const startTimeIST = convertToIST(slot.startTime);
 
           const message = `⏰ Reminder: Your attendance slot starts in 10 minutes!\n` +
                           `Date: ${dateIST.toLocaleDateString('en-IN')}\n` +

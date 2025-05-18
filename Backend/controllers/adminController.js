@@ -3,6 +3,7 @@ const User = require('../models/User');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
+const { convertToIST, getStartOfDayIST, getEndOfDayIST, getCurrentDateIST, isDateBefore, isSameDate } = require('../services/timeUtils');
 
 // @desc    Get student details with attendance history
 // @route   GET /api/admin/students/:id/details
@@ -31,8 +32,8 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     // Get all attendance slots for the student's time period (from their join date)
     const attendanceSlots = await AttendanceSlot.find({
       date: {
-        $gte: new Date(student.createdAt), // Only count slots from when the student joined
-        $lte: new Date()
+        $gte: convertToIST(new Date(student.createdAt)), // Only count slots from when the student joined
+        $lte: getCurrentDateIST()
       }
     }).lean();
 
@@ -43,8 +44,8 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     const attendanceRecords = await Attendance.find({ 
       student: id,
       date: {
-        $gte: new Date(student.createdAt),
-        $lte: new Date()
+        $gte: convertToIST(new Date(student.createdAt)),
+        $lte: getCurrentDateIST()
       }
     })
       .populate('slot', 'shift startTime endTime date')
@@ -61,10 +62,10 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     // Format attendance records to include full date information
     const formattedAttendance = attendanceRecords.map(record => ({
       ...record,
-      date: record.date.toISOString(),
+      date: convertToIST(record.date).toISOString(),
       slot: {
         ...record.slot,
-        date: record.slot.date.toISOString()
+        date: convertToIST(record.slot.date).toISOString()
       }
     }));
 
@@ -108,11 +109,8 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
         });
       }
       
-      const startOfDay = new Date(parsedDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date(parsedDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      const startOfDay = getStartOfDayIST(parsedDate);
+      const endOfDay = getEndOfDayIST(parsedDate);
       
       query.date = {
         $gte: startOfDay,
@@ -129,7 +127,7 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
       const slotObj = slot.toObject();
       return {
         ...slotObj,
-        isExpired: new Date(slotObj.endTime) < now
+        isExpired: isDateBefore(slotObj.endTime, now)
       };
     });
     
@@ -978,34 +976,26 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     console.log('Fetching attendance stats for:', req.query);
     
     const { month, year, minAbsences, startDate: startDateParam, endDate: endDateParam } = req.query;
-    
+
     let dateFilter = {};
-    let startDate, endDate;
-    
-    // Option 1: Use direct date range if provided
+    let startDate, endDate; // ✅ Declare here
+
     if (startDateParam && endDateParam) {
-      startDate = new Date(startDateParam);
-      startDate.setHours(0, 0, 0, 0);
-      
-      endDate = new Date(endDateParam);
-      endDate.setHours(23, 59, 59, 999);
+      startDate = convertToIST(new Date(startDateParam));
+      endDate = convertToIST(new Date(endDateParam));
       
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid date format for startDate or endDate'
+          message: 'Invalid date format. Please provide valid dates in YYYY-MM-DD format'
         });
       }
       
-      dateFilter = {
-        date: {
-          $gte: startDate,
-          $lte: endDate
-        }
+      dateFilter.date = {
+        $gte: startDate,
+        $lte: endDate
       };
-    } 
-    // Option 2: Use month and year
-    else if (month && year) {
+    } else if (month && year) {
       const parsedMonth = parseInt(month);
       const parsedYear = parseInt(year);
       
@@ -1027,9 +1017,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
           $lte: endDate
         }
       };
-    }
-    // Option 3: No dates provided
-    else {
+    } else {
       return res.status(400).json({
         success: false,
         message: 'Either month+year or startDate+endDate parameters are required'
@@ -1037,8 +1025,11 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     }
 
     const parsedMinAbsences = parseInt(minAbsences) || 0;
-    
+
     console.log('Using date range:', startDate.toISOString(), 'to', endDate.toISOString());
+    
+    // ... rest of the code remains the same ...
+
 
     // Get all students
     const allStudents = await User.find({ role: 'student' }).select('_id name email studentCode createdAt');
