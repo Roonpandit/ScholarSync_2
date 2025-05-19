@@ -130,7 +130,7 @@ const AttendanceSlots = () => {
  
   const [formData, setFormData] = useState({ 
     shift: "morning", 
-    date: getCurrentDateIST(), 
+    date: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
     startTime: "09:00", 
     endTime: "10:00", 
   }); 
@@ -276,16 +276,14 @@ const AttendanceSlots = () => {
        }
      }
       
-     // For date input, ensure it's a proper Date object
+     // For date input, ensure it's in YYYY-MM-DD format
      if (name === 'date') {
-       const dateObj = new Date(value);
-       if (!isNaN(dateObj.getTime())) {
-         setFormData((prev) => ({ 
-           ...prev, 
-           [name]: dateObj, 
-         }));
-         return;
-       }
+       // Date input already provides value in YYYY-MM-DD format
+       setFormData((prev) => ({ 
+         ...prev, 
+         [name]: value, // Keep as string in YYYY-MM-DD format
+       }));
+       return;
      }
       
      setFormData((prev) => ({ 
@@ -307,67 +305,22 @@ const AttendanceSlots = () => {
       // Debug logging
       console.log('Form data:', formData);
 
-      // Convert times to proper Date objects
-      const slotDate = formData.date instanceof Date ? formData.date : new Date(formData.date);
-      const slotStartTime = new Date(slotDate);
-      const slotEndTime = new Date(slotDate);
-      
-      // Set hours and minutes
+      // Convert times to Date objects
+      const slotDate = new Date(formData.date);
       const startTimeParts = formData.startTime.split(':');
       const endTimeParts = formData.endTime.split(':');
       
-      if (startTimeParts.length === 2 && endTimeParts.length === 2) {
-        const startHours = parseInt(startTimeParts[0], 10);
-        const startMinutes = parseInt(startTimeParts[1], 10);
-        const endHours = parseInt(endTimeParts[0], 10);
-        const endMinutes = parseInt(endTimeParts[1], 10);
-        
-        if (!isNaN(startHours) && !isNaN(startMinutes) && !isNaN(endHours) && !isNaN(endMinutes)) {
-          slotStartTime.setHours(startHours, startMinutes, 0);
-          slotEndTime.setHours(endHours, endMinutes, 0);
-        }
-      }
-
-      // Validate time parts
-      if (startTimeParts.length !== 2 || endTimeParts.length !== 2) {
-        toast.error('Please enter valid time in HH:mm format');
-        return;
-      }
-
-      // Create slot data
-      const slotCreationData = {
-        date: preparedTimes.date,
-        startTime: preparedTimes.startTime,
-        endTime: preparedTimes.endTime,
-        shift: formData.shift
-      };
-
-      const startMinutes = parseInt(startTimeParts[1], 10);
-      const endHours = parseInt(endTimeParts[0], 10);
-      const endMinutes = parseInt(endTimeParts[1], 10);
-
-      // Validate hours and minutes
-if (isNaN(startHours) || isNaN(startMinutes) || 
-    isNaN(endHours) || isNaN(endMinutes) ||
-          startHours < 0 || startHours > 23 ||
-          startMinutes < 0 || startMinutes > 59 ||
-          endHours < 0 || endHours > 23 ||
-          endMinutes < 0 || endMinutes > 59) {
-        toast.error('Please enter valid hours and minutes (0-23 for hours, 0-59 for minutes)');
-        return;
-      }
-
-      // Validate time order
-      if (slotStartTime >= slotEndTime) {
-        toast.error('End time must be after start time');
-        return;
-      }
-
-      // Create slot data
+      const startTime = new Date(slotDate);
+      startTime.setHours(parseInt(startTimeParts[0], 10), parseInt(startTimeParts[1], 10), 0);
+      
+      const endTime = new Date(slotDate);
+      endTime.setHours(parseInt(endTimeParts[0], 10), parseInt(endTimeParts[1], 10), 0);
+      
+      // Create slot data with proper Date objects
       const slotData = {
-        date: slotDate,
-        startTime: slotStartTime,
-        endTime: slotEndTime,
+        date: formData.date,
+        startTime,
+        endTime,
         shift: formData.shift
       };
 
@@ -639,7 +592,7 @@ if (isNaN(startHours) || isNaN(startMinutes) ||
                   type="date" 
                   id="date" 
                   name="date" 
-                  value={new Date().toISOString().split("T")[0]} 
+                  value={formData.date} 
                   onChange={handleInputChange} 
                   required 
                   className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 

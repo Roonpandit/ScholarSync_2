@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
-import { formatDate, formatTime, formatTime24h, formatDateandTime, getCurrentTimeIST} from '../../utils/timeUtils'
+import { formatDate, formatTime, formatTime24h, formatDateandTime, getCurrentTimeIST, convertToIST } from '../../utils/timeUtils'
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -159,13 +159,24 @@ const MarkAttendance = () => {
       const endTimeIST = formatTime24h(new Date(slot.endTime));
       console.log('Slot end time:', endTimeIST);
       
-      // Check if current time is before slot end time
-      if (currentTimeIST < endTimeIST) {
-        // Continue with photo capture
-      } else {
+      // Get current time as Date object in IST
+      const currentTime = new Date();
+      const currentIST = convertToIST(currentTime);
+      
+      // Get slot end time as Date object in IST
+      const slotEndTime = new Date(slot.endTime);
+      const slotEndIST = convertToIST(slotEndTime);
+      
+      console.log('Capture Photo - Current time:', currentIST);
+      console.log('Capture Photo - Slot end time:', slotEndIST);
+      console.log('Capture Photo - Comparison:', currentIST, '>=', slotEndIST);
+      
+      if (currentIST >= slotEndIST) {
+        console.log('Capture Photo - Slot time expired');
         toast.error('You got late. Slot time expired. Please mark attendance on time next time.');
         return;
       }
+      console.log('Capture Photo - Time is valid, proceeding with capture');
     }
 
     try {
@@ -270,7 +281,29 @@ const MarkAttendance = () => {
       return;
     }
 
-    // If we reach here, slot time is valid
+    // First check if slot time is still valid
+    if (slot) {
+      // Get current time as Date object in IST
+      const currentTime = new Date();
+      const currentIST = convertToIST(currentTime);
+      
+      // Get slot end time as Date object in IST
+      const slotEndTime = new Date(slot.endTime);
+      const slotEndIST = convertToIST(slotEndTime);
+      
+      console.log('Submit - Current time:', currentIST);
+      console.log('Submit - Slot end time:', slotEndIST);
+      console.log('Submit - Comparison:', currentIST, '>=', slotEndIST);
+    
+      
+      if (currentIST >= slotEndIST) {
+        console.log('Submit - Slot time expired');
+        toast.error('Slot time has expired. Please mark attendance on time next time.');
+        return;
+      }
+      console.log('Submit - Time is valid, proceeding with submission');
+    }
+
     // Now check other validations
     const newErrors = {};
     
@@ -394,14 +427,17 @@ const MarkAttendance = () => {
                   onChange={(e) => setSlotId(e.target.value)}
                 >
                   <option value="">Select a slot</option>
-                  {activeSlots.map((slot) => (
-                    <option key={slot._id} value={slot._id} className="text-gray-500">
-                      {formatDate(slot.date)} - 
-                      {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)} Shift - 
-                      {formatTime(slot.startTime)} to 
-                      {formatTime(slot.endTime)}
-                    </option>
-                  ))}
+                  {activeSlots
+                    .filter(slot => slot.status === 'active')
+                    .map((slot) => (
+                      <option key={slot._id} value={slot._id} className="text-gray-500">
+                        {formatDate(slot.date)} - 
+                        {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)} Shift - 
+                        {formatTime(slot.startTime)} to 
+                        {formatTime(slot.endTime)}
+                      </option>
+                    ))
+                  }
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <Clock className="h-5 w-5 text-gray-400" />
