@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { Card, Row, Col, Table, Button, Space, DatePicker, Typography, Spin, Select, Modal, Form, Input } from 'antd';
-import { CalendarOutlined, UserOutlined, MailOutlined, PhoneOutlined, EditOutlined } from '@ant-design/icons';
-import { formatDateDisplay, formatTime24h, convertToIST, getCurrentDateIST } from '../../utils/timeUtils';
-import { toast } from 'react-toastify'
-
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
+import { Table, Spin, Modal, Form, Input, Button, Space } from 'antd';
+import { UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, EditOutlined } from '@ant-design/icons';
+import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/timeUtils';
+import { toast } from 'react-toastify';
 
 const StudentDetails = () => {
   const { studentId } = useParams();
@@ -33,15 +30,11 @@ const StudentDetails = () => {
     }
   };
 
-
-
-
-
   const attendanceStats = studentData?.attendance?.stats || { present: 0, absent: 0, total: 0 };
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px' }}>
+      <div className="flex justify-center items-center p-8 h-64">
         <Spin size="large" />
       </div>
     );
@@ -51,10 +44,10 @@ const StudentDetails = () => {
     setIsEditing(true);
     // Set initial values for all fields
     editForm.setFieldsValue({
-      name: studentData?.name || '',
-      email: studentData?.email || '',
-      studentCode: studentData?.studentCode || '',
-      phone: studentData?.phone || ''
+      name: studentData?.student?.name || '',
+      email: studentData?.student?.email || '',
+      studentCode: studentData?.student?.studentCode || '',
+      phone: studentData?.student?.phone || ''
     });
   };
 
@@ -68,8 +61,11 @@ const StudentDetails = () => {
         toast.success('Student details updated successfully');
         setStudentData({ 
           ...studentData, 
-          name,
-          phone
+          student: {
+            ...studentData.student,
+            name,
+            phone
+          }
         });
         setIsEditing(false);
       } else {
@@ -87,47 +83,53 @@ const StudentDetails = () => {
   };
 
   return (
-    <div>
-      <Card title="Student Details" style={{ marginBottom: 20 }}>
-        <Row gutter={16}>
-          <Col span={24} style={{ marginBottom: 16 }}>
-            <Space>
-              <Button type="primary" onClick={handleEdit}>
-                <EditOutlined /> Edit Details
-              </Button>
-            </Space>
-          </Col>
-          <Col span={8}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <UserOutlined />
-              <Text strong>Name:</Text>
-              <Text>{studentData?.student?.name}</Text>
+    <div className="container mx-auto px-4 py-6">
+      {/* Student Details Card */}
+      <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
+        <div className="border-b border-gray-200 p-4 md:p-6">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Student Details</h2>
+        </div>
+        
+        <div className="p-4 md:p-6">
+          <div className="mb-4">
+            <button 
+              onClick={handleEdit}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center space-x-2 transition duration-200"
+            >
+              <EditOutlined /> 
+              <span>Edit Details</span>
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="flex items-center space-x-2">
+              <UserOutlined className="text-gray-500" />
+              <span className="font-medium">Name:</span>
+              <span className="text-gray-700">{studentData?.student?.name}</span>
             </div>
-          </Col>
-          <Col span={8}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <MailOutlined />
-              <Text strong>Email:</Text>
-              <Text>{studentData?.student?.email}</Text>
+            
+            <div className="flex items-center space-x-2">
+              <MailOutlined className="text-gray-500" />
+              <span className="font-medium">Email:</span>
+              <span className="text-gray-700 break-all">{studentData?.student?.email}</span>
             </div>
-          </Col>
-          <Col span={8}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PhoneOutlined />
-              <Text strong>Phone:</Text>
-              <Text>{studentData?.student?.phone}</Text>
+            
+            <div className="flex items-center space-x-2">
+              <PhoneOutlined className="text-gray-500" />
+              <span className="font-medium">Phone:</span>
+              <span className="text-gray-700">{studentData?.student?.phone}</span>
             </div>
-          </Col>
-          <Col span={8}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CalendarOutlined />
-              <Text strong>Student Code:</Text>
-              <Text>{studentData?.student?.studentCode}</Text>
+            
+            <div className="flex items-center space-x-2">
+              <CalendarOutlined className="text-gray-500" />
+              <span className="font-medium">Student Code:</span>
+              <span className="text-gray-700">{studentData?.student?.studentCode}</span>
             </div>
-          </Col>
-        </Row>
-      </Card>
+          </div>
+        </div>
+      </div>
       
+      {/* Modal for Editing Student Details */}
       <Modal
         title="Edit Student Details"
         open={isEditing}
@@ -138,7 +140,7 @@ const StudentDetails = () => {
           form={editForm}
           layout="vertical"
           onFinish={handleEditSubmit}
-          style={{ maxWidth: 600 }}
+          className="max-w-lg"
         >
           <Form.Item
             name="name"
@@ -155,7 +157,7 @@ const StudentDetails = () => {
             <Input 
               placeholder="student@example.com" 
               disabled
-              style={{ backgroundColor: '#f5f5f5' }}
+              className="bg-gray-100"
             />
           </Form.Item>
 
@@ -166,7 +168,7 @@ const StudentDetails = () => {
             <Input 
               placeholder="e.g. STU12345" 
               disabled
-              style={{ backgroundColor: '#f5f5f5' }}
+              className="bg-gray-100"
             />
           </Form.Item>
 
@@ -194,45 +196,89 @@ const StudentDetails = () => {
         </Form>
       </Modal>
 
-      <Card title="Attendance History">
-        <Row gutter={16} style={{ marginBottom: 20 }}>
-          <Col span={6}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Title level={4}>{attendanceStats.total}</Title>
-              <Text>{attendanceStats.total}</Text>
+      {/* Attendance History Card */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="border-b border-gray-200 p-4 md:p-6">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Attendance History</h2>
+        </div>
+        
+        <div className="p-4 md:p-6">
+          {/* Attendance Statistics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-700">Total</h3>
+              <p className="text-2xl font-bold">{attendanceStats.total}</p>
             </div>
-          </Col>
-          <Col span={6}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Title level={4} style={{ color: '#52c41a' }}>Present</Title>
-              <Text style={{ color: '#52c41a' }}>{attendanceStats.present}</Text>
+            
+            <div className="bg-green-50 p-4 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold text-green-600">Present</h3>
+              <p className="text-2xl font-bold text-green-600">{attendanceStats.present}</p>
             </div>
-          </Col>
-          <Col span={6}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Title level={4} style={{ color: '#ff4d4f' }}>Absent</Title>
-              <Text style={{ color: '#ff4d4f' }}>{attendanceStats.absent}</Text>
+            
+            <div className="bg-red-50 p-4 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold text-red-600">Absent</h3>
+              <p className="text-2xl font-bold text-red-600">{attendanceStats.absent}</p>
             </div>
-          </Col>
-          <Col span={6}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Title level={4}>Attendance Rate</Title>
-              <Text>{attendanceStats.total > 0 ? 
-                `${Math.round((attendanceStats.present / attendanceStats.total) * 100)}%` : 'N/A'}</Text>
+            
+            <div className="bg-blue-50 p-4 rounded-lg shadow-sm">
+              <h3 className="text-lg font-semibold text-blue-600">Attendance Rate</h3>
+              <p className="text-2xl font-bold text-blue-600">
+                {attendanceStats.total > 0 ? 
+                  `${Math.round((attendanceStats.present / attendanceStats.total) * 100)}%` : 'N/A'}
+              </p>
             </div>
-          </Col>
-        </Row>
-
-        <Table dataSource={studentData?.attendance?.records || []} rowKey="_id">
-          <Table.Column title="Date" dataIndex="date" key="date" render={(date) => formatDateDisplay(convertToIST(new Date(date)))} />
-          <Table.Column title="Shift" dataIndex="shift" key="shift" />
-          <Table.Column title="Status" dataIndex="status" key="status" />
-          <Table.Column title="Time" dataIndex="slot" key="time" render={(slot) => 
-            slot && `${formatTime24h(slot.startTime)} - ${formatTime24h(slot.endTime)}`
-          } />
-          <Table.Column title="Time" dataIndex="time" key="time" render={(time) => formatTime24h(convertToIST(time))} />
-        </Table>
-      </Card>
+          </div>
+          
+          {/* Attendance Table */}
+          <div className="overflow-x-auto">
+            <Table 
+              dataSource={studentData?.attendance?.records || []} 
+              rowKey="_id"
+              className="min-w-full"
+              scroll={{ x: 'max-content' }}
+            >
+              <Table.Column 
+                title="Date" 
+                dataIndex="date" 
+                key="date" 
+                render={(date) => formatDateDisplay(convertToIST(new Date(date)))} 
+              />
+              <Table.Column 
+                title="Shift" 
+                dataIndex="shift" 
+                key="shift" 
+              />
+              <Table.Column 
+                title="Status" 
+                dataIndex="status" 
+                key="status" 
+                render={(status) => (
+                  <span className={`px-2 py-1 rounded text-sm ${
+                    status === 'Present' ? 'bg-green-100 text-green-800' : 
+                    status === 'Absent' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {status}
+                  </span>
+                )}
+              />
+              <Table.Column 
+                title="Time Slot" 
+                dataIndex="slot" 
+                key="time" 
+                render={(slot) => 
+                  slot && `${formatTime24h(slot.startTime)} - ${formatTime24h(slot.endTime)}`
+                } 
+              />
+              <Table.Column 
+                title="Recorded Time" 
+                dataIndex="time" 
+                key="time" 
+                render={(time) => time && formatTime24h(convertToIST(time))} 
+              />
+            </Table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
