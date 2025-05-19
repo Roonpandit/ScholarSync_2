@@ -603,54 +603,43 @@ exports.updateStudent = asyncHandler(async (req, res) => {
 exports.getAttendanceDetails = asyncHandler(async (req, res) => {
   try {
     const { studentId, month, year } = req.query;
-    
+
     console.log('Fetching attendance details for:', { studentId, month, year });
 
-    // Validation
     if (!studentId || !month || !year) {
-      console.error('Missing required parameters');
       return res.status(400).json({
         success: false,
         message: 'Please provide studentId, month, and year',
       });
     }
 
-    // Validate student exists
     const student = await User.findById(studentId);
     if (!student) {
-      console.error('Student not found:', studentId);
       return res.status(404).json({
         success: false,
         message: 'Student not found',
       });
     }
 
-    // Parse month and year to numbers
     const monthNum = parseInt(month, 10);
     const yearNum = parseInt(year, 10);
 
     if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-      console.error('Invalid month:', month);
       return res.status(400).json({
         success: false,
         message: 'Invalid month. Please provide a month between 1 and 12',
       });
     }
 
-
-    // Calculate start and end dates for the month
     const startDate = new Date(yearNum, monthNum - 1, 1);
-    const endDate = new Date(yearNum, monthNum, 0);
+    const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
 
-    console.log('Date range:', { startDate, endDate });
-
-    // Get attendance records for the student in the specified month, considering join date
     const attendanceRecords = await Attendance.aggregate([
       {
         $match: {
           student: new mongoose.Types.ObjectId(studentId),
           date: {
-            $gte: new Date(student.createdAt),
+            $gte: new Date(Math.max(startDate, new Date(student.createdAt))),
             $lte: endDate,
           },
         },
@@ -658,8 +647,15 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
       {
         $lookup: {
           from: 'attendanceslots',
-          localField: 'slot',
-          foreignField: '_id',
+          let: { slotId: '$slot' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$slotId'] },
+                status: { $in: ['active', 'closed'] },
+              },
+            },
+          ],
           as: 'slotDetails',
         },
       },
@@ -669,6 +665,7 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
           _id: 1,
           date: 1,
           status: 1,
+          slotStatus: '$slotDetails.status',
           shift: '$slotDetails.shift',
           startTime: '$slotDetails.startTime',
           endTime: '$slotDetails.endTime',
@@ -678,11 +675,38 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
       { $sort: { date: 1 } },
     ]);
 
-    console.log('Found records:', attendanceRecords.length);
+    console.log("Attendance Records Length:", attendanceRecords.length);
+    console.log("Attendance Records:", attendanceRecords);
+
+    // Calculate counts
+    let present = 0;
+    let absent = 0;
+
+    attendanceRecords.forEach((record) => {
+      if (record.status === 'present' && ['active', 'closed'].includes(record.slotStatus)) {
+        present++;
+      } else if (record.status === 'absent' && record.slotStatus === 'closed') {
+        absent++;
+      }
+    });
+
+    console.log("Present Count:", present);
+    console.log("Absent Count:", absent);
 
     res.status(200).json({
       success: true,
-      data: attendanceRecords,
+      data: {
+        student,
+        attendance: {
+          records: attendanceRecords,
+          stats: {
+            total: present + absent,
+            present,
+            absent,
+          },
+          totalRecords: attendanceRecords.length,
+        },
+      },
     });
   } catch (error) {
     console.error('Error in getAttendanceDetails:', error);
@@ -693,6 +717,10 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
     });
   }
 });
+
+
+
+
 
 // @desc    Create a new student
 // @route   POST /api/admin/students

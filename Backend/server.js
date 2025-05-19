@@ -41,7 +41,6 @@ connectDB().then(() => {
   app.use('/api/auth', authRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/students', userRoutes);
-  app.use('/api/notifications', require('./routes/notificationRoutes'));
   
   // Basic route for testing
   app.get('/', (req, res) => {
@@ -61,12 +60,9 @@ connectDB().then(() => {
     });
   });
   
-  // Start server and run fetch function
-  const slotNotificationJob = require('./jobs/slotNotificationJob');
-  
+  // Start server
   const server = app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    slotNotificationJob.startSlotNotifications();
   });
 
   // Handle unhandled promise rejections
@@ -80,10 +76,4 @@ connectDB().then(() => {
     console.error('Uncaught Exception:', err);
     server.close(() => process.exit(1));
   });
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err, promise) => {
-  console.log(`Error: ${err.message}`);
-  server.close(() => process.exit(1));
 });
