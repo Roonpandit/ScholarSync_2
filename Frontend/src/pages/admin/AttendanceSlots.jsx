@@ -275,7 +275,19 @@ const AttendanceSlots = () => {
          }
        }
      }
-     
+      
+     // For date input, ensure it's a proper Date object
+     if (name === 'date') {
+       const dateObj = new Date(value);
+       if (!isNaN(dateObj.getTime())) {
+         setFormData((prev) => ({ 
+           ...prev, 
+           [name]: dateObj, 
+         }));
+         return;
+       }
+     }
+      
      setFormData((prev) => ({ 
        ...prev, 
        [name]: value, 
@@ -295,76 +307,97 @@ const AttendanceSlots = () => {
       // Debug logging
       console.log('Form data:', formData);
 
-      // Parse time strings
-      const date = new Date(formData.date);
+      // Convert times to proper Date objects
+      const slotDate = formData.date instanceof Date ? formData.date : new Date(formData.date);
+      const slotStartTime = new Date(slotDate);
+      const slotEndTime = new Date(slotDate);
+      
+      // Set hours and minutes
       const startTimeParts = formData.startTime.split(':');
       const endTimeParts = formData.endTime.split(':');
+      
+      if (startTimeParts.length === 2 && endTimeParts.length === 2) {
+        const startHours = parseInt(startTimeParts[0], 10);
+        const startMinutes = parseInt(startTimeParts[1], 10);
+        const endHours = parseInt(endTimeParts[0], 10);
+        const endMinutes = parseInt(endTimeParts[1], 10);
+        
+        if (!isNaN(startHours) && !isNaN(startMinutes) && !isNaN(endHours) && !isNaN(endMinutes)) {
+          slotStartTime.setHours(startHours, startMinutes, 0);
+          slotEndTime.setHours(endHours, endMinutes, 0);
+        }
+      }
 
       // Validate time parts
       if (startTimeParts.length !== 2 || endTimeParts.length !== 2) {
-        toast.error('Please enter valid time format (HH:mm)');
+        toast.error('Please enter valid time in HH:mm format');
         return;
       }
 
-      const startHours = parseInt(startTimeParts[0], 10);
-      const startMinutes = parseInt(startTimeParts[1], 10);
-      const endHours = parseInt(endTimeParts[0], 10);
-      const endMinutes = parseInt(endTimeParts[1], 10);
-
-      // Validate hours and minutes
-      if (isNaN(startHours) || isNaN(startMinutes) || 
-          isNaN(endHours) || isNaN(endMinutes) ||
-          startHours < 0 || startHours > 23 ||
-          startMinutes < 0 || startMinutes > 59 ||
-          endHours < 0 || endHours > 23 ||
-          endMinutes < 0 || endMinutes > 59) {
-        toast.error('Please enter valid hours and minutes (00-23:00-59)');
-        return;
-      }
-
-      // Create date objects with proper time
-      const startTime = new Date(date);
-      startTime.setHours(startHours, startMinutes, 0, 0);
-       
-      const endTime = new Date(date);
-      endTime.setHours(endHours, endMinutes, 0, 0);
-
-      // Debug logging
-      console.log('Converted times:', {
-        date,
-        startTime,
-        endTime
-      });
-
-      // Convert times to UTC before sending
-      const preparedTimes = prepareSlotTimes(
-        date,
-        startTime,
-        endTime
-      );
-       
-      const slotData = {
+      // Create slot data
+      const slotCreationData = {
         date: preparedTimes.date,
         startTime: preparedTimes.startTime,
         endTime: preparedTimes.endTime,
         shift: formData.shift
       };
 
-    const token = localStorage.getItem("token");
-    const config = { 
-      headers: { 
-        Authorization: `Bearer ${token}`, 
-        "Content-Type": "application/json", 
-      }, 
-    };
+      const startMinutes = parseInt(startTimeParts[1], 10);
+      const endHours = parseInt(endTimeParts[0], 10);
+      const endMinutes = parseInt(endTimeParts[1], 10);
 
-    const res = await axios.post("/admin/attendance-slots", slotData, config);
+      // Validate hours and minutes
+if (isNaN(startHours) || isNaN(startMinutes) || 
+    isNaN(endHours) || isNaN(endMinutes) ||
+          startHours < 0 || startHours > 23 ||
+          startMinutes < 0 || startMinutes > 59 ||
+          endHours < 0 || endHours > 23 ||
+          endMinutes < 0 || endMinutes > 59) {
+        toast.error('Please enter valid hours and minutes (0-23 for hours, 0-59 for minutes)');
+        return;
+      }
 
-    if (res.data.success) { 
-      toast.success("Attendance slot created successfully"); 
-      setShowAddForm(false); 
-      fetchSlots(); 
-    }
+      // Validate time order
+      if (slotStartTime >= slotEndTime) {
+        toast.error('End time must be after start time');
+        return;
+      }
+
+      // Create slot data
+      const slotData = {
+        date: slotDate,
+        startTime: slotStartTime,
+        endTime: slotEndTime,
+        shift: formData.shift
+      };
+
+      const token = localStorage.getItem("token");
+      const config = { 
+        headers: { 
+          Authorization: `Bearer ${token}`, 
+          "Content-Type": "application/json", 
+        }, 
+      };
+
+      // Prepare slot times before sending
+      const preparedTimes = prepareSlotTimes(
+        slotData.date,
+        slotData.startTime,
+        slotData.endTime
+      );
+
+      const res = await axios.post("/admin/attendance-slots", {
+        ...slotData,
+        date: preparedTimes.date,
+        startTime: preparedTimes.startTime,
+        endTime: preparedTimes.endTime
+      }, config);
+
+      if (res.data.success) { 
+        toast.success("Attendance slot created successfully"); 
+        setShowAddForm(false); 
+        fetchSlots(); 
+      }
     } catch (error) { 
       console.error("Error creating slot:", error); 
       toast.error( 
@@ -727,7 +760,11 @@ const AttendanceSlots = () => {
                     {slots 
                       .filter((slot) => { 
                         if (!filterDate) return true; 
-                        return isSameDate(slot.date, filterDate);
+                        // Convert both dates to Date objects before comparison
+                        return isSameDate(
+                          new Date(slot.date),
+                          new Date(filterDate)
+                        );
                       }) 
                       .map((slot) => ( 
                         <tr 

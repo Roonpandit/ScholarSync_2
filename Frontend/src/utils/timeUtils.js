@@ -51,6 +51,11 @@ export const convertToUTC = (date) => {
   return new Date(istDate.getTime() - ISTOffset);
 };
 
+// GET current time in IST as Date object
+export const getCurrentTimeISTAsDate = () => {
+  return new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000));
+};
+
 // GET current IST time (e.g., "14:05")
 export const getCurrentTimeIST = () => {
   return formatTime24h(new Date());

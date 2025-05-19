@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
-import { formatDate, formatTime, formatDateandTime, getCurrentTimeIST } from '../../utils/timeUtils'
+import { formatDate, formatTime, formatTime24h, formatDateandTime, getCurrentTimeIST} from '../../utils/timeUtils'
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -24,6 +24,7 @@ const MarkAttendance = () => {
   })
   const [submitting, setSubmitting] = useState(false)
   const [hasReadInstructions, setHasReadInstructions] = useState(false)
+  const [canCheckInstructions, setCanCheckInstructions] = useState(false)
   const [errors, setErrors] = useState({})
 
 
@@ -49,12 +50,11 @@ const MarkAttendance = () => {
     try {
       setLoading(true)
       const res = await axios.get('/students/attendance-slots')
-      const activeSlots = res.data.data?.filter(slot => slot.status === 'active') || []
-      setActiveSlots(activeSlots)
+      setActiveSlots(res.data.data || [])
       
       // If no slotId is set and there are active slots, set the first one
-      if (!slotId && activeSlots.length > 0) {
-        setSlotId(activeSlots[0]._id)
+      if (!slotId && res.data.data && res.data.data.length > 0) {
+        setSlotId(res.data.data[0]._id)
       }
     } catch (error) {
       console.error('Error fetching active slots:', error)
@@ -152,22 +152,18 @@ const MarkAttendance = () => {
     // Check if slot time is valid
     if (slot) {
       // Get current time in IST
-      const currentTimeIST = new Date(new Date().toLocaleString("en-US", {
-        timeZone: "Asia/Kolkata"
-      }));
+      const currentTimeIST = getCurrentTimeIST();
       console.log('Current time IST:', currentTimeIST);
       
-      // Convert slot times from UTC to IST for comparison
-      const startTimeIST = formatDateandTime(new Date(slot.startTime));
-      const endTimeIST = formatDateandTime(new Date(slot.endTime));
-      console.log('Slot start time IST:', startTimeIST);
-      console.log('Slot end time IST:', endTimeIST);
+      // Convert slot times to IST
+      const endTimeIST = formatTime24h(new Date(slot.endTime));
+      console.log('Slot end time:', endTimeIST);
       
-      if (currentTimeIST < startTimeIST) {
-        toast.warning(`Attendance slot will be active from ${startTimeIST}`);
-        return;
-      } else if (currentTimeIST > endTimeIST) {
-        toast.error(`Attendance slot expired at ${endTimeIST}`);
+      // Check if current time is before slot end time
+      if (currentTimeIST < endTimeIST) {
+        // Continue with photo capture
+      } else {
+        toast.error('You got late. Slot time expired. Please mark attendance on time next time.');
         return;
       }
     }
@@ -209,7 +205,6 @@ const MarkAttendance = () => {
       
       // Add location text overlay
       const locationText = `Location: ${location_.latitude}, ${location_.longitude}`;
-      const timestamp = getCurrentTimeIST(); // Use IST timestamp
       
       // Create a semi-transparent overlay
       ctx.fillRect(10, canvas.height - 120, canvas.width - 20, 100);
@@ -220,7 +215,7 @@ const MarkAttendance = () => {
       
       // Format and display timestamp with date
       const currentDate = formatDate(new Date());
-      const currentTime = formatTime(new Date());
+      const currentTime = formatTime24h(new Date());
       ctx.fillText(`${currentTime} ${currentDate} `, 20, canvas.height - 80);
 
       
@@ -257,6 +252,14 @@ const MarkAttendance = () => {
       toast.error(error.message || 'Failed to capture photo. Please try again.');
     }
   };
+
+  const handleCheckboxChange = (e) => {
+    if (!photo) {
+      toast.error('Please take a photo first before confirming instructions')
+      return
+    }
+    setHasReadInstructions(e.target.checked)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -517,7 +520,8 @@ const MarkAttendance = () => {
                     type="checkbox"
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     checked={hasReadInstructions}
-                    onChange={(e) => setHasReadInstructions(e.target.checked)}
+                    onChange={handleCheckboxChange}
+                    disabled={!photo}
                     required
                   />
                 </div>

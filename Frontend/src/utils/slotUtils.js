@@ -1,4 +1,6 @@
-// Handle UTC dates directly for slot creation
+import { convertToUTC } from './timeUtils';
+
+// Convert IST times to UTC before creating a slot
 export const prepareSlotTimes = (date, startTime, endTime) => {
   // Validate input dates
   if (!date || isNaN(new Date(date).getTime())) {
@@ -16,25 +18,26 @@ export const prepareSlotTimes = (date, startTime, endTime) => {
   console.log('Input start time:', startTime);
   console.log('Input end time:', endTime);
 
-  // Create date objects with the provided times
-  const dateObj = new Date(date);
-  const startTimeObj = new Date(date);
-  const endTimeObj = new Date(date);
-
-  // Set the hours and minutes
-  startTimeObj.setHours(startTime.getHours(), startTime.getMinutes());
-  endTimeObj.setHours(endTime.getHours(), endTime.getMinutes());
+  // Convert date to UTC
+  const utcDate = convertToUTC(date);
+  
+  // Convert times to UTC
+  const utcStartTime = convertToUTC(new Date(date));
+  utcStartTime.setHours(startTime.getHours(), startTime.getMinutes());
+  
+  const utcEndTime = convertToUTC(new Date(date));
+  utcEndTime.setHours(endTime.getHours(), endTime.getMinutes());
 
   // Debug logging
-  console.log('Date object:', dateObj);
-  console.log('Start time object:', startTimeObj);
-  console.log('End time object:', endTimeObj);
+  console.log('UTC date:', utcDate);
+  console.log('UTC start time:', utcStartTime);
+  console.log('UTC end time:', utcEndTime);
 
-  // Convert to ISO strings (already in UTC)
+  // Convert all dates back to ISO strings
   return {
-    date: dateObj.toISOString(),
-    startTime: startTimeObj.toISOString(),
-    endTime: endTimeObj.toISOString()
+    date: utcDate.toISOString(),
+    startTime: utcStartTime.toISOString(),
+    endTime: utcEndTime.toISOString()
   };
 }
 

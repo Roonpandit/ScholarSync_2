@@ -10,65 +10,89 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalStudents: 0,
     todayAttendance: 0,
-    activeSlots: 0
+    activeSlots: 0,
+    absentStudents: 0
   })
   const [recentAttendance, setRecentAttendance] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshTimer, setRefreshTimer] = useState(null)
 
+  // Auto-refresh every minute
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true)
-        
-        // Get today's date in YYYY-MM-DD format (IST)
-        const todayIST = convertToIST(new Date())
-        const today = todayIST.toISOString().split('T')[0]
-        
-        // Fetch students count
-        const studentsRes = await axios.get('/admin/students')
-        
-        // Fetch today's attendance
-        const attendanceRes = await axios.get(`/admin/attendance?date=${today}`)
-        
-        // Fetch active slots
-        const slotsRes = await axios.get('/admin/attendance-slots')
-        const currentTimeIST = getCurrentTimeIST()
-        
-        // Get current time in IST
-        const nowIST = convertToIST(new Date())
-        const currentHour = nowIST.getHours()
-        const currentMinute = nowIST.getMinutes()
+    const timer = setInterval(() => {
+      fetchDashboardData()
+    }, 5000) // Refresh every 5 seconds
+    setRefreshTimer(timer)
 
-        // Filter slots that are currently active based on time
-        const activeSlots = slotsRes.data.data.filter(slot => {
-          const slotDate = convertToIST(new Date(slot.date))
-          const slotStartTime = convertToIST(new Date(slot.startTime))
-          const slotEndTime = convertToIST(new Date(slot.endTime))
-          
-          // Check if slot is today and within current time
-          return isSameDate(slotDate, nowIST) &&
-            slotStartTime <= nowIST &&
-            nowIST <= slotEndTime
-        })
-        
-        setStats({
-          totalStudents: studentsRes.data.count || 0,
-          todayAttendance: attendanceRes.data.count || 0,
-          activeSlots: activeSlots.length || 0
-        })
-        
-        // Set recent attendance (last 5)
-        setRecentAttendance(attendanceRes.data.data.slice(0, 5) || [])
-        
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-        toast.error('Failed to load dashboard data')
-      } finally {
-        setLoading(false)
+    // Clean up on unmount
+    return () => {
+      if (timer) {
+        clearInterval(timer)
       }
     }
-    
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      
+      // Get today's date in YYYY-MM-DD format (IST)
+      const todayIST = convertToIST(new Date())
+      const today = todayIST.toISOString().split('T')[0]
+      
+      // Fetch students count
+      const studentsRes = await axios.get('/admin/students')
+      
+      // Fetch today's attendance
+      const attendanceRes = await axios.get(`/admin/attendance?date=${today}`)
+      
+      // Fetch active slots
+      const slotsRes = await axios.get('/admin/attendance-slots')
+      const currentTimeIST = getCurrentTimeIST()
+      
+      // Get current time in IST
+      const nowIST = convertToIST(new Date())
+      const currentHour = nowIST.getHours()
+      const currentMinute = nowIST.getMinutes()
+
+      // Count only slots with status 'active'
+      const activeSlots = slotsRes.data.data.filter(slot => slot.status === 'active')
+      
+      // Fetch absent students
+      const absentRes = await axios.get('/admin/attendance/absent')
+      
+      setStats({
+        totalStudents: studentsRes.data.count || 0,
+        todayAttendance: attendanceRes.data.count || 0,
+        activeSlots: activeSlots.length || 0,
+        absentStudents: absentRes.data.count || 0
+      })
+      
+      // Set recent attendance (last 5)
+      setRecentAttendance(attendanceRes.data.data.slice(0, 5) || [])
+      
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+      toast.error('Failed to load dashboard data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    // Initial fetch
     fetchDashboardData()
+    
+    // Set up auto-refresh
+    const timer = setInterval(fetchDashboardData, 5000) // Refresh every 5 seconds
+    setRefreshTimer(timer)
+
+    // Clean up on unmount
+    return () => {
+      if (timer) {
+        clearInterval(timer)
+      }
+    }
   }, [])
 
   if (loading) {
@@ -136,6 +160,19 @@ const AdminDashboard = () => {
             </svg>
           }
           color="purple"
+        />
+        
+        <StatCard 
+          title="Absent Students" 
+          value={stats.absentStudents} 
+          linkTo="/admin/attendance/absent"
+          linkText="View List"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          color="red"
         />
       </div>
 
