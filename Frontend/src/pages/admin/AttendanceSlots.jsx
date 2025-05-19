@@ -15,7 +15,8 @@ import {
   Camera,
   CheckCircle,
   XCircle,
-} from "lucide-react"; 
+} from "lucide-react";
+import { prepareSlotTimes, formatSlotTimes } from "../../utils/slotUtils"; 
 import Modal from "./Modal"; 
 import PropTypes from "prop-types"; 
 import { 
@@ -33,7 +34,7 @@ import {
 const AttendanceSlots = () => {
   // Helper function to get slot status badge
   const getStatusBadge = (slot) => {
-    if (slot.isExpired) {
+    if (slot.status === 'closed') {
       return (
         <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
           <XCircle className="h-4 w-4 mr-1" />
@@ -41,7 +42,7 @@ const AttendanceSlots = () => {
         </span>
       );
     }
-    if (slot.isActive) {
+    if (slot.status === 'active') {
       return (
         <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800">
           <CheckCircle className="h-4 w-4 mr-1" />
@@ -49,10 +50,18 @@ const AttendanceSlots = () => {
         </span>
       );
     }
+    if (slot.status === 'upcoming') {
+      return (
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800">
+          <Clock className="h-4 w-4 mr-1" />
+          Upcoming
+        </span>
+      );
+    }
     return (
-      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800">
-        <Clock className="h-4 w-4 mr-1" />
-        Upcoming
+      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800">
+        <X className="h-4 w-4 mr-1" />
+        Unknown
       </span>
     );
   };
@@ -121,9 +130,9 @@ const AttendanceSlots = () => {
  
   const [formData, setFormData] = useState({ 
     shift: "morning", 
-    date: getCurrentDateIST().split("T")[0], 
-    startTime: "", 
-    endTime: "", 
+    date: getCurrentDateIST(), 
+    startTime: "09:00", 
+    endTime: "10:00", 
   }); 
  
   const [filterDate, setFilterDate] = useState(""); 
@@ -249,37 +258,97 @@ const AttendanceSlots = () => {
  
   const handleInputChange = useCallback((e) => { 
     const { name, value } = e.target; 
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: value, 
-    })); 
-  }, []); 
+     
+     // For time inputs, convert to proper time format
+     if (name === 'startTime' || name === 'endTime') {
+       // Ensure time is in HH:mm format
+       const time = value.split(':');
+       if (time.length === 2) {
+         const hours = parseInt(time[0], 10);
+         const minutes = parseInt(time[1], 10);
+         if (!isNaN(hours) && !isNaN(minutes)) {
+           setFormData((prev) => ({ 
+             ...prev, 
+             [name]: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+           }));
+           return;
+         }
+       }
+     }
+     
+     setFormData((prev) => ({ 
+       ...prev, 
+       [name]: value, 
+     })); 
+   }, []); 
  
   const handleSubmit = async (e) => { 
     e.preventDefault(); 
- 
-    try { 
-      // Parse the selected date and times
-    const [year, month, day] = formData.date.split("-").map(Number);
-    const [startHour, startMinute] = formData.startTime.split(":").map(Number);
-    const [endHour, endMinute] = formData.endTime.split(":").map(Number);
+    
+    try {
+      // Validate form data
+      if (!formData.shift || !formData.date || !formData.startTime || !formData.endTime) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
 
-    // Create dates in UTC timezone
-    const startDate = new Date(Date.UTC(year, month - 1, day, startHour, startMinute));
-    const endDate = new Date(Date.UTC(year, month - 1, day, endHour, endMinute));
+      // Debug logging
+      console.log('Form data:', formData);
 
-    // Get ISO strings directly
-    const dateUTC = startDate.toISOString();
-    const startTimeUTC = startDate.toISOString();
-    const endTimeUTC = endDate.toISOString();
+      // Parse time strings
+      const date = new Date(formData.date);
+      const startTimeParts = formData.startTime.split(':');
+      const endTimeParts = formData.endTime.split(':');
 
-    const slotData = {
-      date: dateUTC,
-      startTime: startTimeUTC,
-      endTime: endTimeUTC,
-      shift: formData.shift,
-      timezone: 'Asia/Kolkata'
-    };
+      // Validate time parts
+      if (startTimeParts.length !== 2 || endTimeParts.length !== 2) {
+        toast.error('Please enter valid time format (HH:mm)');
+        return;
+      }
+
+      const startHours = parseInt(startTimeParts[0], 10);
+      const startMinutes = parseInt(startTimeParts[1], 10);
+      const endHours = parseInt(endTimeParts[0], 10);
+      const endMinutes = parseInt(endTimeParts[1], 10);
+
+      // Validate hours and minutes
+      if (isNaN(startHours) || isNaN(startMinutes) || 
+          isNaN(endHours) || isNaN(endMinutes) ||
+          startHours < 0 || startHours > 23 ||
+          startMinutes < 0 || startMinutes > 59 ||
+          endHours < 0 || endHours > 23 ||
+          endMinutes < 0 || endMinutes > 59) {
+        toast.error('Please enter valid hours and minutes (00-23:00-59)');
+        return;
+      }
+
+      // Create date objects with proper time
+      const startTime = new Date(date);
+      startTime.setHours(startHours, startMinutes, 0, 0);
+       
+      const endTime = new Date(date);
+      endTime.setHours(endHours, endMinutes, 0, 0);
+
+      // Debug logging
+      console.log('Converted times:', {
+        date,
+        startTime,
+        endTime
+      });
+
+      // Convert times to UTC before sending
+      const preparedTimes = prepareSlotTimes(
+        date,
+        startTime,
+        endTime
+      );
+       
+      const slotData = {
+        date: preparedTimes.date,
+        startTime: preparedTimes.startTime,
+        endTime: preparedTimes.endTime,
+        shift: formData.shift
+      };
 
     const token = localStorage.getItem("token");
     const config = { 

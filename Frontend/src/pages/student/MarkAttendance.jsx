@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
-import { formatDateTime, formatDateDisplay, formatTime24h, convertToIST, getCurrentDateIST, getCurrentTimeIST, convertToUTC, subtract11Hours } from '../../utils/timeUtils'
+import { formatDate, formatTime, formatDateandTime, getCurrentTimeIST } from '../../utils/timeUtils'
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -49,11 +49,12 @@ const MarkAttendance = () => {
     try {
       setLoading(true)
       const res = await axios.get('/students/attendance-slots')
-      setActiveSlots(res.data.data || [])
+      const activeSlots = res.data.data?.filter(slot => slot.status === 'active') || []
+      setActiveSlots(activeSlots)
       
       // If no slotId is set and there are active slots, set the first one
-      if (!slotId && res.data.data && res.data.data.length > 0) {
-        setSlotId(res.data.data[0]._id)
+      if (!slotId && activeSlots.length > 0) {
+        setSlotId(activeSlots[0]._id)
       }
     } catch (error) {
       console.error('Error fetching active slots:', error)
@@ -157,16 +158,16 @@ const MarkAttendance = () => {
       console.log('Current time IST:', currentTimeIST);
       
       // Convert slot times from UTC to IST for comparison
-      const startTimeIST = subtract11Hours(new Date(slot.startTime));
-      const endTimeIST = subtract11Hours(new Date(slot.endTime));
+      const startTimeIST = formatDateandTime(new Date(slot.startTime));
+      const endTimeIST = formatDateandTime(new Date(slot.endTime));
       console.log('Slot start time IST:', startTimeIST);
       console.log('Slot end time IST:', endTimeIST);
       
       if (currentTimeIST < startTimeIST) {
-        toast.warning(`Attendance slot will be active from ${formatTime24h(startTimeIST)}`);
+        toast.warning(`Attendance slot will be active from ${startTimeIST}`);
         return;
       } else if (currentTimeIST > endTimeIST) {
-        toast.error(`Attendance slot expired at ${formatTime24h(endTimeIST)}`);
+        toast.error(`Attendance slot expired at ${endTimeIST}`);
         return;
       }
     }
@@ -216,7 +217,12 @@ const MarkAttendance = () => {
       // Add location and timestamp text
       ctx.fillStyle = 'white';
       ctx.fillText(locationText, 20, canvas.height - 110);
-      ctx.fillText(timestamp, 20, canvas.height - 80);
+      
+      // Format and display timestamp with date
+      const currentDate = formatDate(new Date());
+      const currentTime = formatTime(new Date());
+      ctx.fillText(`${currentTime} ${currentDate} `, 20, canvas.height - 80);
+
       
       // Add Masai logo or watermark
       ctx.fillStyle = '#007bff';
@@ -229,7 +235,7 @@ const MarkAttendance = () => {
         const metadata = {
           latitude: location_.latitude,
           longitude: location_.longitude,
-          timestamp: convertToIST(new Date()).toISOString(),
+          timestamp: formatDateandTime(new Date()).replace(' - ', ', '), // Format as "May 19, 2025, 14:05"
           locationText
         };
         
@@ -259,26 +265,6 @@ const MarkAttendance = () => {
     if (!slotId) {
       toast.error('Please select an attendance slot first');
       return;
-    }
-
-    // Check if slot time is valid (highest priority)
-    if (slot) {
-      // Get current time in IST
-      const currentTimeIST = new Date(new Date().toLocaleString("en-US", {
-        timeZone: "Asia/Kolkata"
-      }));
-      
-      // Convert slot times from UTC to IST for comparison
-      const startTimeIST = subtract11Hours(new Date(slot.startTime));
-      const endTimeIST = subtract11Hours(new Date(slot.endTime));
-      
-      if (currentTimeIST < startTimeIST) {
-        toast.warning(`Attendance slot will be active from ${formatTime24h(startTimeIST)}`);
-        return; // Return early if slot hasn't started
-      } else if (currentTimeIST > endTimeIST) {
-        toast.error(`Attendance slot expired at ${formatTime24h(endTimeIST)}`);
-        return; // Return early if slot has expired
-      }
     }
 
     // If we reach here, slot time is valid
@@ -330,6 +316,9 @@ const MarkAttendance = () => {
       formData.append('longitude', location_.longitude);
       formData.append('photo', photo, 'selfie.jpg');
       formData.append('hasReadInstructions', hasReadInstructions);
+      // Use current time directly
+      const currentTime = new Date();
+      formData.append('currentTime', currentTime.toISOString());
 
       const res = await axios.post('/students/attendance', formData, {
         headers: {
@@ -400,15 +389,14 @@ const MarkAttendance = () => {
                   className="block w-full pl-10 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm"
                   value={slotId}
                   onChange={(e) => setSlotId(e.target.value)}
-                  required
                 >
                   <option value="">Select a slot</option>
                   {activeSlots.map((slot) => (
                     <option key={slot._id} value={slot._id} className="text-gray-500">
-                      {formatDateDisplay(new Date(slot.date))} - 
+                      {formatDate(slot.date)} - 
                       {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)} Shift - 
-                      {formatTime24h(subtract11Hours(new Date(slot.startTime)))} to 
-                      {formatTime24h(subtract11Hours(new Date(slot.endTime)))}
+                      {formatTime(slot.startTime)} to 
+                      {formatTime(slot.endTime)}
                     </option>
                   ))}
                 </select>
@@ -417,7 +405,7 @@ const MarkAttendance = () => {
                 </div>
               </div>
             </div>
-                        {/* Location Section */}
+            {/* Location Section */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Location
@@ -448,25 +436,6 @@ const MarkAttendance = () => {
                 </div>
               )}
               
-              {location_.error && (
-                <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">Location Error</h3>
-                      <div className="mt-2 text-sm text-red-700">
-                        <p>{location_.error}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {errors.location && (
-                <p className="mt-2 text-sm text-red-600">{errors.location}</p>
-              )}
             </div>
 
             {/* Selfie Section */}

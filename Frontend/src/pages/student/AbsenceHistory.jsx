@@ -4,14 +4,18 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Calendar, Clock } from "lucide-react";
 import {
-  formatTime24h,
-  subtractISTOffset,
-  convertToIST,
-  convertToUTC,
+  formatDate,
+  formatTime,
+  convertToIST
 } from "../../utils/timeUtils";
 
 const AbsenceHistory = () => {
-  const [absences, setAbsences] = useState([]);
+  const [attendanceData, setAttendanceData] = useState({
+    absences: [],
+    pending: [],
+    totalAbsences: 0,
+    totalPending: 0
+  });
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     month: new Date().getMonth() + 1, // Current month (1-12)
@@ -37,9 +41,9 @@ const AbsenceHistory = () => {
 
       // Send month as a number directly
       const res = await axios.get(
-        `/students/absences?month=${monthNum}&year=${yearNum}`
+        `/students/absences?month=${month}&year=${year}`
       );
-      setAbsences(res.data.data);
+      setAttendanceData(res.data);
     } catch (error) {
       console.error("Error fetching absence history:", error);
       toast.error("Failed to load absence history");
@@ -55,8 +59,6 @@ const AbsenceHistory = () => {
       [name]: value,
     });
   };
-
-  const formatTime = (time) => formatTime24h(convertToIST(time));
 
   const getMonthName = (monthNumber) => {
     const date = new Date();
@@ -146,9 +148,9 @@ const AbsenceHistory = () => {
               </div>
             ) : (
               <>
-                {absences.length === 0 ? (
+                {attendanceData.totalAbsences === 0 && attendanceData.totalPending === 0 ? (
                   <div className="text-gray-600 text-lg mb-2">
-                    No absences in this month
+                    No absences or pending slots in this month
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -183,45 +185,34 @@ const AbsenceHistory = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {absences.map((absence, index) => (
+                          {[
+                            ...attendanceData.absences.map(absence => ({
+                              ...absence,
+                              type: 'absence'
+                            })),
+                            ...attendanceData.pending.map(pending => ({
+                              ...pending,
+                              type: 'pending'
+                            }))
+                          ].sort((a, b) => new Date(a.date) - new Date(b.date)).map((item, index) => (
                             <tr key={index} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {new Date(absence.date).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    weekday: "short",
-                                    day: "numeric",
-                                    month: "short",
-                                    timeZone: "UTC",
-                                  }
-                                )}
+                                {formatDate(item.date)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {absence.shift.charAt(0).toUpperCase() + absence.shift.slice(1)}
+                                {item.shift.charAt(0).toUpperCase() + item.shift.slice(1)}
 
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-gray-500">
-                                  {subtractISTOffset(
-                                    new Date(absence.slotStartTime)
-                                  ).toLocaleTimeString("en-IN", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: false,
-                                  })}{" "}
-                                  -{" "}
-                                  {subtractISTOffset(
-                                    new Date(absence.slotEndTime)
-                                  ).toLocaleTimeString("en-IN", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: false,
-                                  })}
+                                  {formatTime(item.slotStartTime)} - {formatTime(item.slotEndTime)}
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                  Absent
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  item.type === 'absence' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {item.type === 'absence' ? 'Absent' : 'Pending'}
                                 </span>
                               </td>
                             </tr>
@@ -241,31 +232,26 @@ const AbsenceHistory = () => {
             <h2 className="text-xl font-bold text-gray-800 mb-4">Summary</h2>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-sm font-medium text-gray-700">
-                  Total Absences
-                </span>
-                <span className="text-xl font-bold text-gray-900">
-                  {absences.length}
-                </span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Total Absences:</span>
+                <span className="font-semibold">{attendanceData.totalAbsences}</span>
               </div>
-
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Status
-                </span>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    absences.length > 3
-                      ? "bg-red-100 text-red-800"
-                      : absences.length > 1
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-green-100 text-green-800"
-                  }`}
-                >
-                  {absences.length > 3
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Pending Slots:</span>
+                <span className="font-semibold">{attendanceData.totalPending}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Status:</span>
+                <span className={`font-semibold ${
+                  attendanceData.absences.length > 3
+                    ? "text-red-600"
+                    : attendanceData.absences.length > 1
+                    ? "text-yellow-600"
+                    : "text-green-600"
+                }`}>
+                  {attendanceData.absences.length > 3
                     ? "Critical"
-                    : absences.length > 1
+                    : attendanceData.absences.length > 1
                     ? "Warning"
                     : "Good"}
                 </span>
@@ -273,7 +259,7 @@ const AbsenceHistory = () => {
             </div>
           </div>
 
-          {absences.length > 3 && (
+          {attendanceData.absences.length > 3 && (
             <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-6">
               <div className="flex">
                 <div className="flex-shrink-0">

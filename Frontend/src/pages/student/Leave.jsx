@@ -12,6 +12,7 @@ import {
   Users,
   ArrowLeft,
   ChevronRight,
+  Phone,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { formatDateDisplay, convertToIST, getCurrentDateIST } from "../../utils/timeUtils";
@@ -282,6 +283,7 @@ const Leave = () => {
               </ul>
             </div>
           </div>
+
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6">

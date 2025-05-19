@@ -10,8 +10,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalStudents: 0,
     todayAttendance: 0,
-    activeSlots: 0,
-    absentStudents: 0
+    activeSlots: 0
   })
   const [recentAttendance, setRecentAttendance] = useState([])
   const [loading, setLoading] = useState(true)
@@ -52,14 +51,10 @@ const AdminDashboard = () => {
             nowIST <= slotEndTime
         })
         
-        // Fetch absent students
-        const absentRes = await axios.get('/admin/attendance/absent')
-        
         setStats({
           totalStudents: studentsRes.data.count || 0,
           todayAttendance: attendanceRes.data.count || 0,
-          activeSlots: activeSlots.length || 0,
-          absentStudents: absentRes.data.count || 0
+          activeSlots: activeSlots.length || 0
         })
         
         // Set recent attendance (last 5)
@@ -141,19 +136,6 @@ const AdminDashboard = () => {
             </svg>
           }
           color="purple"
-        />
-        
-        <StatCard 
-          title="Absent Students" 
-          value={stats.absentStudents} 
-          linkTo="/admin/attendance/absent"
-          linkText="View List"
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          color="red"
         />
       </div>
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { formatDateDisplay, getCurrentDateIST, convertToIST } from '../../utils/timeUtils';
+import { formatDate, formatTime } from '../../utils/timeUtils';
 import { 
   Calendar, 
   Clock, 
@@ -58,7 +58,8 @@ const AttendanceHistory = () => {
   const getMonthName = (monthNum) => {
     const date = new Date();
     date.setMonth(monthNum - 1);
-    return formatDateDisplay(convertToIST(date));
+    date.setDate(1); // Set to first day of the month
+    return date.toLocaleString('en-IN', { month: 'long' });
   };
 
   // Calculate attendance statistics
@@ -175,7 +176,7 @@ const AttendanceHistory = () => {
                 <h3 className="ml-2 text-base sm:text-lg font-semibold text-gray-800">Filter Records</h3>
               </div>
               <div className="text-xs sm:text-sm text-blue-600">
-                {getMonthName(filters.month)} {filters.year}
+                {getMonthName(filters.month)}
               </div>
             </div>
 
@@ -247,18 +248,16 @@ const AttendanceHistory = () => {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center text-xs font-medium text-gray-900">
                         <Calendar className="w-3 h-3 text-gray-400 mr-1" />
-                        {formatDateDisplay(new Date(record.date))}
+                        {formatDate(record.date)}
                       </div>
                       <div className="text-xs capitalize text-gray-500">
                         {record.shift}
                       </div>
                     </div>
-                    
                     <div className="flex items-center mb-3 text-xs text-gray-500">
                       <Clock className="w-3 h-3 text-gray-400 mr-1" />
-                      {formatTime24h(record.markedAt)}
+                      {formatTime(record.markedAt)}
                     </div>
-                    
                     <div className="flex space-x-2">
                       <button
                         className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -267,8 +266,8 @@ const AttendanceHistory = () => {
                           setPhotoModalOpen(true);
                         }}
                       >
-                        <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                        View
+                        <Camera className="w-3 h-3 mr-1" />
+                        View Photo
                       </button>
                     </div>
                   </div>
@@ -312,7 +311,7 @@ const AttendanceHistory = () => {
                           <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                             <div className="flex items-center">
                               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1 sm:mr-2" />
-                              {formatDateDisplay(record.date)}
+                              {formatDate(record.date)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}</td>
