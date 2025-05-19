@@ -1,11 +1,4 @@
 const mongoose = require('mongoose');
-const { convertToIST, convertToUTC } = require('../services/timeUtils');
-
-// Helper to convert IST time to UTC
-const toUTCDate = convertToUTC;
-
-// Helper to convert UTC to IST
-const toISTDate = convertToIST;
 
 const attendanceSlotSchema = new mongoose.Schema(
   {
@@ -16,70 +9,20 @@ const attendanceSlotSchema = new mongoose.Schema(
     },
     date: {
       type: Date,
-      required: [true, 'Please add a date'],
-      validate: {
-        validator: function(value) {
-          if (!value) return false;
-          if (!(value instanceof Date)) return false;
-          if (isNaN(value.getTime())) return false;
-          return true;
-        },
-        message: 'Invalid date format. Please provide a valid date string or Date object'
-      },
-      set: function(value) {
-        try {
-          const utcDate = toUTCDate(value);
-          if (!utcDate) throw new Error('Invalid date value');
-          return utcDate;
-        } catch (error) {
-          console.error('Error converting date:', error);
-          throw new Error('Invalid date value: ' + error.message);
-        }
-      },
-      get: toISTDate
+      required: [true, 'Please add a date']
     },
     startTime: {
       type: Date,
-      required: [true, 'Please add a start time'],
-      validate: {
-        validator: function(value) {
-          if (!value) return false;
-          if (!(value instanceof Date)) return false;
-          if (isNaN(value.getTime())) return false;
-          return true;
-        },
-        message: 'Invalid start time format. Please provide a valid time string or Date object'
-      },
-      set: function(value) {
-        const utcDate = toUTCDate(value);
-        if (!utcDate) throw new Error('Invalid start time value');
-        return utcDate;
-      },
-      get: toISTDate
+      required: [true, 'Please add a start time']
     },
     endTime: {
       type: Date,
-      required: [true, 'Please add an end time'],
-      validate: {
-        validator: function(value) {
-          if (!value) return false;
-          if (!(value instanceof Date)) return false;
-          if (isNaN(value.getTime())) return false;
-          return true;
-        },
-        message: 'Invalid end time format. Please provide a valid time string or Date object'
-      },
-      set: function(value) {
-        const utcDate = toUTCDate(value);
-        if (!utcDate) throw new Error('Invalid end time value');
-        return utcDate;
-      },
-      get: toISTDate
+      required: [true, 'Please add an end time']
     },
-    timezone: {
+    status: {
       type: String,
-      default: 'Asia/Kolkata',
-      required: true
+      enum: ['upcoming', 'active', 'closed'],
+      default: 'upcoming'
     },
     isActive: {
       type: Boolean,
@@ -87,8 +30,7 @@ const attendanceSlotSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Admin',
-      required: true,
+      ref: 'Admin'
     },
     notified: {
       type: Boolean,
@@ -96,6 +38,14 @@ const attendanceSlotSchema = new mongoose.Schema(
     },
     notificationSentAt: {
       type: Date
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
     },
   },
   {
@@ -107,4 +57,42 @@ const attendanceSlotSchema = new mongoose.Schema(
 attendanceSlotSchema.index({ date: 1, shift: 1 });
 attendanceSlotSchema.index({ isActive: 1 });
 
-module.exports = mongoose.model('AttendanceSlot', attendanceSlotSchema);
+attendanceSlotSchema.methods.calculateStatus = function() {
+  const now = new Date();
+  const startTime = this.startTime;
+  const endTime = this.endTime;
+
+  if (now < startTime) {
+    return 'upcoming';
+  } else if (now < endTime) {
+    return 'active';
+  } else {
+    return 'closed';
+  }
+};
+
+// Add a helper method to get times
+attendanceSlotSchema.methods.getTimes = function() {
+  return {
+    startTime: this.startTime,
+    endTime: this.endTime
+  };
+};
+
+attendanceSlotSchema.pre('save', function(next) {
+  this.status = this.calculateStatus();
+  next();
+});
+
+const AttendanceSlot = mongoose.model('AttendanceSlot', attendanceSlotSchema);
+
+// Add a static method to update status for all slots
+AttendanceSlot.updateAllStatuses = async function() {
+  const slots = await this.find();
+  for (const slot of slots) {
+    slot.status = slot.calculateStatus();
+    await slot.save();
+  }
+};
+
+module.exports = AttendanceSlot;

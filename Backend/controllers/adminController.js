@@ -3,7 +3,53 @@ const User = require('../models/User');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
-const { convertToIST, getStartOfDayIST, getEndOfDayIST, getCurrentDateIST, isDateBefore, isSameDate } = require('../services/timeUtils');
+
+// Helper to compare dates
+const isDateBefore = (date1, date2) => {
+  return new Date(date1) < new Date(date2);
+};
+
+// @desc    Create attendance slot
+// @route   POST /api/admin/attendance-slots
+// @access  Private/Admin
+exports.createAttendanceSlot = asyncHandler(async (req, res) => {
+  try {
+    const { shift, date, startTime, endTime } = req.body;
+    const admin = req.user; // The authenticated admin user
+
+    // Validate required fields
+    if (!shift || !date || !startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields: shift, date, startTime, endTime'
+      });
+    }
+
+    // Create the slot with the admin as createdBy
+    const slot = new AttendanceSlot({
+      shift,
+      date,
+      startTime,
+      endTime,
+      createdBy: admin._id
+    });
+
+    await slot.save();
+
+    res.status(201).json({
+      success: true,
+      data: slot,
+      message: 'Attendance slot created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating attendance slot:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while creating attendance slot',
+      error: error.message
+    });
+  }
+});
 
 // @desc    Get student details with attendance history
 // @route   GET /api/admin/students/:id/details
@@ -32,8 +78,8 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     // Get all attendance slots for the student's time period (from their join date)
     const attendanceSlots = await AttendanceSlot.find({
       date: {
-        $gte: convertToIST(new Date(student.createdAt)), // Only count slots from when the student joined
-        $lte: getCurrentDateIST()
+        $gte: new Date(student.createdAt),
+        $lte: new Date()
       }
     }).lean();
 
@@ -44,8 +90,8 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     const attendanceRecords = await Attendance.find({ 
       student: id,
       date: {
-        $gte: convertToIST(new Date(student.createdAt)),
-        $lte: getCurrentDateIST()
+        $gte: new Date(student.createdAt),
+        $lte: new Date()
       }
     })
       .populate('slot', 'shift startTime endTime date')
@@ -62,10 +108,10 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     // Format attendance records to include full date information
     const formattedAttendance = attendanceRecords.map(record => ({
       ...record,
-      date: convertToIST(record.date).toISOString(),
+      date: record.date,
       slot: {
         ...record.slot,
-        date: convertToIST(record.slot.date).toISOString()
+        date: record.slot.date
       }
     }));
 
@@ -109,12 +155,9 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
         });
       }
       
-      const startOfDay = getStartOfDayIST(parsedDate);
-      const endOfDay = getEndOfDayIST(parsedDate);
-      
       query.date = {
-        $gte: startOfDay,
-        $lte: endOfDay
+        $gte: parsedDate,
+        $lte: parsedDate
       };
     }
     
@@ -207,8 +250,8 @@ exports.getAttendanceBySlot = asyncHandler(async (req, res) => {
           _id: slot._id,
           shift: slot.shift,
           date: slot.date,
-          startTime: new Date(slot.startTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
-          endTime: new Date(slot.endTime).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+          startTime: slot.startTime,
+          endTime: slot.endTime,
           isActive: slot.isActive
         },
         attendance: formattedRecords
@@ -287,8 +330,7 @@ exports.markAttendance = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get current time in IST
-    const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const now = new Date();
 
     // Check if student exists
     const student = await User.findOne({
@@ -974,49 +1016,41 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
 exports.getAttendanceStats = asyncHandler(async (req, res) => {
   try {
     console.log('Fetching attendance stats for:', req.query);
-    
+
     const { month, year, minAbsences, startDate: startDateParam, endDate: endDateParam } = req.query;
 
     let dateFilter = {};
-    let startDate, endDate; // ✅ Declare here
+    let startDate, endDate;
 
     if (startDateParam && endDateParam) {
-      startDate = convertToIST(new Date(startDateParam));
-      endDate = convertToIST(new Date(endDateParam));
-      
+      startDate = new Date(startDateParam);
+      endDate = new Date(endDateParam);
+
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return res.status(400).json({
           success: false,
           message: 'Invalid date format. Please provide valid dates in YYYY-MM-DD format'
         });
       }
-      
-      dateFilter.date = {
-        $gte: startDate,
-        $lte: endDate
-      };
+
+      dateFilter.date = { $gte: startDate, $lte: endDate };
     } else if (month && year) {
       const parsedMonth = parseInt(month);
       const parsedYear = parseInt(year);
-      
-      if (isNaN(parsedMonth) || isNaN(parsedYear) || 
-          parsedMonth < 1 || parsedMonth > 12 || 
-          parsedYear < 2000 || parsedYear > 2100) {
+
+      if (isNaN(parsedMonth) || isNaN(parsedYear) ||
+        parsedMonth < 1 || parsedMonth > 12 ||
+        parsedYear < 2000 || parsedYear > 2100) {
         return res.status(400).json({
           success: false,
           message: 'Invalid month or year values'
         });
       }
-      
+
       startDate = new Date(Date.UTC(parsedYear, parsedMonth - 1, 1));
       endDate = new Date(Date.UTC(parsedYear, parsedMonth, 0, 23, 59, 59, 999));
-      
-      dateFilter = {
-        date: {
-          $gte: startDate,
-          $lte: endDate
-        }
-      };
+
+      dateFilter.date = { $gte: startDate, $lte: endDate };
     } else {
       return res.status(400).json({
         success: false,
@@ -1027,26 +1061,27 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     const parsedMinAbsences = parseInt(minAbsences) || 0;
 
     console.log('Using date range:', startDate.toISOString(), 'to', endDate.toISOString());
-    
-    // ... rest of the code remains the same ...
-
 
     // Get all students
     const allStudents = await User.find({ role: 'student' }).select('_id name email studentCode createdAt');
-    
-    // Get all attendance slots within the date range
-    const slots = await AttendanceSlot.find(dateFilter);
-    console.log(`Found ${slots.length} attendance slots`);
-    
-    // Get all attendance records within the date range
+
+    // Get slots within date range and only 'active' or 'closed'
+    const slots = await AttendanceSlot.find({
+      ...dateFilter,
+      status: { $in: ['active', 'closed'] }
+    });
+
+    console.log(`Found ${slots.length} attendance slots (active/closed)`);
+
+    // Get attendance records in range
     const attendanceRecords = await Attendance.find(dateFilter)
       .populate('student', 'name email studentCode');
+
     console.log(`Found ${attendanceRecords.length} attendance records`);
-    
-    // Create a mapping of student attendance
+
     const studentAttendance = new Map();
-    
-    // Initialize the map with student data
+
+    // Initialize with student info
     allStudents.forEach(student => {
       const studentJoinDate = new Date(student.createdAt);
       studentAttendance.set(student._id.toString(), {
@@ -1063,8 +1098,8 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
         absentDates: []
       });
     });
-    
-    // Process attendance records (mark presents)
+
+    // Mark present days
     attendanceRecords.forEach(record => {
       const studentId = record.student._id.toString();
       if (studentAttendance.has(studentId)) {
@@ -1077,41 +1112,51 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
         studentAttendance.set(studentId, data);
       }
     });
-    
-    // Calculate attendance for each student
-    studentAttendance.forEach((data, studentId) => {
-      // Count total possible slots for this student
-      const totalSlots = slots.filter(slot => {
-        const slotDate = new Date(slot.date);
-        return slotDate >= data.joinDate;
-      }).length;
 
-      // Count present slots for this student
-      const presentSlots = attendanceRecords.filter(record => 
-        record.student._id.toString() === studentId
+    // Now calculate absents per student
+    studentAttendance.forEach((data, studentId) => {
+      const studentJoinDate = data.joinDate;
+
+      const totalAvailableSlots = slots.filter(slot => {
+        const slotDate = new Date(slot.date);
+        return slotDate >= studentJoinDate; // Skip slots before student joined
+      });
+
+      const totalSlotsCount = totalAvailableSlots.length;
+
+      const presentCount = attendanceRecords.filter(record =>
+        record.student._id.toString() === studentId &&
+        new Date(record.date) >= studentJoinDate
       ).length;
 
-      // Calculate absences
-      data.present = presentSlots;
-      data.absent = totalSlots - presentSlots;
+      data.present = presentCount;
+      data.absent = totalSlotsCount - presentCount;
 
-      // Update the map with the correct counts
+      // Optional: collect absentDates if needed
+      const presentDates = new Set(
+        attendanceRecords
+          .filter(r => r.student._id.toString() === studentId)
+          .map(r => new Date(r.date).toISOString())
+      );
+
+      data.absentDates = totalAvailableSlots
+        .map(slot => new Date(slot.date).toISOString())
+        .filter(dateStr => !presentDates.has(dateStr));
+
       studentAttendance.set(studentId, data);
     });
-    
-    // Filter students with absences >= minAbsences
+
     const studentsWithAbsences = Array.from(studentAttendance.values())
       .filter(data => data.absent >= parsedMinAbsences)
       .sort((a, b) => b.absent - a.absent);
-    
-    // Prepare statistics
+
     const stats = {
       totalSlots: slots.length,
       totalStudents: allStudents.length,
       attendanceRecords: attendanceRecords.length,
       studentsWithAbsences
     };
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -1131,6 +1176,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 // @desc    Delete a student and all their related data
 // @route   DELETE /api/admin/students/:id
@@ -1195,7 +1241,7 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
   const { threshold = 0, month, year } = req.query;
   
   let dateFilter = {};
-  
+
   // Apply date filters if provided
   if (month && year) {
     try {
@@ -1215,14 +1261,6 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
       const startOfMonth = new Date(Date.UTC(parsedYear, parsedMonth - 1, 1));
       const endOfMonth = new Date(Date.UTC(parsedYear, parsedMonth, 0, 23, 59, 59, 999));
 
-      // Validate the created dates
-      if (isNaN(startOfMonth.getTime()) || isNaN(endOfMonth.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid date range generated'
-        });
-      }
-      
       dateFilter = {
         date: {
           $gte: startOfMonth,
@@ -1236,7 +1274,6 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
       });
     }
   } else {
-    // If no date parameters provided, get data for the current month
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -1250,13 +1287,10 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
   }
   
   try {
-    // Get all students - INCLUDE createdAt in the selection
     const allStudents = await User.find({ role: 'student' }).select('_id name email studentCode createdAt');
-    
-    // Create a mapping of student absences
+
     const absenteeMap = {};
-    
-    // Initialize the map with student join dates
+
     allStudents.forEach(student => {
       const studentJoinDate = student.createdAt ? new Date(student.createdAt) : null;
       absenteeMap[student._id] = {
@@ -1271,32 +1305,33 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
         absentDates: []
       };
     });
-    
-    // Get all attendance slots within the date range
-    const slots = await AttendanceSlot.find(dateFilter);
-    
-    // Get all attendance records within the date range
+
+    // ✅ Only get slots with "active" or "closed" status
+    const slots = await AttendanceSlot.find({
+      ...dateFilter,
+      status: { $in: ['active', 'closed'] }
+    });
+
     const attendanceRecords = await Attendance.find(dateFilter);
-    
-    // Calculate absences for each student
+
+    // Calculate absences
     slots.forEach(slot => {
       const slotDate = slot.date.toISOString().split('T')[0];
       const slotShift = slot.shift;
-      
+      const slotDateObj = new Date(slot.date);
+
       allStudents.forEach(student => {
         const studentId = student._id.toString();
-        // Get student join date, defaulting to the earliest possible date if it's not available
         const studentJoinDate = student.createdAt ? new Date(student.createdAt) : new Date(0);
-        const slotDateObj = new Date(slotDate);
-        
-        // Only count absence if slot date is after student's join date
+
+        // ✅ Ignore slots before student joined
         if (slotDateObj >= studentJoinDate) {
           const isPresent = attendanceRecords.some(record =>
             record.student.toString() === studentId &&
             record.date.toISOString().split('T')[0] === slotDate &&
             record.shift === slotShift
           );
-          
+
           if (!isPresent) {
             absenteeMap[studentId].absentCount += 1;
             absenteeMap[studentId].absentDates.push({
@@ -1307,12 +1342,11 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
         }
       });
     });
-    
-    // Filter by threshold and convert to array
+
     const absentees = Object.values(absenteeMap)
       .filter(data => data.absentCount >= parseInt(threshold))
       .sort((a, b) => b.absentCount - a.absentCount);
-    
+
     res.status(200).json({
       success: true,
       count: absentees.length,

@@ -3,31 +3,29 @@ const notificationService = require("../services/notificationService");
 const Slot = require("../models/AttendanceSlot");
 const User = require("../models/User");
 
-// Helper to convert a date to IST
-const {
-  convertToIST,
-  convertToUTC,
-  getCurrentDateIST,
-  addMinutes,
-} = require("../services/timeUtils");
+// Helper to add minutes to a date
+const addMinutes = (date, minutes) => {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() + minutes);
+  return d;
+};
 
-// Helper to convert a date to IST
-const toIST = convertToIST;
-
-// Schedule to run every minute in IST timezone
+// Schedule to run every minute using UTC time
 const startSlotNotifications = () => {
   try {
-    // Schedule the job using UTC time
+    // Schedule the job using UTC time (every minute)
     cron.schedule("* * * * *", async () => {
       try {
-        const nowIST = getCurrentDateIST();
-        const nowUTC = convertToUTC(nowIST);
+        const now = new Date();
+        const tenMinutesLater = addMinutes(now, 10);
+
+        console.log(`Checking for slots between ${now.toISOString()} and ${tenMinutesLater.toISOString()}`);
 
         const upcomingSlots = await Slot.find({
           notified: false,
           startTime: {
-            $gte: nowIST,
-            $lte: addMinutes(nowIST, 10),
+            $gte: now,
+            $lte: tenMinutesLater,
           },
         });
 
@@ -45,13 +43,10 @@ const startSlotNotifications = () => {
             continue;
           }
 
-          const dateIST = convertToIST(slot.date);
-          const startTimeIST = convertToIST(slot.startTime);
-
           const message =
             `⏰ Reminder: Your attendance slot starts in 10 minutes!\n` +
-            `Date: ${dateIST.toLocaleDateString("en-IN")}\n` +
-            `Time: ${startTimeIST.toLocaleTimeString("en-IN")}\n` +
+            `Date: ${slot.date}\n` +
+            `Time: ${slot.startTime}\n` +
             `Shift: ${
               slot.shift
                 ? slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)

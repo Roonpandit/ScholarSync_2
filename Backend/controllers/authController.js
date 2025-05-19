@@ -203,9 +203,10 @@ exports.getMe = asyncHandler(async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role,
-      studentCode: user.role === 'student' ? user.studentCode : undefined,
-    },
+      studentCode: user.studentCode,
+      phone: user.phone,
+      role: user.role
+    }
   });
 });
 

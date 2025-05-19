@@ -6,7 +6,13 @@ const cloudinary = require('../config/cloudinary');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
-const { convertToIST, getCurrentDateIST, isDateBefore, isSameDate, addDays, convertToUTC } = require('../services/timeUtils');
+
+// Helper to add days to a date
+const addDays = (date, days) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -116,29 +122,10 @@ const uploadToCloudinary = async (file) => {
 // @route   GET /api/students/attendance-slots
 // @access  Private/Student
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
-  // Get current time in IST
-  const nowIST = getCurrentDateIST();
-  const nowUTC = convertToUTC(nowIST);
-
-  // Get all active slots that are either:
-  // 1. Currently active (startTime <= now <= endTime), OR
-  // 2. Upcoming (startTime > now)
+  // Get all slots that are either active or upcoming
   const activeSlots = await AttendanceSlot.find({
     isActive: true,
-    $or: [
-      {
-        // Currently active slots
-        startTime: { $lte: nowUTC },
-        endTime: { $gte: nowUTC }
-      },
-      {
-        // Upcoming slots (within the next 12 hours)
-        startTime: { 
-          $gt: nowUTC,
-          $lte: addDays(nowUTC, 0.5) // Next 12 hours
-        }
-      }
-    ]
+    status: { $in: ['active', 'upcoming'] }
   }).sort({ startTime: 1 }); // Sort by start time ascending
 
   // Filter out slots where student has already marked attendance
@@ -158,19 +145,10 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
   // Remove null values (slots where student has marked attendance)
   const availableSlots = filteredSlots.filter(Boolean);
 
-    // Convert times to IST for display
-    const slotsWithISTTimes = availableSlots.map(slot => {
-      return {
-        ...slot.toObject(),
-        startTime: convertToIST(new Date(slot.startTime)).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
-        endTime: convertToIST(new Date(slot.endTime)).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
-      };
-    });
-
     res.status(200).json({
       success: true,
-      count: slotsWithISTTimes.length,
-      data: slotsWithISTTimes
+      count: availableSlots.length,
+      data: availableSlots
     });
 });
 
@@ -218,8 +196,11 @@ exports.markAttendance = asyncHandler(async (req, res) => {
   }
   
   // Check if the current time is within the slot timeframe
-  const now = new Date();
-  if (now < slot.startTime || now > slot.endTime) {
+  const currentTime = new Date();
+  console.log('Current time:', currentTime.toISOString());
+  console.log('Start time:', slot.startTime.toISOString());
+  console.log('End time:', slot.endTime.toISOString());
+  if (currentTime < slot.startTime || currentTime > slot.endTime) {
     return res.status(400).json({
       success: false,
       message: 'Attendance can only be marked during the active time window',
@@ -242,7 +223,7 @@ exports.markAttendance = asyncHandler(async (req, res) => {
   }
   
   // Get current time in IST
-  const nowIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const markTime = new Date();
 
   // Create attendance record with IST timestamp
   const attendance = new Attendance({
@@ -262,7 +243,7 @@ exports.markAttendance = asyncHandler(async (req, res) => {
       coordinates: [longitude, latitude],
       address
     },
-    markedAt: new Date(nowIST),
+    markedAt: markTime,
     studentCode: req.user.studentCode,
     studentName: req.user.name,
     studentEmail: req.user.email
@@ -287,8 +268,8 @@ exports.getAttendanceHistory = asyncHandler(async (req, res) => {
   
   // If specific dates are provided
   if (startDate && endDate) {
-    const start = convertToIST(new Date(startDate));
-    const end = convertToIST(new Date(endDate));
+    const start = new Date(startDate);
+    const end = new Date(endDate);
     
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({
@@ -328,43 +309,35 @@ exports.getAttendanceHistory = asyncHandler(async (req, res) => {
 // @access  Private/Student
 exports.getAbsenceHistory = asyncHandler(async (req, res) => {
   const { month, year } = req.query;
-  
+
   try {
-    // Parse and validate month and year
+    // Parse and validate input
     const monthNum = parseInt(month, 10);
     const yearNum = parseInt(year, 10);
-    
+
     if (isNaN(monthNum) || isNaN(yearNum) || monthNum < 1 || monthNum > 12) {
       return res.status(400).json({
         success: false,
         error: 'Invalid month or year'
       });
     }
-    
-    // Use parsed numbers for date calculations
+
+    // Calculate the date range for the given month and year
     const startOfMonth = new Date(yearNum, monthNum - 1, 1);
     const endOfMonth = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
-    
-    // Validate dates are valid
-    if (isNaN(startOfMonth) || isNaN(endOfMonth)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid date range'
-      });
-    }
-    
+
     const joinDate = new Date(req.user.createdAt);
-    const effectiveStartDate = new Date(Math.max(startOfMonth.getTime(), joinDate.getTime()));
-    
-    // Get all slots for the selected month and year
+    const effectiveStartDate = startOfMonth < joinDate ? joinDate : startOfMonth;
+
+    // Get all attendance slots within the date range and after join date
     const slots = await AttendanceSlot.find({
       date: {
         $gte: effectiveStartDate,
         $lte: endOfMonth
       }
     });
-    
-    // Get all attendance records for the student within the selected month and year
+
+    // Get the student's attendance records for the same range
     const attendanceRecords = await Attendance.find({
       student: req.user._id,
       date: {
@@ -372,30 +345,39 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
         $lte: endOfMonth
       }
     });
-    
-    // Calculate absences
+
     const absences = [];
-    
+    const pending = [];
+
     slots.forEach(slot => {
-      const isPresent = attendanceRecords.some(record => 
+      const isPresent = attendanceRecords.some(record =>
         record.slot.toString() === slot._id.toString()
       );
-      
+
       if (!isPresent) {
-        absences.push({
+        const entry = {
           date: slot.date,
           shift: slot.shift,
           slotStartTime: slot.startTime,
           slotEndTime: slot.endTime
-        });
+        };
+
+        if (slot.status === 'closed') {
+          absences.push(entry);
+        } else if (slot.status === 'active') {
+          pending.push(entry);
+        }
       }
     });
-    
+
     res.status(200).json({
       success: true,
-      count: absences.length,
-      data: absences,
-      totalSlots: slots.length
+      absences,
+      pending,
+      totalAbsences: absences.length,
+      totalPending: pending.length,
+      totalClosedSlots: slots.filter(slot => slot.status === 'closed').length,
+      totalActiveSlots: slots.filter(slot => slot.status === 'active').length
     });
   } catch (error) {
     console.error('Error in getAbsenceHistory:', error);

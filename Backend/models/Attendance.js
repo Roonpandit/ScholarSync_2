@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { getCurrentDateIST } = require('../services/timeUtils');
 
 const attendanceSchema = new mongoose.Schema(
   {
@@ -7,11 +6,6 @@ const attendanceSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-    },
-    timezone: {
-      type: String,
-      default: 'Asia/Kolkata',
-      required: true
     },
     slot: {
       type: mongoose.Schema.Types.ObjectId,
@@ -54,9 +48,7 @@ const attendanceSchema = new mongoose.Schema(
     },
     markedAt: {
       type: Date,
-      default: function() {
-        return getCurrentDateIST();
-      }
+      default: Date.now
     },
     studentCode: {
       type: String,
