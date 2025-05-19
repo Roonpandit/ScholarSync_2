@@ -157,7 +157,7 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
 // @access  Private/Student
 exports.markAttendance = asyncHandler(async (req, res) => {
   const { slotId, latitude, longitude, address } = req.body;
-  
+
   // Validate required fields
   if (!slotId || !latitude || !longitude) {
     return res.status(400).json({
@@ -165,7 +165,7 @@ exports.markAttendance = asyncHandler(async (req, res) => {
       message: 'Please provide slot ID and location data',
     });
   }
-  
+
   // Check if photo was uploaded
   if (!req.file) {
     return res.status(400).json({
@@ -174,19 +174,16 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     });
   }
 
-  // Upload photo to Cloudinary
-  const cloudinaryResult = await uploadToCloudinary(req.file);
-  
   // Find the attendance slot
   const slot = await AttendanceSlot.findById(slotId);
-  
+
   if (!slot) {
     return res.status(404).json({
       success: false,
       message: 'Attendance slot not found',
     });
   }
-  
+
   // Check if the slot is active
   if (!slot.isActive) {
     return res.status(400).json({
@@ -194,19 +191,16 @@ exports.markAttendance = asyncHandler(async (req, res) => {
       message: 'This attendance slot is no longer active',
     });
   }
-  
+
   // Check if the current time is within the slot timeframe
   const currentTime = new Date();
-  console.log('Current time:', currentTime.toISOString());
-  console.log('Start time:', slot.startTime.toISOString());
-  console.log('End time:', slot.endTime.toISOString());
   if (currentTime < slot.startTime || currentTime > slot.endTime) {
     return res.status(400).json({
       success: false,
       message: 'Attendance can only be marked during the active time window',
     });
   }
-  
+
   // Check if student has already marked attendance for this slot
   const existingAttendance = await Attendance.findOne({
     student: req.user._id,
@@ -214,18 +208,21 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     date: slot.date,
     shift: slot.shift
   });
-  
+
   if (existingAttendance) {
     return res.status(400).json({
       success: false,
       message: 'You have already marked your attendance for this slot',
     });
   }
-  
+
+  // Upload photo to Cloudinary AFTER all validations pass
+  const cloudinaryResult = await uploadToCloudinary(req.file);
+
   // Get current time in IST
   const markTime = new Date();
 
-  // Create attendance record with IST timestamp
+  // Create attendance record
   const attendance = new Attendance({
     student: req.user._id,
     slot: slotId,
@@ -248,15 +245,16 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     studentName: req.user.name,
     studentEmail: req.user.email
   });
-  
+
   await attendance.save();
-  
+
   res.status(201).json({
     success: true,
     message: 'Attendance marked successfully',
     data: attendance,
   });
 });
+
 
 // @desc    Get student's attendance history
 // @route   GET /api/students/attendance
