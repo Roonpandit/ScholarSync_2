@@ -20,6 +20,21 @@ const sendAttendanceReminder = async (slotId) => {
     const students = await User.find({ role: 'student' }).select('email');
     const slot = await AttendanceSlot.findById(slotId);
 
+    // Convert UTC timestamps to IST
+    const startTimeIST = new Date(slot.startTime).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const endTimeIST = new Date(slot.endTime).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: students.map(student => student.email).join(','),
@@ -29,8 +44,7 @@ const sendAttendanceReminder = async (slotId) => {
 This is a reminder for the upcoming attendance slot:
 
 Shift: ${slot.shift}
-Date: ${slot.date.toDateString()}
-Time: ${slot.startTime} - ${slot.endTime}
+Time: ${startTimeIST} - ${endTimeIST} IST
 
 Instructions:
 
