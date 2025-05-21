@@ -30,7 +30,7 @@ This is a reminder for the upcoming attendance slot:
 
 Shift: ${slot.shift}
 Date: ${slot.date.toDateString()}
-Time: ${slot.startTime.toLocaleTimeString()} - ${slot.endTime.toLocaleTimeString()}
+Time: ${slot.startTime} - ${slot.endTime}
 
 Instructions:
 
