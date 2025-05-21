@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cron = require('./config/cron');
+const attendanceReminder = require('./config/attendanceReminderCron');
 
 // Load env vars
 dotenv.config();
@@ -15,13 +16,17 @@ dotenv.config();
 connectDB().then(() => {
   console.log('MongoDB Connected');
   
+  // Initialize cron jobs
+  cron.updateSlotStatuses();
+  attendanceReminder.scheduleAttendanceReminder();
+  
   // Initialize app
   const app = express();
   const PORT = process.env.PORT;
   
   // Body parser
   app.use(express.json());
-  
+
   // Enable CORS with specific origin and credentials
   const corsOptions = {
     origin: process.env.ALLOWED_ORIGINS.split(","), // Your frontend URL

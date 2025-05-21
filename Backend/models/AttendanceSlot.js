@@ -28,6 +28,10 @@ const attendanceSlotSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    emailSent: {
+      type: Boolean,
+      default: false
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Admin'
