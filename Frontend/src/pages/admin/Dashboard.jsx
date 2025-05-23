@@ -161,19 +161,6 @@ const AdminDashboard = () => {
           }
           color="purple"
         />
-        
-        <StatCard 
-          title="Absent Students" 
-          value={stats.absentStudents} 
-          linkTo="/admin/attendance/absent"
-          linkText="View List"
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          color="red"
-        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

@@ -272,7 +272,7 @@ const AbsentStudents = () => {
                                 {new Date(date.date).toLocaleDateString('en-US', {day: 'numeric', month: 'short' })}
                                 <span className="mx-1">•</span>
                                 <Clock size={12} className="mr-1" />
-                                {date.shift}
+                                {date.shift.charAt(0).toUpperCase() + date.shift.slice(1)}
                               </span>
                             ))}
                           </div>

@@ -78,12 +78,13 @@ const StudentManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+  
     setFormData({
       ...formData,
-      [name]: value
+      [name]: name === "email" ? value.toLowerCase() : value
     });
-    // Remove validation from handleInputChange
   };
+  
   const [errors, setErrors] = useState({});
 
   const viewStudentDetails = (studentId) => {
