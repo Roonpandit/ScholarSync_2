@@ -269,7 +269,7 @@ const AbsentStudents = () => {
                             {record.absentDates.map((date, index) => (
                               <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
                                 <Calendar size={12} className="mr-1" />
-                                {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'short' })}
+                                {new Date(date.date).toLocaleDateString('en-US', {day: 'numeric', month: 'short' })}
                                 <span className="mx-1">•</span>
                                 <Clock size={12} className="mr-1" />
                                 {date.shift}
