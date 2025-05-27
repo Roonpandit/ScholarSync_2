@@ -778,6 +778,99 @@ exports.createStudent = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Create multiple students at once
+// @route   POST /api/admin/students/bulk
+// @access  Private/Admin
+exports.createStudentsBulk = asyncHandler(async (req, res) => {
+  const studentsData = req.body;
+
+  // Validate input
+  if (!Array.isArray(studentsData) || studentsData.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide an array of student data',
+    });
+  }
+
+  // Validate each student's data
+  const validationErrors = studentsData.map((student, index) => {
+    if (!student.name || !student.email || !student.studentCode || !student.password) {
+      return `Student ${index + 1}: Missing required fields`;
+    }
+    if (student.phone && !/^[\d]{10}$/.test(student.phone)) {
+      return `Student ${index + 1}: Invalid phone number`;
+    }
+    return null;
+  }).filter(error => error !== null);
+
+  if (validationErrors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation errors',
+      errors: validationErrors
+    });
+  }
+
+  // Separate existing and new students
+  const existingStudents = await User.find({
+    $or: [
+      { email: { $in: studentsData.map(s => s.email) } },
+      { studentCode: { $in: studentsData.map(s => s.studentCode) } }
+    ]
+  });
+
+  const existingStudentIds = new Set(existingStudents.map(student => student._id.toString()));
+  const existingEmails = new Set(existingStudents.map(student => student.email));
+  const existingStudentCodes = new Set(existingStudents.map(student => student.studentCode));
+
+  // Filter out students that already exist
+  const studentsToCreate = studentsData.filter(student => {
+    return !existingEmails.has(student.email) && !existingStudentCodes.has(student.studentCode);
+  });
+
+  // Create students in bulk
+  const createdStudents = await User.insertMany(
+    studentsToCreate.map(student => ({
+      ...student,
+      role: 'student'
+    })),
+    { ordered: false } // Continue on error
+  ).catch(err => {
+    console.error('Error creating students:', err);
+    throw err;
+  });
+
+  // Prepare response data
+  const createdStudentEmails = createdStudents.map(student => student.email);
+  const existingStudentEmails = studentsData
+    .filter(student => !createdStudentEmails.includes(student.email))
+    .map(student => student.email);
+
+  const message = existingStudentEmails.length > 0
+    ? `${createdStudents.length} students created successfully, ${existingStudentEmails.length} students could not be created as they already exist`
+    : `${createdStudents.length} students created successfully`;
+
+  res.status(201).json({
+    success: true,
+    message,
+    existing: {
+      count: existingStudentEmails.length,
+      emails: existingStudentEmails
+    },
+    created: {
+      count: createdStudents.length,
+      emails: createdStudentEmails
+    },
+    data: createdStudents.map(student => ({
+      _id: student._id,
+      name: student.name,
+      email: student.email,
+      studentCode: student.studentCode,
+      role: student.role,
+    }))
+  });
+});
+
 // @desc    Get all students
 // @route   GET /api/admin/students
 // @access  Private/Admin

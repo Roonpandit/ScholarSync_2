@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   createStudent,
+  createStudentsBulk,
   getAllStudents,
   getStudentsByClass,
   createAttendanceSlot,
@@ -29,6 +30,9 @@ router.use(authorize('admin'));
 router.route('/students')
   .post(createStudent)
   .get(getAllStudents);
+
+// Bulk student creation route
+router.post('/students/bulk', createStudentsBulk);
 
 // Get students by class ID
 router.get('/students/class', getStudentsByClass);
