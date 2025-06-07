@@ -153,11 +153,11 @@ const MarkAttendance = () => {
     if (slot) {
       // Get current time in IST
       const currentTimeIST = getCurrentTimeIST();
-      console.log('Current time IST:', currentTimeIST);
+      //console.log('Current time IST:', currentTimeIST);
       
       // Convert slot times to IST
       const endTimeIST = formatTime24h(new Date(slot.endTime));
-      console.log('Slot end time:', endTimeIST);
+      //console.log('Slot end time:', endTimeIST);
       
       // Get current time as Date object in IST
       const currentTime = new Date();
@@ -167,16 +167,16 @@ const MarkAttendance = () => {
       const slotEndTime = new Date(slot.endTime);
       const slotEndIST = convertToIST(slotEndTime);
       
-      console.log('Capture Photo - Current time:', currentIST);
-      console.log('Capture Photo - Slot end time:', slotEndIST);
-      console.log('Capture Photo - Comparison:', currentIST, '>=', slotEndIST);
+      //console.log('Capture Photo - Current time:', currentIST);
+      //console.log('Capture Photo - Slot end time:', slotEndIST);
+      //console.log('Capture Photo - Comparison:', currentIST, '>=', slotEndIST);
       
       if (currentIST >= slotEndIST) {
-        console.log('Capture Photo - Slot time expired');
+        //console.log('Capture Photo - Slot time expired');
         toast.error('You got late. Slot time expired. Please mark attendance on time next time.');
         return;
       }
-      console.log('Capture Photo - Time is valid, proceeding with capture');
+      //console.log('Capture Photo - Time is valid, proceeding with capture');
     }
 
     try {
@@ -291,17 +291,17 @@ const MarkAttendance = () => {
       const slotEndTime = new Date(slot.endTime);
       const slotEndIST = convertToIST(slotEndTime);
       
-      console.log('Submit - Current time:', currentIST);
-      console.log('Submit - Slot end time:', slotEndIST);
-      console.log('Submit - Comparison:', currentIST, '>=', slotEndIST);
+      //console.log('Submit - Current time:', currentIST);
+      //console.log('Submit - Slot end time:', slotEndIST);
+      //console.log('Submit - Comparison:', currentIST, '>=', slotEndIST);
     
       
       if (currentIST >= slotEndIST) {
-        console.log('Submit - Slot time expired');
+        //console.log('Submit - Slot time expired');
         toast.error('Slot time has expired. Please mark attendance on time next time.');
         return;
       }
-      console.log('Submit - Time is valid, proceeding with submission');
+      //console.log('Submit - Time is valid, proceeding with submission');
     }
 
     // Now check other validations

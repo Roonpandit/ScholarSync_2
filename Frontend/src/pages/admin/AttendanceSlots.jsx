@@ -152,7 +152,7 @@ const AttendanceSlots = () => {
       } 
  
       const url = "/admin/attendance-slots"; 
-      console.log("Making request to:", url); 
+      //console.log("Making request to:", url); 
  
       const config = { 
         headers: { 
@@ -164,7 +164,7 @@ const AttendanceSlots = () => {
       }; 
  
       const res = await axios.get(url, config); 
-      console.log("Response:", res); 
+      //console.log("Response:", res); 
  
       if (!res.data || !res.data.success) { 
         throw new Error(res.data?.message || "Invalid response format"); 
@@ -224,11 +224,11 @@ const AttendanceSlots = () => {
         }, 
       }; 
  
-      console.log("Marking attendance:", { 
-        studentId, 
-        slotId: currentSlot._id, 
-        isPresent, 
-      }); 
+      // console.log("Marking attendance:", { 
+      //   studentId, 
+      //   slotId: currentSlot._id, 
+      //   isPresent, 
+      // }); 
  
       const res = await axios.post( 
         "/admin/attendance/mark", 
@@ -241,7 +241,7 @@ const AttendanceSlots = () => {
         config 
       ); 
  
-      console.log("Mark attendance response:", res.data); 
+      //console.log("Mark attendance response:", res.data); 
  
       if (res.data.success) { 
         // Refresh the attendance data 
@@ -303,7 +303,7 @@ const AttendanceSlots = () => {
       }
 
       // Debug logging
-      console.log('Form data:', formData);
+      //console.log('Form data:', formData);
 
       // Convert times to Date objects
       const slotDate = new Date(formData.date);
@@ -401,13 +401,13 @@ const AttendanceSlots = () => {
         }, 
       }; 
  
-      console.log("Fetching data for slot:", slot._id); 
+      //console.log("Fetching data for slot:", slot._id); 
  
       try { 
         // Fetch all students first 
         const studentsRes = await axios.get("/admin/students", config); 
         const allStudents = studentsRes.data.data || []; 
-        console.log("All students:", allStudents); 
+        //console.log("All students:", allStudents); 
  
         // Get attendance for this slot 
         const attendanceRes = await axios.get( 
@@ -417,7 +417,7 @@ const AttendanceSlots = () => {
         const attendanceData = attendanceRes.data.success 
           ? attendanceRes.data.data 
           : []; 
-        console.log("Attendance records:", attendanceData); 
+        //console.log("Attendance records:", attendanceData); 
  
         // Create a map of present student IDs for quick lookup 
         const presentStudentIds = new Set(); 
@@ -439,7 +439,7 @@ const AttendanceSlots = () => {
           } 
         }); 
  
-        console.log("Present student IDs:", presentStudentIds); 
+        //console.log("Present student IDs:", presentStudentIds); 
  
         // Process all students to include absent ones 
         const processedStudents = allStudents.map((student) => { 
@@ -463,8 +463,8 @@ const AttendanceSlots = () => {
           }; 
         }); 
  
-        console.log("Processed students:", processedStudents); 
-        console.log("Attendance map:", attendanceMap); 
+        //console.log("Processed students:", processedStudents); 
+        //console.log("Attendance map:", attendanceMap); 
  
         setStudents(processedStudents); 
         setAttendance(attendanceMap); 
@@ -685,13 +685,13 @@ const AttendanceSlots = () => {
                     <tr> 
                       <th 
                         scope="col" 
-                        className="py-3.5 pl-4 pr-3 text-left text-xs sm:text-sm font-semibold text-gray-900 sm:pl-6" 
+                        className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900" 
                       > 
                         Date & Time 
                       </th> 
                       <th 
                         scope="col" 
-                        className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden sm:table-cell" 
+                        className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900" 
                       > 
                         Shift 
                       </th> 
@@ -703,7 +703,7 @@ const AttendanceSlots = () => {
                       </th> 
                       <th 
                         scope="col" 
-                        className="relative whitespace-nowrap px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900" 
+                        className="px-3 py-3.5 text-right-17 text-xs sm:text-sm font-semibold text-gray-900" 
                       > 
                         Action 
                       </th>
@@ -884,12 +884,6 @@ const AttendanceSlots = () => {
                     </th>
                     <th
                       scope="col"
-                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell"
-                    >
-                      Location
-                    </th>
-                    <th
-                      scope="col"
                       className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
                       Photo
@@ -937,10 +931,6 @@ const AttendanceSlots = () => {
                             >
                               {isPresent ? "Present" : "Absent"}
                             </span>
-                          </td>
-
-                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden md:table-cell">
-                            {location?.address || "N/A"}
                           </td>
                           <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                             {photo?.url ? (

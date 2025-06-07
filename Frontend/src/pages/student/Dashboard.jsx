@@ -80,10 +80,14 @@ const StudentDashboard = () => {
     );
   }
 
-  const attendancePercentage =
-    attendanceStats.total > 0
-      ? Math.round((attendanceStats.present / (attendanceStats.total - attendanceStats.pending)) * 100)
+  const calculateAttendancePercentage = (stats) => {
+    return stats.total > 0
+      ? Math.round((stats.present / (stats.total - stats.pending)) * 100)
       : 0;
+  };
+
+  // Then use it like this:
+  const attendancePercentage = calculateAttendancePercentage(attendanceStats);
 
   // Count active and upcoming slots
   const activeSlotCount = slots.filter(slot => slot.status === 'active').length;

@@ -73,8 +73,8 @@ export const formatToIST = (utcString) => {
 
   const istTime = date.toLocaleTimeString("en-IN", options);
 
-  console.log("Original UTC:", utcString);
-  console.log("Converted IST:", istTime);
+  //console.log("Original UTC:", utcString);
+  //console.log("Converted IST:", istTime);
 
   return istTime;
 };

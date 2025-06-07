@@ -14,9 +14,9 @@ export const prepareSlotTimes = (date, startTime, endTime) => {
   }
 
   // Debug logging
-  console.log('Input date:', date);
-  console.log('Input start time:', startTime);
-  console.log('Input end time:', endTime);
+  //console.log('Input date:', date);
+  //console.log('Input start time:', startTime);
+  //console.log('Input end time:', endTime);
 
   // Convert date to UTC
   const utcDate = convertToUTC(date);
@@ -29,9 +29,9 @@ export const prepareSlotTimes = (date, startTime, endTime) => {
   utcEndTime.setHours(endTime.getHours(), endTime.getMinutes());
 
   // Debug logging
-  console.log('UTC date:', utcDate);
-  console.log('UTC start time:', utcStartTime);
-  console.log('UTC end time:', utcEndTime);
+  //console.log('UTC date:', utcDate);
+  //console.log('UTC start time:', utcStartTime);
+  //console.log('UTC end time:', utcEndTime);
 
   // Convert all dates back to ISO strings
   return {

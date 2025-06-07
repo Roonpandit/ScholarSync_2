@@ -137,30 +137,8 @@ const AttendanceHistory = () => {
             <div className="p-4 sm:p-6">
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                  <span className="text-sm sm:text-base text-gray-600">Total Days Present</span>
+                  <span className="text-sm sm:text-base text-gray-600">Total Present</span>
                   <span className="text-xl sm:text-2xl font-bold text-gray-800">{stats.totalDays}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm sm:text-base text-gray-600">Attendance Rate</span>
-                  <div className="flex items-center">
-                    <div className={`font-bold text-xl sm:text-2xl ${
-                      stats.attendanceRate >= 75 ? 'text-green-600' : 
-                      stats.attendanceRate >= 50 ? 'text-yellow-600' : 
-                      'text-red-600'
-                    }`}>
-                      {stats.attendanceRate}%
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2 sm:h-2.5">
-                  <div className={`h-2 sm:h-2.5 rounded-full ${
-                    stats.attendanceRate >= 75 ? 'bg-green-600' : 
-                    stats.attendanceRate >= 50 ? 'bg-yellow-500' : 
-                    'bg-red-500'
-                  }`} style={{ width: `${stats.attendanceRate}%` }}></div>
                 </div>
               </div>
             </div>

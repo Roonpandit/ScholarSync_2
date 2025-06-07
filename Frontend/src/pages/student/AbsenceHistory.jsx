@@ -82,7 +82,7 @@ const AbsenceHistory = () => {
             Absence History
           </h1>
           <p className="text-gray-600 mt-1">
-            Track your missed attendance days
+            Track your missed attendance and pending slots for the current month.
           </p>
         </div>
       </div>

@@ -6,7 +6,6 @@ import { formatDateDisplay, formatTime24h, getCurrentDateIST, getCurrentTimeIST,
 
 const AdminDashboard = () => {
 
-
   const [stats, setStats] = useState({
     totalStudents: 0,
     todayAttendance: 0,
@@ -17,19 +16,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true)
   const [refreshTimer, setRefreshTimer] = useState(null)
 
-  // Auto-refresh every minute
   useEffect(() => {
-    const timer = setInterval(() => {
-      fetchDashboardData()
-    }, 5000) // Refresh every 5 seconds
-    setRefreshTimer(timer)
-
-    // Clean up on unmount
-    return () => {
-      if (timer) {
-        clearInterval(timer)
-      }
-    }
+    fetchDashboardData()
   }, [])
 
   const fetchDashboardData = async () => {
@@ -78,22 +66,6 @@ const AdminDashboard = () => {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    // Initial fetch
-    fetchDashboardData()
-    
-    // Set up auto-refresh
-    const timer = setInterval(fetchDashboardData, 5000) // Refresh every 5 seconds
-    setRefreshTimer(timer)
-
-    // Clean up on unmount
-    return () => {
-      if (timer) {
-        clearInterval(timer)
-      }
-    }
-  }, [])
 
   if (loading) {
     return (
