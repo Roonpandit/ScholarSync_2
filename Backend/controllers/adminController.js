@@ -196,7 +196,7 @@ exports.getAttendanceBySlot = asyncHandler(async (req, res) => {
   try {
     const { slotId } = req.query;
     
-    console.log('Received request for slot ID:', slotId);
+    //console.log('Received request for slot ID:', slotId);
     
     if (!slotId) {
       console.error('No slot ID provided');
@@ -222,7 +222,7 @@ exports.getAttendanceBySlot = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log(`Found ${attendanceRecords.length} attendance records for slot:`, slotId);
+    //console.log(`Found ${attendanceRecords.length} attendance records for slot:`, slotId);
     
     // Format the response
     const formattedRecords = attendanceRecords.map(record => ({
@@ -604,7 +604,7 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
   try {
     const { studentId, month, year } = req.query;
 
-    console.log('Fetching attendance details for:', { studentId, month, year });
+    //console.log('Fetching attendance details for:', { studentId, month, year });
 
     if (!studentId || !month || !year) {
       return res.status(400).json({
@@ -675,8 +675,8 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
       { $sort: { date: 1 } },
     ]);
 
-    console.log("Attendance Records Length:", attendanceRecords.length);
-    console.log("Attendance Records:", attendanceRecords);
+    //console.log("Attendance Records Length:", attendanceRecords.length);
+    //console.log("Attendance Records:", attendanceRecords);
 
     // Calculate counts
     let present = 0;
@@ -690,8 +690,8 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
       }
     });
 
-    console.log("Present Count:", present);
-    console.log("Absent Count:", absent);
+    //console.log("Present Count:", present);
+    //console.log("Absent Count:", absent);
 
     res.status(200).json({
       success: true,
@@ -1136,7 +1136,7 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 exports.getAttendanceStats = asyncHandler(async (req, res) => {
   try {
-    console.log('Fetching attendance stats for:', req.query);
+    //console.log('Fetching attendance stats for:', req.query);
 
     const { month, year, minAbsences, startDate: startDateParam, endDate: endDateParam } = req.query;
 
@@ -1181,7 +1181,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
 
     const parsedMinAbsences = parseInt(minAbsences) || 0;
 
-    console.log('Using date range:', startDate.toISOString(), 'to', endDate.toISOString());
+    //console.log('Using date range:', startDate.toISOString(), 'to', endDate.toISOString());
 
     // Get all students
     const allStudents = await User.find({ role: 'student' }).select('_id name email studentCode createdAt');
@@ -1192,13 +1192,13 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
       status: { $in: ['active', 'closed'] }
     });
 
-    console.log(`Found ${slots.length} attendance slots (active/closed)`);
+    //console.log(`Found ${slots.length} attendance slots (active/closed)`);
 
     // Get attendance records in range
     const attendanceRecords = await Attendance.find(dateFilter)
       .populate('student', 'name email studentCode');
 
-    console.log(`Found ${attendanceRecords.length} attendance records`);
+    //console.log(`Found ${attendanceRecords.length} attendance records`);
 
     const studentAttendance = new Map();
 

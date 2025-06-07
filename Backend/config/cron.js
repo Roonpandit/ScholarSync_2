@@ -3,7 +3,7 @@ const AttendanceSlot = require('../models/AttendanceSlot');
 
 // Update slot statuses every minute
 const updateSlotStatuses = () => {
-  console.log('Updating slot statuses...');
+  //console.log('Updating slot statuses...');
   AttendanceSlot.updateAllStatuses()
     .catch(error => console.error('Error updating slot statuses:', error));
 };

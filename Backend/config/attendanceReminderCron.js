@@ -8,7 +8,7 @@ const sendAttendanceReminders = async () => {
   try {
     // Get current time in IST
     const now = new Date();
-    console.log('Checking attendance slots at:', now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+    //console.log('Checking attendance slots at:', now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
 
     // Find all upcoming slots that haven't been notified and are within 15 minutes
     const slots = await AttendanceSlot.find({
@@ -17,13 +17,13 @@ const sendAttendanceReminders = async () => {
       startTime: { $gt: now, $lt: new Date(now.getTime() + 15 * 60000) }
     });
 
-    console.log('Found upcoming slots:', slots.length);
+    //console.log('Found upcoming slots:', slots.length);
     
     if (slots.length === 0) return;
 
     // Process each slot
     for (const slot of slots) {
-      console.log('Processing slot:', slot._id, 'at', slot.startTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+      //console.log('Processing slot:', slot._id, 'at', slot.startTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
       
       // Send reminder email to all students
       const success = await sendAttendanceReminder(slot._id);
@@ -36,7 +36,7 @@ const sendAttendanceReminders = async () => {
           emailSent: true,
           notificationSentAt: new Date()
         });
-        console.log('Successfully sent reminder to all students for slot:', slot._id);
+        //console.log('Successfully sent reminder to all students for slot:', slot._id);
       }
     }
   } catch (error) {
@@ -47,7 +47,7 @@ const sendAttendanceReminders = async () => {
 // Schedule the job to run every minute
 const scheduleAttendanceReminder = () => {
   cron.schedule('*/1 * * * *', sendAttendanceReminders);
-  console.log('Attendance reminder cron job initialized');
+  //console.log('Attendance reminder cron job initialized');
 };
 
 module.exports = {

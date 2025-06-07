@@ -43,7 +43,7 @@ exports.getStudentsByClass = asyncHandler(async (req, res) => {
   try {
     const { classId } = req.query;
     
-    console.log('Received request for class ID:', classId);
+    //console.log('Received request for class ID:', classId);
     
     if (!classId) {
       console.error('No class ID provided');
@@ -53,7 +53,7 @@ exports.getStudentsByClass = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log('Searching for students in class:', classId);
+    //console.log('Searching for students in class:', classId);
     
     // Find all students in the specified class
     const students = await User.find({ 
@@ -61,7 +61,7 @@ exports.getStudentsByClass = asyncHandler(async (req, res) => {
       role: 'student'
     }).select('_id name email rollNumber photo');
 
-    console.log(`Found ${students.length} students in class ${classId}`);
+    //console.log(`Found ${students.length} students in class ${classId}`);
 
     // Format the response to match the expected structure
     const formattedStudents = students.map(student => ({
@@ -72,7 +72,7 @@ exports.getStudentsByClass = asyncHandler(async (req, res) => {
       photo: student.photo?.url || null
     }));
 
-    console.log('Formatted students:', formattedStudents);
+    //console.log('Formatted students:', formattedStudents);
 
     res.status(200).json({
       success: true,

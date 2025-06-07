@@ -48,15 +48,15 @@ router.get('/students/:id/details', getStudentDetailsWithAttendance);
 router.route('/attendance-slots')
   .post(createAttendanceSlot)
   .get((req, res, next) => {
-    console.log('GET /api/admin/attendance-slots called with query:', req.query);
-    console.log('Headers:', req.headers);
+    //console.log('GET /api/admin/attendance-slots called with query:', req.query);
+    //console.log('Headers:', req.headers);
     next();
   }, getAllAttendanceSlots);
 
 // Attendance stats route
 router.get('/attendance/stats', (req, res, next) => {
-  console.log('GET /api/admin/attendance/stats called with query:', req.query);
-  console.log('Headers:', req.headers);
+  //console.log('GET /api/admin/attendance/stats called with query:', req.query);
+  //console.log('Headers:', req.headers);
   next();
 }, getAttendanceStats);
 
