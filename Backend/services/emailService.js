@@ -43,8 +43,9 @@ const sendAttendanceReminder = async (slotId) => {
 
 This is a reminder for the upcoming attendance slot:
 
-Shift: ${slot.shift}
 Time: ${startTimeIST} - ${endTimeIST} IST
+Shift: ${slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)}
+Date: ${new Date(slot.startTime).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
 
 Instructions:
 
