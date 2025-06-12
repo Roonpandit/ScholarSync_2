@@ -34,6 +34,8 @@ const sendAttendanceReminder = async (slotId) => {
       hour: '2-digit',
       minute: '2-digit'
     });
+    const startTimeWithOffset = new Date(new Date(slot.startTime).getTime() + 5.5 * 60 * 60 * 1000);
+
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -43,9 +45,9 @@ const sendAttendanceReminder = async (slotId) => {
 
 This is a reminder for the upcoming attendance slot:
 
-Time: ${startTimeIST} - ${endTimeIST} IST
+Time: ${startTimeIST} - ${endTimeIST}
 Shift: ${slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)}
-Date: ${new Date(slot.startTime).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+Date: ${startTimeWithOffset.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
 
 Instructions:
 
