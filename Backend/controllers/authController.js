@@ -112,9 +112,21 @@ exports.updatePassword = asyncHandler(async (req, res) => {
   // Check if current password is correct
   const isMatch = await user.matchPassword(currentPassword);
   if (!isMatch) {
-    return res.status(401).json({
+    // Keep the user's session active
+    return res.status(400).json({
       success: false,
-      message: 'Current password is incorrect'
+      message: 'Current password is incorrect',
+      error: 'The current password you entered is incorrect. Please try again.'
+    });
+  }
+
+  // Check if new password is the same as current password
+  const isSamePassword = await user.matchPassword(newPassword);
+  if (isSamePassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password update failed',
+      error: 'New password cannot be the same as the current password'
     });
   }
 
