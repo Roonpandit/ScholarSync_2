@@ -92,6 +92,12 @@ const Profile = () => {
       return;
     }
 
+    // Check if new password is the same as current password
+    if (currentPassword === newPassword) {
+      setPasswordError('New password cannot be the same as current password');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setPasswordError('New password and confirm password do not match');
       return;
@@ -170,10 +176,12 @@ const Profile = () => {
         </div>
 
         <div className="space-y-4">
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Student ID</h3>
-            <p className="mt-1 text-lg font-mono text-gray-900">{profile.studentCode}</p>
-          </div>
+          {profile.role !== 'admin' && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Student ID</h3>
+              <p className="mt-1 text-lg font-mono text-gray-900">{profile.studentCode}</p>
+            </div>
+          )}
           
           <div>
             <h3 className="text-sm font-medium text-gray-500">Account Type</h3>
@@ -184,15 +192,17 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mt-8">
-        <button
-          onClick={() => setShowPasswordForm(!showPasswordForm)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <Lock className="h-4 w-4 mr-2" />
-          {showPasswordForm ? 'Hide Password Update' : 'Update Password'}
-        </button>
-      </div>
+      {profile.role !== 'admin' && (
+        <div className="mt-8">
+          <button
+            onClick={() => setShowPasswordForm(!showPasswordForm)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            {showPasswordForm ? 'Hide Password Update' : 'Update Password'}
+          </button>
+        </div>
+      )}
 
       {showPasswordForm && (
         <div className="mt-6 p-6 bg-gray-50 rounded-lg">
