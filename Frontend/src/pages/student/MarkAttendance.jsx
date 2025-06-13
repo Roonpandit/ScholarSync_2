@@ -4,6 +4,7 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
 import { formatDate, formatTime, formatTime24h, formatDateandTime, getCurrentTimeIST, convertToIST } from '../../utils/timeUtils'
+import Loader from '../../components/Loader';
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -401,6 +402,10 @@ const MarkAttendance = () => {
         </div>
       </div>
     )
+  }
+
+  if (loading) {
+    return <Loader message="Loading attendance slots..." />;
   }
 
   return (

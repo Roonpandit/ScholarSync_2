@@ -30,6 +30,7 @@ import {
   isDateBefore,
   isSameDate
 } from "../../utils/timeUtils";
+import Loader from '../../components/Loader';
 
 const AttendanceSlots = () => {
   // Helper function to get slot status badge
@@ -69,54 +70,119 @@ const AttendanceSlots = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   // Function to export slot attendance to Excel
-  const exportSlotAttendance = () => {
-    if (!currentSlot) return;
-    try {
-      // Get attendance data for this slot
-      const slotAttendance = students.map((student) => {
-        const studentAttendance = attendance[student._id];
-        const isPresent = studentAttendance?.isPresent;
-        const photo = studentAttendance?.photo?.url || student.photo?.url;
-
-        return {
-          'Student Code': student.studentCode || 'N/A',
-          'Student Name': student.name,
-          'Student Email': student.email,
-          'Attendance Status': isPresent ? 'Present' : 'Absent',
-          'Shift': currentSlot.shift,
-          'Photo URL': photo || 'N/A'
-        };
-      }).filter(student => student); // Remove any undefined entries
-
-      // Create workbook and worksheet
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(slotAttendance);
+// Function to export slot attendance to Excel
+const exportSlotAttendance = () => {
+  if (!currentSlot) return;
+  try {
+    // Get attendance data for this slot
+    const slotAttendance = students.map((student) => {
+      const studentAttendance = attendance[student._id];
+      const isPresent = studentAttendance?.isPresent;
+      const photo = studentAttendance?.photo?.url || student.photo?.url;
+      const markedAt = studentAttendance?.markedAt;
+      const location = studentAttendance?.location;
       
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
-      
-      // Generate Excel file
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: 'xlsx',
-        type: 'array'
+      // Format date and shift
+      const date = new Date(currentSlot.date);
+      const formattedDate = date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
       });
+      const dateAndShift = `${currentSlot.shift.charAt(0).toUpperCase() + currentSlot.shift.slice(1)}, ${formattedDate}`;
       
-      // Create blob and download
-      const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `attendance-${currentSlot.date}-${currentSlot.shift}.xlsx`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Attendance data exported successfully');
-      
-    } catch (error) {
-      toast.error('Error exporting attendance data');
-      console.error('Excel export error:', error);
-    }
-  };
+      return {
+        'Student Code': student.studentCode || 'N/A',
+        'Student Name': student.name,
+        'Student Email': student.email,
+        'Date and Shift': dateAndShift,
+        'Attendance Status': isPresent ? 'Present' : 'Absent',
+        'Marked At': markedAt ? new Date(markedAt).toLocaleTimeString() : 'N/A',
+        'Location': location ? `${location.coordinates[0]}, ${location.coordinates[1]}` : 'N/A',
+        'Photo URL': photo || 'N/A'
+      };
+    }).filter(student => student); // Remove any undefined entries
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    
+    // Convert data to array of arrays format
+    const headers = Object.keys(slotAttendance[0]);
+    const dataRows = slotAttendance.map(student => Object.values(student));
+    const worksheetData = [headers, ...dataRows];
+    
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Apply styling to absent student rows
+    slotAttendance.forEach((student, index) => {
+      if (student['Attendance Status'] === 'Absent') {
+        const rowIndex = index + 2; // +2 because: +1 for 0-based index, +1 for header row
+        
+        // Style each cell in the row
+        headers.forEach((header, colIndex) => {
+          const cellAddress = XLSX.utils.encode_cell({ r: rowIndex - 1, c: colIndex });
+          
+          if (!worksheet[cellAddress]) {
+            worksheet[cellAddress] = { v: student[header] };
+          }
+          
+          // Apply red background and white text
+          worksheet[cellAddress].s = {
+            fill: {
+              fgColor: { rgb: "FFFF0000" } // Red background
+            },
+            font: {
+              color: { rgb: "FFFFFFFF" } // White text
+            },
+            alignment: {
+              horizontal: "left",
+              vertical: "center"
+            }
+          };
+        });
+      }
+    });
+    
+    // Set column widths for better readability
+    const columnWidths = [
+      { wch: 15 }, // Student Code
+      { wch: 25 }, // Student Name
+      { wch: 30 }, // Student Email
+      { wch: 25 }, // Date and Shift
+      { wch: 15 }, // Attendance Status
+      { wch: 15 }, // Marked At
+      { wch: 20 }, // Location
+      { wch: 40 }  // Photo URL
+    ];
+    worksheet['!cols'] = columnWidths;
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+    
+    // Generate Excel file
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+      cellStyles: true // Enable cell styling
+    });
+    
+    // Create blob and download
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance-${currentSlot.date}-${currentSlot.shift}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('Attendance data exported successfully');
+    
+  } catch (error) {
+    toast.error('Error exporting attendance data');
+    console.error('Excel export error:', error);
+  }
+};
 
   // Rest of the component code... 
   const [slots, setSlots] = useState([]); 
@@ -499,13 +565,8 @@ const AttendanceSlots = () => {
     fetchSlots(); 
   }, []); 
  
-  if (loading) { 
-    return ( 
-      <div className="flex flex-col items-center justify-center h-64"> 
-        <div className="w-12 h-12 border-4 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div> 
-        <p className="mt-4 text-gray-600">Loading attendance slots...</p> 
-      </div> 
-    ); 
+  if (loading) {
+    return <Loader message="Loading attendance slots..." />;
   } 
  
   return ( 
@@ -886,7 +947,19 @@ const AttendanceSlots = () => {
                       scope="col"
                       className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     >
+                      Marked At
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       Photo
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Location (Lng, Lat)
                     </th>
                   </tr>
                 </thead>
@@ -933,6 +1006,9 @@ const AttendanceSlots = () => {
                             </span>
                           </td>
                           <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                            {markedAt ? new Date(markedAt).toLocaleTimeString() : "N/A"}
+                          </td>
+                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                             {photo?.url ? (
                               <button
                                 onClick={() => {
@@ -947,6 +1023,9 @@ const AttendanceSlots = () => {
                             ) : (
                               "N/A"
                             )}
+                          </td>
+                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                            {location ? `${location.coordinates[0]}, ${location.coordinates[1]}` : "N/A"}
                           </td>
                         </tr>
                       );

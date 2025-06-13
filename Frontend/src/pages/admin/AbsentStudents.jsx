@@ -3,6 +3,7 @@ import axios from 'axios';
 import { formatDateDisplay, convertToIST } from '../../utils/timeUtils';
 import { toast } from 'react-toastify';
 import { Calendar, Clock, AlertTriangle, ChevronRight, Search, Filter } from 'lucide-react';
+import Loader from '../../components/Loader';
 
 const AbsentStudents = () => {
   const [absentStudents, setAbsentStudents] = useState([]);
@@ -92,12 +93,7 @@ const AbsentStudents = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-gray-600">Loading absent students data...</p>
-      </div>
-    );
+    return <Loader message="Loading absent students data..." />;
   }
 
   return (

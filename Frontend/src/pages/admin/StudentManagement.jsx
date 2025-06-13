@@ -6,6 +6,7 @@ import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/time
 import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Trash2 } from 'lucide-react';
 import BulkUpload from './BulkUpload';
 import { useNavigate } from 'react-router-dom';
+import Loader from '../../components/Loader';
 
 const StudentManagement = () => {
   const navigate = useNavigate();
@@ -181,12 +182,7 @@ const StudentManagement = () => {
   const formatDate = (date) => formatDateDisplay(convertToIST(new Date(date)));
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="w-12 h-12 border-4 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-gray-600">Loading students data...</p>
-      </div>
-    );
+    return <Loader message="Loading students data..." />;
   }
 
   return (

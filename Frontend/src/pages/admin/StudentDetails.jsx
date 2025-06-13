@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { Table, Spin, Modal, Form, Input, Button, Space } from 'antd';
+import { Table, Modal, Form, Input, Button, Space } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, EditOutlined } from '@ant-design/icons';
 import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/timeUtils';
 import { toast } from 'react-toastify';
+import Loader from '../../components/Loader';
 
 const StudentDetails = () => {
   const { studentId } = useParams();
@@ -33,11 +34,7 @@ const StudentDetails = () => {
   const attendanceStats = studentData?.attendance?.stats || { present: 0, absent: 0, total: 0 };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center p-8 h-64">
-        <Spin size="large" />
-      </div>
-    );
+    return <Loader message="Loading student details..." />;
   }
 
   const handleEdit = () => {

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import { Calendar, Clock, Mail } from "lucide-react";
 import { formatTime, formatDate } from '../../utils/timeUtils';
+import Loader from "../../components/Loader";
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -73,11 +74,7 @@ const StudentDashboard = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <Loader message="Loading dashboard data..." />;
   }
 
   const calculateAttendancePercentage = (stats) => {

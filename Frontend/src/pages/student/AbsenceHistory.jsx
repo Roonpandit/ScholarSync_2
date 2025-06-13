@@ -8,6 +8,7 @@ import {
   formatTime,
   convertToIST
 } from "../../utils/timeUtils";
+import Loader from "../../components/Loader";
 
 const AbsenceHistory = () => {
   const [attendanceData, setAttendanceData] = useState({
@@ -67,11 +68,7 @@ const AbsenceHistory = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-      </div>
-    );
+    return <Loader message="Loading absence history..." />;
   }
 
   return (

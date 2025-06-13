@@ -15,17 +15,23 @@ import Leave from './pages/student/Leave.jsx'
 import Layout from './components/Layout.jsx'
 import NotFound from './pages/NotFound.jsx'
 import './App.css'
+import Lottie from 'lottie-react'
+import loaderAnimation from './components/loader/animations/62d18998-eb09-48b7-a29a-e69b4e6fb833.json'
 
 function App() {
   const { user, loading } = useAuth()
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-        <p>Loading...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Lottie 
+          animationData={loaderAnimation}
+          loop={true}
+          className="w-32 h-32"
+        />
+        <p className="mt-4 text-gray-600">Loading...</p>
       </div>
-    )
+    );
   }
 
   return (

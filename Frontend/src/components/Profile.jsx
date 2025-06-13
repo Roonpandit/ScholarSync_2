@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Lock, Unlock, Eye, EyeOff } from 'lucide-react';
+import Loader from '../components/Loader';
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -131,11 +132,7 @@ const Profile = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <Loader message="Loading profile data..." />;
   }
 
   if (error) {
@@ -148,11 +145,7 @@ const Profile = () => {
   }
 
   if (!profile) {
-    return (
-      <div className="text-center py-10">
-        <p>No profile data available</p>
-      </div>
-    );
+    return <Loader message="No profile data available" />;
   }
 
   return (

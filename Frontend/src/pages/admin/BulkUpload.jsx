@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Upload, X, File, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, X, File, CheckCircle, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import Loader from '../../components/Loader';
 
 const BulkUpload = () => {
   const [showModal, setShowModal] = useState(false);
@@ -468,26 +469,21 @@ const BulkUpload = () => {
             </div>
 
             <div className="flex justify-end mt-6">
-              <button 
-                onClick={handleUpload}
-                disabled={uploading || previewData.length === 0 || !passwordsGenerated}
-                className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
-                  ${uploading || previewData.length === 0 || !passwordsGenerated 
-                    ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
-                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" size={16} />
-                    Uploading... {uploadProgress}%
-                  </>
-                ) : (
-                  <>
-                    <Upload size={16} className="mr-2" />
-                    Upload Students
-                  </>
-                )}
-              </button>
+              {uploading ? (
+                <Loader message={`Uploading... ${uploadProgress}%`} />
+              ) : (
+                <button 
+                  onClick={handleUpload}
+                  disabled={previewData.length === 0 || !passwordsGenerated}
+                  className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
+                    ${previewData.length === 0 || !passwordsGenerated 
+                      ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                >
+                  <Upload size={16} className="mr-2" />
+                  Upload Students
+                </button>
+              )}
             </div>
           </div>
         </div>
