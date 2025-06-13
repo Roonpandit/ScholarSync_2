@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/timeUtils';
 import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Trash2 } from 'lucide-react';
+import BulkUpload from './BulkUpload';
 import { useNavigate } from 'react-router-dom';
 
 const StudentManagement = () => {
@@ -199,26 +200,29 @@ const StudentManagement = () => {
           <p className="text-gray-500 text-sm mt-1">Manage student records and accounts</p>
         </div>
         
-        <button 
-          onClick={() => setShowAddForm(!showAddForm)}
-          className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            showAddForm 
-              ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {showAddForm ? (
-            <>
-              <X size={16} className="mr-2" />
-              Cancel
-            </>
-          ) : (
-            <>
-              <Plus size={16} className="mr-2" />
-              Add Student
-            </>
-          )}
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setShowAddForm(!showAddForm)}
+            className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              showAddForm 
+                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {showAddForm ? (
+              <>
+                <X size={16} className="mr-2" />
+                Cancel
+              </>
+            ) : (
+              <>
+                <Plus size={16} className="mr-2" />
+                Add Student
+              </>
+            )}
+          </button>
+          <BulkUpload />
+        </div>
       </div>
       
       {/* Add Student Form */}
