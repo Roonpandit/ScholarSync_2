@@ -8,6 +8,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please add a name'],
       trim: true,
+      validate: {
+        validator: function(name) {
+          // Allow only English alphabet letters (both uppercase and lowercase)
+          return /^[A-Za-z\s]+$/.test(name);
+        },
+        message: 'Name must contain only English alphabet letters (A-Z, a-z)'
+      }
     },
     email: {
       type: String,

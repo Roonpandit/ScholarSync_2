@@ -166,7 +166,7 @@ exports.login = asyncHandler(async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials',
+        message: 'User does not exist with this email',
       });
     }
   }
@@ -177,7 +177,7 @@ exports.login = asyncHandler(async (req, res) => {
   if (!isMatch) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid credentials',
+      message: 'You have entered the wrong password',
     });
   }
 
