@@ -36,8 +36,8 @@ export const AuthProvider = ({ children }) => {
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          // Token expired or invalid
+        if (error.response?.status === 401 && token) {
+          // Only trigger logout if we have a token (not during initial login)
           console.error('Unauthorized:', error);
           logout();
           navigate('/login');
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       axios.interceptors.response.eject(interceptor);
     };
-  }, [navigate]);
+  }, [navigate, token]);
 
   // Check if user is logged in on initial load
   useEffect(() => {

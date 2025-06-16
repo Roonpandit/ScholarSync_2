@@ -23,13 +23,13 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
         <Lottie 
           animationData={loaderAnimation}
           loop={true}
           className="w-32 h-32"
         />
-        <p className="mt-4 text-gray-600">Loading...</p>
+        <p className="mt-4 text-gray-600">Hold on! Your page is loading....</p>
       </div>
     );
   }
