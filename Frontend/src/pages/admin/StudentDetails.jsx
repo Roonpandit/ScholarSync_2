@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { Table, Modal, Form, Input, Button, Space } from 'antd';
+import { Camera, MapPin, X } from 'lucide-react';
 import { UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, EditOutlined } from '@ant-design/icons';
 import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/timeUtils';
 import { toast } from 'react-toastify';
@@ -13,6 +14,8 @@ const StudentDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm] = Form.useForm();
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
 
   useEffect(() => {
     fetchStudentDetails();
@@ -193,6 +196,31 @@ const StudentDetails = () => {
         </Form>
       </Modal>
 
+      {/* Photo Modal */}
+      <Modal
+        title="Attendance Photo"
+        open={photoModalOpen}
+        onCancel={() => setPhotoModalOpen(false)}
+        footer={null}
+      >
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+          </div>
+          <div className="p-4">
+            {selectedPhoto ? (
+              <img
+                src={selectedPhoto}
+                alt="Attendance"
+                className="w-full max-h-[80vh] object-contain"
+              />
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                <Camera className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p>No photo available</p>
+              </div>
+            )}
+        </div>
+      </Modal>
+
       {/* Attendance History Card */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="border-b border-gray-200 p-4 md:p-6">
@@ -233,6 +261,7 @@ const StudentDetails = () => {
               rowKey="_id"
               className="min-w-full"
               scroll={{ x: 'max-content' }}
+              pagination={{ pageSize: 10 }}
             >
               <Table.Column 
                 title="Date" 
@@ -244,33 +273,96 @@ const StudentDetails = () => {
                 title="Shift" 
                 dataIndex="shift" 
                 key="shift" 
+                render={(shift) => shift?.charAt(0)?.toUpperCase() + shift?.slice(1)}
               />
               <Table.Column 
-                title="Status" 
-                dataIndex="status" 
-                key="status" 
-                render={(status) => (
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    status === 'Present' ? 'bg-green-100 text-green-800' : 
-                    status === 'Absent' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {status}
-                  </span>
-                )}
-              />
-              <Table.Column 
-                title="Time Slot" 
+                title="Slot Time" 
                 dataIndex="slot" 
-                key="time" 
+                key="slot" 
                 render={(slot) => 
                   slot && `${formatTime24h(slot.startTime)} - ${formatTime24h(slot.endTime)}`
                 } 
               />
               <Table.Column 
-                title="Recorded Time" 
-                dataIndex="time" 
-                key="time" 
-                render={(time) => time && formatTime24h(convertToIST(time))} 
+                title="Status" 
+                dataIndex="status" 
+                key="status" 
+                render={(status, record) => {
+                  // Handle different record types
+                  const recordType = record?.type;
+                  const recordStatus = record?.status;
+                  
+                  const statusText = recordType ? 
+                    (recordType === 'absence' ? 'Absent' : 
+                     recordType === 'pending' ? 'Pending' : 
+                     'Present') : 
+                    (recordStatus || status || 'Present');
+                  
+                  const colorClass = 
+                    (statusText === 'Present' ? 'bg-green-100 text-green-800' : 
+                     statusText === 'Absent' ? 'bg-red-100 text-red-800' : 
+                     statusText === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
+                     'bg-gray-100 text-gray-800');
+
+                  return (
+                    <span className={`px-2 py-1 rounded text-sm ${colorClass}`}>
+                      {statusText}
+                    </span>
+                  );
+                }}
+              />
+              <Table.Column 
+                title="Marked At" 
+                dataIndex="markedAt" 
+                key="markedAt" 
+                render={(markedAt) => {
+                  if (!markedAt) return null;
+                  try {
+                    const dateObj = new Date(markedAt);
+                    if (isNaN(dateObj.getTime())) return null;
+                    return formatTime24h(dateObj);
+                  } catch (error) {
+                    console.error('Error formatting markedAt:', error);
+                    return null;
+                  }
+                }} 
+              />
+              <Table.Column 
+                title="Location" 
+                dataIndex="location" 
+                key="location" 
+                render={(location) => (
+                  <div className="flex items-center">
+                    <button
+                      className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      onClick={() => {
+                        toast.info(`Location: ${location?.coordinates?.join(', ')}`);
+                      }}
+                    >
+                      <MapPin className="w-3 h-3 mr-1 sm:mr-2" />
+                      View
+                    </button>
+                  </div>
+                )}
+              />
+              <Table.Column 
+                title="Photo" 
+                dataIndex="photo" 
+                key="photo" 
+                render={(photo) => (
+                  <div className="flex items-center">
+                    <button
+                      className="inline-flex items-center px-1.5 sm:px-2.5 py-1 sm:py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      onClick={() => {
+                        setSelectedPhoto(photo?.url);
+                        setPhotoModalOpen(true);
+                      }}
+                    >
+                      <Camera className="w-3 h-3 mr-1 sm:mr-2" />
+                      View
+                    </button>
+                  </div>
+                )}
               />
             </Table>
           </div>
