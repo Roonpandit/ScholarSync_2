@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 const cron = require('./config/cron');
 const attendanceReminder = require('./config/attendanceReminderCron');
 
@@ -46,6 +47,7 @@ connectDB().then(() => {
   app.use('/api/auth', authRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/students', userRoutes);
+  app.use('/api/review', reviewRoutes);
   
   // Basic route for testing
   app.get('/', (req, res) => {

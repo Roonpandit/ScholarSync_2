@@ -36,6 +36,18 @@ const upload = multer({
 // Handle file upload middleware
 exports.uploadAttendancePhoto = upload.single('photo');
 
+// @desc    Get all students
+// @route   GET /api/students
+// @access  Private/Admin
+exports.getAllStudents = asyncHandler(async (req, res) => {
+    try {
+        const students = await User.find({ role: 'student' }).select('name email studentCode');
+        res.status(200).json({ students });
+    } catch (error) {
+        throw new Error('Failed to fetch students');
+    }
+});
+
 // @desc    Get students by class ID
 // @route   GET /api/students/class?classId=:classId
 // @access  Private/Student,Admin

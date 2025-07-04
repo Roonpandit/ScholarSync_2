@@ -3,6 +3,7 @@ const User = require('../models/User');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
+const { sendWelcomeEmail } = require('../services/welcomeEmailService');
 
 // Helper to compare dates
 const isDateBefore = (date1, date2) => {
@@ -766,6 +767,13 @@ exports.createStudent = asyncHandler(async (req, res) => {
     role: 'student',
   });
 
+  // Send welcome email
+  await sendWelcomeEmail({
+    name: student.name,
+    email: student.email,
+    studentCode: student.studentCode
+  });
+
   res.status(201).json({
     success: true,
     data: {
@@ -840,6 +848,33 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
     throw err;
   });
 
+  // Send welcome emails only to newly created students
+  const emailResults = [];
+  
+  for (const student of createdStudents) {
+    try {
+      await sendWelcomeEmail({
+        name: student.name,
+        email: student.email,
+        studentCode: student.studentCode
+      });
+      emailResults.push({
+        email: student.email,
+        status: 'success'
+      });
+    } catch (error) {
+      console.error(`Failed to send email to ${student.email}:`, error);
+      emailResults.push({
+        email: student.email,
+        status: 'failed',
+        error: error.message
+      });
+    }
+  }
+
+  // Log email sending results
+  console.log('Email sending results:', emailResults);
+
   // Prepare response data
   const createdStudentEmails = createdStudents.map(student => student.email);
   const existingStudentEmails = studentsData
@@ -848,11 +883,12 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
 
   const message = existingStudentEmails.length > 0
     ? `${createdStudents.length} students created successfully, ${existingStudentEmails.length} students could not be created as they already exist`
-    : `${createdStudents.length} students created successfully`;
+    : `${createdStudents.length} students created successfully and Welcame email also sent to all students`;
 
   res.status(201).json({
     success: true,
     message,
+    emailResults,
     existing: {
       count: existingStudentEmails.length,
       emails: existingStudentEmails
