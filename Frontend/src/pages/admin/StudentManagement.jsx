@@ -155,7 +155,7 @@ const StudentManagement = () => {
       const res = await axios.post('/admin/students', postData);
       
       if (res.data.success) {
-        toast.success('Student added successfully');
+        toast.success('Student created successfully and Welcome email sent');
         setStudents([...students, res.data.data]);
         setFormData({
           name: '',

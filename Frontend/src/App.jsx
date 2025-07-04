@@ -12,6 +12,7 @@ import MarkAttendance from './pages/student/MarkAttendance.jsx'
 import AttendanceHistory from './pages/student/AttendanceHistory.jsx'
 import AbsenceHistory from './pages/student/AbsenceHistory.jsx'
 import Leave from './pages/student/Leave.jsx'
+import Review from './pages/admin/Review.jsx';
 import Layout from './components/Layout.jsx'
 import NotFound from './pages/NotFound.jsx'
 import './App.css'
@@ -44,6 +45,14 @@ function App() {
         element={
           user && user.role === 'admin' ? 
           <Layout><AdminDashboard /></Layout> : 
+          <Navigate to="/login" />
+        } 
+      />
+      <Route 
+        path="/admin/review" 
+        element={
+          user && user.role === 'admin' ? 
+          <Layout><Review /></Layout> : 
           <Navigate to="/login" />
         } 
       />

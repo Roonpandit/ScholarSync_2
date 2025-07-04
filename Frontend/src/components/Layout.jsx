@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { FaFileAlt } from 'react-icons/fa';
 import { useAuth } from "../contexts/AuthContext.jsx";
 import Profile from "./Profile";
 
@@ -330,6 +331,13 @@ const Layout = ({ children }) => {
                     }
                   >
                     Students
+                  </NavItem>
+                  <NavItem
+                    to="/admin/review"
+                    isActive={isActive("/admin/review")}
+                    icon={<FaFileAlt className="h-5 w-5" />}
+                  >
+                    Feedback Form
                   </NavItem>
 
                   <div className="my-3 px-3 pt-3 text-xs font-semibold text-gray-500 uppercase tracking-wider border-t border-gray-200">

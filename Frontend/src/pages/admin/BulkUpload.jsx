@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Upload, X, File, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, X, File, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import Loader from '../../components/Loader';
 
 const BulkUpload = () => {
   const [showModal, setShowModal] = useState(false);
   const [file, setFile] = useState(null);
   const [previewData, setPreviewData] = useState([]);
+  const [existingStudents, setExistingStudents] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [successCount, setSuccessCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const [errors, setErrors] = useState([]);
@@ -180,21 +179,9 @@ const BulkUpload = () => {
     return `${firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()}@123`;
   };
 
-  const formatDataForPreview = (data) => {
-    return data.map(row => ({
-      name: row.name,
-      email: row.email,
-      studentCode: row.studentCode,
-      phone: row.phone,
-      password: generatePassword(row.name),
-      errors: validateRow(row)
-    }));
-  };
-
   const handleUpload = async () => {
     try {
       setUploading(true);
-      setUploadProgress(0);
       setSuccessCount(0);
       setErrorCount(0);
       setErrors([]);
@@ -231,63 +218,39 @@ const BulkUpload = () => {
       let totalErrors = 0;
       const allErrors = [];
 
-      // Upload each chunk
+      // Upload all chunks
+      let allResponses = [];
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        const chunkNumber = i + 1;
         
         try {
           const response = await axios.post('/admin/students/bulk', chunk, {
             headers: {
               'Content-Type': 'application/json',
-            },
-            onUploadProgress: (progressEvent) => {
-              const progress = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-              setUploadProgress(progress);
             }
           });
-
-          if (response.data.success) {
-            totalSuccess += response.data.created.count;
-            // Get existing (failed) student emails
-            const existingEmails = response.data.existing?.emails || [];
-            allErrors.push(...existingEmails);
-            
-            // Show success message for this chunk
-            const chunkSuccess = response.data.created.count;
-            const chunkExisting = existingEmails.length;
-            if (chunkExisting > 0) {
-              toast.warning(`Chunk ${chunkNumber}: ${chunkSuccess} students created, ${chunkExisting} students already exist`);
-            } else {
-              toast.success(`Chunk ${chunkNumber}: ${chunkSuccess} students created`);
-            }
-          } else {
-            // If response is not successful, consider all students in this chunk failed
-            totalErrors += chunk.length;
-            allErrors.push(...chunk.map(student => student.email));
-            toast.error(`Chunk ${chunkNumber}: Failed to create any students in this chunk`);
-          }
-
-          // Update progress
-          const overallProgress = Math.round((chunkNumber / chunks.length) * 100);
-          setUploadProgress(overallProgress);
-
+          allResponses.push(response);
         } catch (error) {
-          console.error(`Error uploading chunk ${chunkNumber}:`, error);
-          
-          // Handle different types of errors
-          const errorMessage = error.response?.data?.message || error.message;
-          if (error.response?.data?.existing?.emails) {
-            // If we have specific existing students data
-            const existingEmails = error.response.data.existing.emails;
-            allErrors.push(...existingEmails);
-            toast.error(`Chunk ${chunkNumber}: ${existingEmails.length} students already exist`);
-          } else {
-            // General error
-            totalErrors += chunk.length;
-            allErrors.push(...chunk.map(student => student.email));
-            toast.error(`Chunk ${chunkNumber}: ${errorMessage}`);
-          }
+          allResponses.push({ error });
+        }
+      }
+
+      // Process all responses at once
+      const successResponses = allResponses.filter(r => !r.error && r.data.success);
+      const errorResponses = allResponses.filter(r => r.error || !r.data.success);
+
+      if (successResponses.length > 0) {
+        // Show success message from the last successful response
+        toast.success(successResponses[successResponses.length - 1].data.message);
+      }
+
+      if (errorResponses.length > 0) {
+        // Show error message from the first error
+        const firstError = errorResponses[0];
+        if (firstError.error) {
+          toast.error(firstError.error.response?.data?.message || 'Failed to upload students');
+        } else {
+          toast.error(firstError.data.message || 'Failed to create students');
         }
       }
 
@@ -314,31 +277,23 @@ const BulkUpload = () => {
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = ['name', 'email', 'studentCode', 'phone'];
-    const data = [{
-      name: 'John Doe',
-      email: 'john@example.com',
-      studentCode: 'STD123',
-      phone: '9876543210'
-    }];
-
-    const csvData = [
-      headers,
-      ...data.map(row => headers.map(header => row[header]))
+  const downloadExcelTemplate = () => {
+    // Create an array of data with headers
+    const data = [
+      ['Name', 'Email', 'Phone', 'StudentCode'],
+      ['John Doe', 'john@example.com', '9876543210', 'STD123']
     ];
 
-    const csvString = csvData.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'student_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    // Create worksheet and workbook
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Student Template');
+
+    // Export the file
+    XLSX.writeFile(wb, 'student_template.xlsx');
   };
+
+
 
   return (
     <div>
@@ -468,22 +423,25 @@ const BulkUpload = () => {
               )}
             </div>
 
-            <div className="flex justify-end mt-6">
-              {uploading ? (
-                <Loader message={`Uploading... ${uploadProgress}%`} />
-              ) : (
-                <button 
-                  onClick={handleUpload}
-                  disabled={previewData.length === 0 || !passwordsGenerated}
-                  className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
-                    ${previewData.length === 0 || !passwordsGenerated 
-                      ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
-                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                >
-                  <Upload size={16} className="mr-2" />
-                  Upload Students
-                </button>
-              )}
+            <div className="flex justify-end gap-4 mt-6">
+              <button 
+                onClick={downloadExcelTemplate}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                <Download size={16} className="mr-2" />
+                Download Excel Template
+              </button>
+              <button 
+                onClick={handleUpload}
+                disabled={previewData.length === 0 || !passwordsGenerated || uploading}
+                className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
+                  ${previewData.length === 0 || !passwordsGenerated || uploading 
+                    ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+              >
+                <Upload size={16} className="mr-2" />
+                {uploading ? 'Uploading...' : 'Upload Students'}
+              </button>
             </div>
           </div>
         </div>
