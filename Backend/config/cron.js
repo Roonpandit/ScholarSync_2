@@ -8,8 +8,8 @@ const updateSlotStatuses = () => {
     .catch(error => console.error('Error updating slot statuses:', error));
 };
 
-// Schedule the job to run every minute
-cron.schedule('*/1 * * * *', updateSlotStatuses);
+// Schedule the job to run every second
+cron.schedule('* * * * * *', updateSlotStatuses);
 
 // Also run once on startup
 updateSlotStatuses();
