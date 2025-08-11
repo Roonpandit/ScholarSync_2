@@ -83,7 +83,7 @@ const Layout = ({ children }) => {
           scrolled ? "shadow-md" : "shadow-sm"
         }`}
       >
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="w-full px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleSidebar}
@@ -130,7 +130,7 @@ const Layout = ({ children }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex-1 flex justify-end items-center gap-4">
             {/* Notifications Icon */}
             <button className="p-2 rounded-full hover:bg-gray-100 transition-colors relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
               <svg
