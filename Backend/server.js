@@ -43,6 +43,16 @@ connectDB().then(() => {
   // Static folder for uploads
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
   
+  // Keep-alive endpoint
+  app.get('/keep-alive', (req, res) => {
+    console.log(`Keep-alive ping received at ${new Date().toISOString()}`);
+    res.status(200).json({ 
+      status: 'alive', 
+      timestamp: new Date().toISOString(),
+      message: 'Server is awake and running'
+    });
+  });
+
   // Mount routes
   app.use('/api/auth', authRoutes);
   app.use('/api/admin', adminRoutes);
