@@ -81,6 +81,15 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
+  // Check if new password is same as current password
+  const isSamePassword = await user.matchPassword(password);
+  if (isSamePassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password cannot be the same as your current password',
+    });
+  }
+
   // Set new password (hashing is handled by the pre-save hook in the User model)
   user.password = password;
   user.resetPasswordToken = undefined;
