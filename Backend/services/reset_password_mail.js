@@ -6,7 +6,7 @@ const { transporter } = require('./welcomeEmailService');
 
 const sendPasswordResetEmail = async (email, name, resetToken) => {
   // Get the second origin from ALLOWED_ORIGINS (production URL)
-  const productionUrl = process.env.ALLOWED_ORIGINS.split(',')[1];
+  const productionUrl = process.env.ALLOWED_ORIGINS.split(',')[0];
   const resetUrl = `${productionUrl}/reset-password/${resetToken}`;
   
   const mailOptions = {
