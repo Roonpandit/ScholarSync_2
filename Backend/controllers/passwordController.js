@@ -81,12 +81,20 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if new password is same as current password
-  const isSamePassword = await user.matchPassword(password);
-  if (isSamePassword) {
+  try {
+    // Check if new password is same as current password
+    const isSamePassword = await user.matchPassword(password);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password cannot be the same as your current password',
+      });
+    }
+  } catch (error) {
+    console.error('Error comparing passwords:', error);
     return res.status(400).json({
       success: false,
-      message: 'New password cannot be the same as your current password',
+      message: 'Error validating password. Please try again.',
     });
   }
 
