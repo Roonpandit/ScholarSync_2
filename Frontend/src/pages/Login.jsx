@@ -256,7 +256,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(true)}
-                  className="font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  className="font-small text-blue-600 hover:text-blue-800 transition-colors"
                 >
                   Forgot password?
                 </button>
