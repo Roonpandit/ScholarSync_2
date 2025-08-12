@@ -69,10 +69,11 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     .update(req.params.resetToken)
     .digest('hex');
 
+  // Find user with password field explicitly selected
   const user = await User.findOne({
     resetPasswordToken,
     resetPasswordExpire: { $gt: Date.now() },
-  });
+  }).select('+password'); // Explicitly include the password field
 
   if (!user) {
     return res.status(400).json({
