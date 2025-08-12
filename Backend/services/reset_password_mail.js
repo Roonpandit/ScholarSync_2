@@ -32,7 +32,7 @@ const sendPasswordResetEmail = async (email, name, resetToken) => {
           </a>
         </div>
         
-        <p>If you didn't request this, please ignore this email. The password reset link will expire in 10 minutes (by ${new Date(Date.now() + 10 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}).</p>
+        <p>If you didn't request this, please ignore this email. The password reset link will expire in 10 minutes.</p>
         <p>For security reasons, do not share this email with anyone.</p>
         
         <div style="margin-top: 30px; font-size: 12px; color: #666; text-align: center;">

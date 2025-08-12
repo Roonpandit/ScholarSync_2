@@ -78,14 +78,20 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Encrypt password using bcrypt
+// Encrypt password using bcrypt when it's modified or when it's a new user
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
+  // Only run this function if password was modified or if it's a new user with a password
+  if (!this.isModified('password') || !this.password) {
+    return next();
   }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Sign JWT and return

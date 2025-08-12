@@ -69,12 +69,16 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  // Set new password
+  // Set new password and mark it as modified
   user.password = req.body.password;
+  user.markModified('password'); // Explicitly mark password as modified
+  
+  // Clear reset token fields
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
 
   try {
+    // Save the user with the new password
     await user.save();
     
     // Send password reset confirmation email
