@@ -89,4 +89,5 @@ const sendPasswordResetConfirmation = async (email, name) => {
 module.exports = { 
   sendPasswordResetEmail,
   sendPasswordResetConfirmation 
+  
 };
