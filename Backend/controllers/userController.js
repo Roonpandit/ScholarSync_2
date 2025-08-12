@@ -48,6 +48,27 @@ exports.getAllStudents = asyncHandler(async (req, res) => {
     }
 });
 
+// @desc    Check if email exists
+// @route   GET /api/users/check-email
+// @access  Public
+exports.checkEmailExists = asyncHandler(async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email is required'
+    });
+  }
+
+  const user = await User.findOne({ email });
+  
+  res.status(200).json({
+    success: true,
+    exists: !!user
+  });
+});
+
 // @desc    Get students by class ID
 // @route   GET /api/students/class?classId=:classId
 // @access  Private/Student,Admin

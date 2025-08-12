@@ -3,16 +3,19 @@ require('dotenv').config();
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: false, // Force to false as we're using port 587 with STARTTLS
+  requireTLS: true, // Force using STARTTLS
+  tls: {
+    // Do not fail on invalid certs
+    rejectUnauthorized: false
+  },
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
   },
-  tls: {
-    rejectUnauthorized: false
-  }
+  debug: true // Show debug output
 });
 
 const generatePassword = (name) => {

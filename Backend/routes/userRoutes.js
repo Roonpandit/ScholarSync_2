@@ -5,7 +5,8 @@ const {
   getAttendanceHistory,
   getAbsenceHistory,
   uploadAttendancePhoto,
-  getStudentsByClass
+  getStudentsByClass,
+  checkEmailExists
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -13,6 +14,9 @@ const router = express.Router();
 
 // Protect all routes in this router
 router.use(protect);
+
+// Public routes (no authentication required)
+router.get('/check-email', checkEmailExists);
 
 // Apply student authorization to all routes except getStudentsByClass
 router.use((req, res, next) => {
