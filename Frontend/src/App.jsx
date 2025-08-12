@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext.jsx'
 import Login from './pages/Login.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import AdminDashboard from './pages/admin/Dashboard.jsx'
 import StudentDashboard from './pages/student/Dashboard.jsx'
 import StudentManagement from './pages/admin/StudentManagement.jsx'
@@ -38,6 +39,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
       
       {/* Admin Routes */}
       <Route 

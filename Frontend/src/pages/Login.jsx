@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
+import ForgotPasswordPopup from "../components/ForgotPasswordPopup";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -8,6 +9,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -236,7 +239,7 @@ const Login = () => {
                   )}
                 </div>
               </div>
-              <div className="flex justify-between items-center mt-1">
+              <div className="flex items-center justify-between mt-1">
                 <div className="flex items-center">
                   <input
                     id="remember-me"
@@ -250,12 +253,13 @@ const Login = () => {
                     Remember me
                   </label>
                 </div>
-                <a
-                  href="#"
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="font-medium text-blue-600 hover:text-blue-800 transition-colors"
                 >
-                  Forgot Password?
-                </a>
+                  Forgot your password?
+                </button>
               </div>
             </div>
 
@@ -312,7 +316,10 @@ const Login = () => {
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <div className="flex items-center justify-center space-x-6">
-              <button className="flex items-center justify-center p-2 border border-gray-300 rounded-full bg-white hover:bg-gray-50 transition-colors">
+              <button 
+                onClick={() => setShowAuthPopup(true)}
+                className="flex items-center justify-center p-2 border border-gray-300 rounded-full bg-white hover:bg-gray-50 transition-colors"
+              >
                 <svg
                   className="h-5 w-5"
                   viewBox="0 0 24 24"
@@ -337,7 +344,10 @@ const Login = () => {
                   />
                 </svg>
               </button>
-              <button className="flex items-center justify-center p-2 border border-gray-300 rounded-full bg-white hover:bg-gray-50 transition-colors">
+              <button 
+                onClick={() => setShowAuthPopup(true)}
+                className="flex items-center justify-center p-2 border border-gray-300 rounded-full bg-white hover:bg-gray-50 transition-colors"
+              >
                 <svg
                   className="h-5 w-5 text-blue-600"
                   viewBox="0 0 24 24"
@@ -347,16 +357,6 @@ const Login = () => {
                   <path d="M24 12.073c0-5.962-4.825-10.788-10.787-10.788-5.962 0-10.787 4.826-10.787 10.788 0 5.386 3.949 9.848 9.102 10.649v-7.534H8.931v-3.115h2.597V9.496c0-2.564 1.526-3.979 3.858-3.979 1.118 0 2.285.2 2.285.2v2.513h-1.285c-1.267 0-1.665.785-1.665 1.594v1.914h2.832l-.452 3.115h-2.38v7.534C20.05 21.92 24 17.459 24 12.073z" />
                 </svg>
               </button>
-              <button className="flex items-center justify-center p-2 border border-gray-300 rounded-full bg-white hover:bg-gray-50 transition-colors">
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M18.3362 6.00939C17.0148 4.65685 15.1606 3.90784 13.1964 3.90784H10.8036C8.83936 3.90784 6.98518 4.65685 5.66384 6.00939C4.34249 7.36192 3.6095 9.25668 3.6095 11.266V13.7333C3.6095 15.7426 4.34249 17.6374 5.66384 18.9899C6.98518 20.3424 8.83936 21.0915 10.8036 21.0915H13.1964C15.1606 21.0915 17.0148 20.3424 18.3362 18.9899C19.6575 17.6374 20.3905 15.7426 20.3905 13.7333V11.266C20.3905 9.25668 19.6575 7.36192 18.3362 6.00939ZM14.9458 11.9631L10.5779 15.257C10.4808 15.331 10.3585 15.3704 10.2308 15.3704C10.1031 15.3704 9.9807 15.331 9.8838 15.257C9.7892 15.185 9.71498 15.084 9.67101 14.9667C9.62704 14.8494 9.6148 14.7209 9.6355 14.5975V7.99908C9.6148 7.87564 9.62704 7.7471 9.67101 7.62985C9.71498 7.5126 9.7892 7.41147 9.8838 7.33969C9.97937 7.26666 10.0946 7.22595 10.2139 7.22274C10.3333 7.21954 10.4505 7.25402 10.5496 7.32207C10.6487 7.39011 10.7259 7.48836 10.7712 7.60449C10.8164 7.72062 10.8277 7.84889 10.8036 7.97235V13.6358L14.1924 11.0631C14.2896 10.988 14.4122 10.9478 14.5401 10.9478C14.668 10.9478 14.7906 10.988 14.8877 11.0631C14.9821 11.1344 15.0563 11.2348 15.1004 11.352C15.1446 11.4692 15.1571 11.5977 15.1365 11.7212C15.1159 11.8447 15.0676 11.9581 14.9971 12.0486C14.9266 12.1392 14.8371 12.2031 14.7375 12.2326L14.9458 11.9631Z" />
-                </svg>
-              </button>
             </div>
 
             <div className="text-center mt-4">
@@ -364,7 +364,11 @@ const Login = () => {
                 Don't have an account?{" "}
                 <a
                   href="#"
-                  className="font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowAuthPopup(true);
+                  }}
+                  className="font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
                 >
                   Sign up
                 </a>
@@ -375,12 +379,69 @@ const Login = () => {
           <div className="mt-6 text-center">
             <div className="text-gray-500 text-xs">
               <p>
-                © {new Date().getFullYear()} Masai School. All rights reserved.
+                {new Date().getFullYear()} Masai School. All rights reserved.
               </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Auth Popup Modal */}
+      {showAuthPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 sm:p-8 relative">
+            <button
+              onClick={() => setShowAuthPopup(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900">Access Restricted</h3>
+            </div>
+            
+            <div className="text-sm text-gray-600 space-y-4 mb-6">
+              <p>This attendance portal is designed with enhanced security measures. New user registration is currently disabled.</p>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <p className="font-medium text-blue-800 mb-2">To gain access:</p>
+                <ul className="list-disc list-inside space-y-1 text-blue-700">
+                  <li>Contact your system administrator for login credentials</li>
+                  <li>Existing users can log in with their assigned username and password</li>
+                </ul>
+              </div>
+              
+              <p className="text-sm text-center mt-4">
+                For technical support or credential requests, please reach out to your Administration
+              </p>
+            </div>
+            
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => setShowAuthPopup(false)}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forgot Password Popup */}
+      <ForgotPasswordPopup 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 };
