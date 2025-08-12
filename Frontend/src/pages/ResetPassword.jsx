@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -13,6 +14,24 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [tokenError, setTokenError] = useState('');
+  
+  // Password validation states
+  const [hasMinLength, setHasMinLength] = useState(false);
+  const [hasUppercase, setHasUppercase] = useState(false);
+  const [hasLowercase, setHasLowercase] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
+  const [hasSpecialChar, setHasSpecialChar] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState(false);
+  
+  // Update password validations when password changes
+  useEffect(() => {
+    setHasMinLength(password.length >= 8);
+    setHasUppercase(/[A-Z]/.test(password));
+    setHasLowercase(/[a-z]/.test(password));
+    setHasNumber(/[0-9]/.test(password));
+    setHasSpecialChar(/[!@#$%^&*(),.?":{}|<>]/.test(password));
+    setPasswordsMatch(password === confirmPassword && confirmPassword !== '');
+  }, [password, confirmPassword]);
 
   // Simulate initial page loading with skeleton
   useEffect(() => {
@@ -187,6 +206,40 @@ const ResetPassword = () => {
                   required
                   className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 group-hover:border-blue-300"
                 />
+                
+                {/* Password validation checklist */}
+                <div className="mt-2 space-y-1.5 text-sm">
+                  <div className={`flex items-center ${hasMinLength ? 'text-green-600' : 'text-gray-500'}`}>
+                    {hasMinLength ? 
+                      <CheckCircle size={16} className="mr-2" /> : 
+                      <XCircle size={16} className="mr-2" />}
+                    <span>At least 8 characters</span>
+                  </div>
+                  <div className={`flex items-center ${hasUppercase ? 'text-green-600' : 'text-gray-500'}`}>
+                    {hasUppercase ? 
+                      <CheckCircle size={16} className="mr-2" /> : 
+                      <XCircle size={16} className="mr-2" />}
+                    <span>At least one uppercase letter (A-Z)</span>
+                  </div>
+                  <div className={`flex items-center ${hasLowercase ? 'text-green-600' : 'text-gray-500'}`}>
+                    {hasLowercase ? 
+                      <CheckCircle size={16} className="mr-2" /> : 
+                      <XCircle size={16} className="mr-2" />}
+                    <span>At least one lowercase letter (a-z)</span>
+                  </div>
+                  <div className={`flex items-center ${hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+                    {hasNumber ? 
+                      <CheckCircle size={16} className="mr-2" /> : 
+                      <XCircle size={16} className="mr-2" />}
+                    <span>At least one number (0-9)</span>
+                  </div>
+                  <div className={`flex items-center ${hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                    {hasSpecialChar ? 
+                      <CheckCircle size={16} className="mr-2" /> : 
+                      <XCircle size={16} className="mr-2" />}
+                    <span>At least one special character (!@#$%^&*(),.?":{}|&lt;&gt;)</span>
+                  </div>
+                </div>
                 <div
                   className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
                   onClick={() => setShowPassword(!showPassword)}
@@ -263,8 +316,18 @@ const ResetPassword = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your new password"
                   required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 group-hover:border-blue-300"
+                  className={`w-full pl-10 pr-12 py-3 border ${passwordsMatch ? 'border-green-300' : confirmPassword ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-200 group-hover:border-blue-300`}
                 />
+                {confirmPassword && !passwordsMatch && (
+                  <p className="mt-1 text-sm text-red-600">
+                    Passwords do not match
+                  </p>
+                )}
+                {passwordsMatch && (
+                  <p className="mt-1 text-sm text-green-600 flex items-center">
+                    <CheckCircle size={16} className="mr-1" /> Passwords match
+                  </p>
+                )}
                 <div
                   className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
