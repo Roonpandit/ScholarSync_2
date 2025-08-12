@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../services/reset_password_mail');
@@ -51,6 +52,17 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
 // @route   PUT /api/auth/reset-password/:resetToken
 // @access  Public
 exports.resetPassword = asyncHandler(async (req, res) => {
+  const { password } = req.body;
+
+  // Validate password format
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*(),.?":{}|<>)',
+    });
+  }
+
   // Get hashed token
   const resetPasswordToken = crypto
     .createHash('sha256')
@@ -69,17 +81,14 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  // Set new password and mark it as modified
-  user.password = req.body.password;
-  user.markModified('password'); // Explicitly mark password as modified
-  
-  // Clear reset token fields
+  // Set new password (hashing is handled by the pre-save hook in the User model)
+  user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
 
   try {
-    // Save the user with the new password
-    await user.save();
+    // Save the user (validations and password hashing will be handled by the pre-save hook)
+    await user.save({ validateBeforeSave: true });
     
     // Send password reset confirmation email
     await sendPasswordResetConfirmation(user.email, user.name);
