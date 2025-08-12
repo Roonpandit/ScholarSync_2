@@ -83,7 +83,12 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 
   try {
     // Check if new password is same as current password
+    console.log('User password hash from DB:', user.password ? 'exists' : 'missing');
+    console.log('Password to compare:', password ? 'provided' : 'missing');
+    
     const isSamePassword = await user.matchPassword(password);
+    console.log('Password comparison result:', isSamePassword);
+    
     if (isSamePassword) {
       return res.status(400).json({
         success: false,
@@ -92,9 +97,17 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     }
   } catch (error) {
     console.error('Error comparing passwords:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      userPasswordExists: !!user.password,
+      inputPasswordExists: !!password
+    });
+    
     return res.status(400).json({
       success: false,
       message: 'Error validating password. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 
