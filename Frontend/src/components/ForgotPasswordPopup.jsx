@@ -69,7 +69,7 @@ const ForgotPasswordPopup = ({ isOpen, onClose }) => {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors z-10"
           disabled={isLoading}
         >
           <X className="w-6 h-6" />
@@ -88,20 +88,40 @@ const ForgotPasswordPopup = ({ isOpen, onClose }) => {
           </div>
 
           {!isEmailSent ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email Address
                 </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                  placeholder="you@example.com"
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                />
+                <div className="space-y-1">
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                    placeholder="you@example.com"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  />
+                  {/* Space reserved for validation indicators */}
+                  <div className="min-h-[20px] flex items-start">
+                    {/* Add your validation indicators here */}
+                    {/* Example: 
+                    {emailError && (
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {emailError}
+                      </p>
+                    )}
+                    {emailValid && (
+                      <p className="text-sm text-green-600 flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4" />
+                        Valid email address
+                      </p>
+                    )}
+                    */}
+                  </div>
+                </div>
               </div>
 
               <button
