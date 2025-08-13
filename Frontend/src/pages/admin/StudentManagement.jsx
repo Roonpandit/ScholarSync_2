@@ -16,6 +16,7 @@ const StudentManagement = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -150,6 +151,7 @@ const StudentManagement = () => {
     }
     
     try {
+      setIsSubmitting(true);
       // Create a copy of formData without confirmPassword
       const { confirmPassword, ...postData } = formData;
       const res = await axios.post('/admin/students', postData);
@@ -170,6 +172,8 @@ const StudentManagement = () => {
       console.error('Error adding student:', error);
       const errorMessage = error.response?.data?.message || 'Failed to add student';
       toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -356,21 +360,21 @@ const StudentManagement = () => {
                   {errors.confirmPassword && (
                     <p className="text-red-500 text-xs italic mt-1">{errors.confirmPassword}</p>
                   )}
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2" />
+                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
                       <span>At least one lowercase letter (a-z)</span>
                     </div>
                     <div className={`flex items-center ${/[0-9]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2" />
+                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
                       <span>At least one number (0-9)</span>
                     </div>
                     <div className={`flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2" />
-                      <span>At least one special character (!@#$%^&*(),.?&quot;:{}|&lt;&gt;)</span>
+                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
+                      <span>At least one special character</span>
                     </div>
                     <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2" />
+                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
                       <span>At least 8 characters long</span>
                     </div>
                   </div>
@@ -381,10 +385,24 @@ const StudentManagement = () => {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button 
                 type="submit" 
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center"
+                disabled={isSubmitting}
+                style={{ cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+                className={`flex-1 ${isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'} text-white px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 inline-flex items-center justify-center`}
               >
-                <Plus size={16} className="mr-2" />
-                Add Student
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} className="mr-2" />
+                    Add Student
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -587,9 +605,18 @@ const StudentManagement = () => {
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                disabled={isDeleting}
+                className={`px-4 py-2 ${isDeleting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'} text-white rounded-md`}
               >
-                Delete
+                {isDeleting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </span>
+                ) : 'Delete'}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Table, Modal, Form, Input, Button, Space } from 'antd';
 import { Camera, MapPin, X } from 'lucide-react';
 import { UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined, EditOutlined } from '@ant-design/icons';
@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import Loader from '../../components/Loader';
 
 const StudentDetails = () => {
+  const navigate = useNavigate();
   const { studentId } = useParams();
   const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,8 +87,15 @@ const StudentDetails = () => {
     <div className="container mx-auto px-4 py-6">
       {/* Student Details Card */}
       <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
-        <div className="border-b border-gray-200 p-4 md:p-6">
+        <div className="border-b border-gray-200 p-4 md:p-6 relative">
           <h2 className="text-xl md:text-2xl font-semibold text-gray-800">Student Details</h2>
+          <button 
+            onClick={() => navigate(-1)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
         </div>
         
         <div className="p-4 md:p-6">

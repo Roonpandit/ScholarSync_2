@@ -83,30 +83,24 @@ const Login = () => {
       ) : (
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 border border-gray-100 transition-all duration-300 hover:shadow-blue-500/20">
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="h-16 w-16 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"
+            <div className="flex flex-col items-center">
+              <div className="flex items-center justify-center space-x-1.5 mb-4">
+                <div className="h-10 w-10 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                  <img 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    className="h-full w-full object-contain"
+                    style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
                   />
-                </svg>
+                </div>
+                <h1 className="text-4xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text -mb-1" style={{fontFamily: 'Times New Roman, Times, serif'}}>
+                  ScholarSync
+                </h1>
               </div>
+              <p className="text-gray-800 -mt-1">
+                Welcome back! Sign in to your account
+              </p>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 text-transparent bg-clip-text mb-2">
-              Masai Attendance
-            </h1>
-            <p className="text-gray-600">
-              Welcome back! Sign in to your account
-            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

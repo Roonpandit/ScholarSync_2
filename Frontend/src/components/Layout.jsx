@@ -120,14 +120,19 @@ const Layout = ({ children }) => {
                 </svg>
               )}
             </button>
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">M</span>
+            <div className="flex items-center justify-center space-x-1.5">
+                <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                  <img 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    className="h-full w-full object-contain"
+                    style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+                  />
+                </div>
+                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{fontFamily: 'Times New Roman, Times, serif'}}>
+                  ScholarSync
+                </h1>
               </div>
-              <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700 hidden sm:block">
-                Masai Attendance
-              </h1>
-            </div>
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-4">
