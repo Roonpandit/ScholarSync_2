@@ -10,7 +10,7 @@ const {
   forgotPassword,
   resetPassword
 } = require('../controllers/passwordController');
-const { checkEmailExists } = require('../controllers/userController');
+const { checkEmailExists } = require('../controllers/studentController');
 const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();

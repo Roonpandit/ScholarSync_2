@@ -5,7 +5,7 @@ const multer = require('multer');
 const cloudinary = require('../config/cloudinary');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
-const User = require('../models/User');
+const User = require('../models/Student');
 
 // Helper to add days to a date
 const addDays = (date, days) => {

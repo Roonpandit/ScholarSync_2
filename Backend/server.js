@@ -5,8 +5,9 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const userRoutes = require('./routes/userRoutes');
+const userRoutes = require('./routes/studentRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const teacherRoutes = require('./routes/teacherRoutes');
 const cron = require('./config/cron');
 const attendanceReminder = require('./config/attendanceReminderCron');
 
@@ -56,9 +57,28 @@ connectDB().then(() => {
   // Mount routes
   app.use('/api/auth', authRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/teacher', teacherRoutes);
   app.use('/api/students', userRoutes);
-  app.use('/api/review', reviewRoutes);
-  
+  app.use('/api/reviews', reviewRoutes);
+
+  // Error handling middleware (should be after all other middleware and routes)
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong!',
+      error: process.env.NODE_ENV === 'development' ? err.message : {}
+    });
+  });
+
+  // Handle 404 - Keep this as the last route
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      message: 'API endpoint not found'
+    });
+  });
+
   // Basic route for testing
   app.get('/', (req, res) => {
     res.json({

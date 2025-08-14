@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const AttendanceSlot = require('../models/AttendanceSlot');
-const Student = require('../models/User');
+const Student = require('../models/Student');
 const { sendAttendanceReminder } = require('../services/emailService');
 
 // Function to check and send reminders for upcoming slots

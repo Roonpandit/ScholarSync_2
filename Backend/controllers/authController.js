@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
+const User = require('../models/Student');
 const Admin = require('../models/Admin');
 
 // Password validation

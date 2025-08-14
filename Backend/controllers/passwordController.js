@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
+const User = require('../models/Student');
 const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../services/reset_password_mail');
 
 // @desc    Forgot password

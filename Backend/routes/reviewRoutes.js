@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middlewares/auth');
 const { sendFeedbackEmails } = require('../controllers/reviewController');
-const User = require('../models/User');
+const User = require('../models/Student');
 
 // Get all students for review page
 router.get('/students', protect, authorize('admin'), async (req, res) => {

@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const Student = require('../models/User');
+const Student = require('../models/Student');
 
 // Professional email template
 const feedbackEmailTemplate = (studentName, feedbackLink) => `

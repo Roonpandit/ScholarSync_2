@@ -7,7 +7,7 @@ const {
   uploadAttendancePhoto,
   getStudentsByClass,
   checkEmailExists
-} = require('../controllers/userController');
+} = require('../controllers/studentController');
 const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();

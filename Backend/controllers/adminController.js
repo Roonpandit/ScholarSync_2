@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
+const User = require('../models/Student');
+const Teacher = require('../models/Teacher');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
@@ -1334,6 +1335,165 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
   }
 });
 
+
+// @desc    Register a new teacher (Admin only)
+// @route   POST /api/admin/teachers
+// @access  Private/Admin
+exports.registerTeacher = asyncHandler(async (req, res) => {
+  const { name, email, teacherCode, phone, password } = req.body;
+
+  // Check if teacher already exists with email or teacherCode
+  const existingTeacher = await Teacher.findOne({
+    $or: [{ email }, { teacherCode }],
+  });
+
+  if (existingTeacher) {
+    return res.status(400).json({
+      success: false,
+      message: 'Teacher with this email or teacher code already exists',
+    });
+  }
+
+  // Create teacher
+  const teacher = await Teacher.create({
+    name,
+    email,
+    teacherCode,
+    phone,
+    password,
+    role: 'teacher',
+  });
+
+  // Send welcome email
+  try {
+    await sendWelcomeEmail({
+      name: teacher.name,
+      email: teacher.email,
+      password: password, // This is the plain text password
+      role: 'teacher',
+    });
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    // Don't fail the request if email fails
+  }
+
+  // Remove password from output
+  teacher.password = undefined;
+
+  res.status(201).json({
+    success: true,
+    data: teacher,
+    message: 'Teacher registered successfully',
+  });
+});
+
+// @desc    Get all teachers
+// @route   GET /api/admin/teachers
+// @access  Private/Admin
+exports.getTeachers = asyncHandler(async (req, res) => {
+  const teachers = await Teacher.find().select('-password');
+  
+  res.status(200).json({
+    success: true,
+    count: teachers.length,
+    data: teachers,
+  });
+});
+
+// @desc    Get single teacher
+// @route   GET /api/admin/teachers/:id
+// @access  Private/Admin
+exports.getTeacher = asyncHandler(async (req, res) => {
+  const teacher = await Teacher.findById(req.params.id).select('-password');
+
+  if (!teacher) {
+    return res.status(404).json({
+      success: false,
+      message: 'Teacher not found',
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: teacher,
+  });
+});
+
+// @desc    Update teacher
+// @route   PUT /api/admin/teachers/:id
+// @access  Private/Admin
+exports.updateTeacher = asyncHandler(async (req, res) => {
+  const { name, email, teacherCode, phone } = req.body;
+
+  let teacher = await Teacher.findById(req.params.id);
+
+  if (!teacher) {
+    return res.status(404).json({
+      success: false,
+      message: 'Teacher not found',
+    });
+  }
+
+  // Check if email or teacherCode is being updated to an existing one
+  if (email && email !== teacher.email) {
+    const existingTeacher = await Teacher.findOne({ email });
+    if (existingTeacher) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already in use',
+      });
+    }
+  }
+
+  if (teacherCode && teacherCode !== teacher.teacherCode) {
+    const existingTeacher = await Teacher.findOne({ teacherCode });
+    if (existingTeacher) {
+      return res.status(400).json({
+        success: false,
+        message: 'Teacher code already in use',
+      });
+    }
+  }
+
+  // Update fields
+  teacher.name = name || teacher.name;
+  teacher.email = email || teacher.email;
+  teacher.teacherCode = teacherCode || teacher.teacherCode;
+  teacher.phone = phone || teacher.phone;
+
+  await teacher.save();
+
+  // Remove password from output
+  teacher.password = undefined;
+
+  res.status(200).json({
+    success: true,
+    data: teacher,
+    message: 'Teacher updated successfully',
+  });
+});
+
+// @desc    Delete teacher
+// @route   DELETE /api/admin/teachers/:id
+// @access  Private/Admin
+exports.deleteTeacher = asyncHandler(async (req, res) => {
+  const teacher = await Teacher.findById(req.params.id);
+
+  if (!teacher) {
+    return res.status(404).json({
+      success: false,
+      message: 'Teacher not found',
+    });
+  }
+
+  await teacher.remove();
+
+  res.status(200).json({
+    success: true,
+    data: {},
+    message: 'Teacher deleted successfully',
+  });
+});
 
 // @desc    Delete a student and all their related data
 // @route   DELETE /api/admin/students/:id

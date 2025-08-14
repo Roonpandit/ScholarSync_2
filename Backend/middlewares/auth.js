@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
+const User = require('../models/Student');
 const Admin = require('../models/Admin');
+const Teacher = require('../models/Teacher');
 
 // Protect routes
 exports.protect = asyncHandler(async (req, res, next) => {
@@ -33,6 +34,11 @@ exports.protect = asyncHandler(async (req, res, next) => {
     if (!user) {
       // Try to find admin
       user = await Admin.findById(decoded.id);
+      
+      if (!user) {
+        // Try to find teacher
+        user = await Teacher.findById(decoded.id);
+      }
     }
 
     if (!user) {
@@ -55,12 +61,33 @@ exports.protect = asyncHandler(async (req, res, next) => {
 // Grant access to specific roles
 exports.authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    // If route is for admin/teacher only, check role
+    if (roles.length > 0 && !roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         message: `User role ${req.user.role} is not authorized to access this route`,
       });
     }
+    
+    // Check for delete operations by teachers
+    if (req.user.role === 'teacher' && req.method === 'DELETE') {
+      return res.status(403).json({
+        success: false,
+        message: 'Teachers are not authorized to perform delete operations',
+      });
+    }
+    
     next();
   };
+};
+
+// Middleware to restrict route to admin only
+exports.restrictToAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Only administrators are allowed to perform this action',
+    });
+  }
+  next();
 };

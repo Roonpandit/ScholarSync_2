@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const User = require('../models/User');
+const User = require('../models/Student');
 const AttendanceSlot = require('../models/AttendanceSlot');
 require('dotenv').config();
 
