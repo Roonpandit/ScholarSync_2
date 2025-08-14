@@ -143,7 +143,7 @@ function App() {
         } 
       />
       
-      {/* Default Routes */}
+      {/* Default Route - Show home if not logged in, otherwise redirect based on role */}
       <Route 
         path="/" 
         element={
@@ -152,7 +152,7 @@ function App() {
             <Navigate to="/admin" /> : 
             <Navigate to="/student" />
           ) : (
-            <Navigate to="/login" />
+            <Navigate to="/home" />
           )
         } 
       />
