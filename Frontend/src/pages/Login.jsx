@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import ForgotPasswordPopup from "../components/ForgotPasswordPopup";
 
 const Login = () => {
@@ -77,11 +78,18 @@ const Login = () => {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-200 via-indigo-500 to-purple-900 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-400 to-indigo-900 p-4 sm:p-6 md:p-8">
       {pageLoading ? (
         <LoginSkeleton />
       ) : (
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 border border-gray-100 transition-all duration-300 hover:shadow-blue-500/20">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 border border-gray-100 transition-all duration-300 hover:shadow-blue-500/20 relative">
+          <Link 
+            to="/home" 
+            className="absolute top-4 left-4 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 text-gray-600"
+            aria-label="Back to home"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
           <div className="text-center mb-8">
             <div className="flex flex-col items-center">
               <div className="flex items-center justify-center space-x-1.5 mb-4">

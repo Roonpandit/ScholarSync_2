@@ -16,6 +16,7 @@ import Leave from './pages/student/Leave.jsx'
 import Review from './pages/admin/Review.jsx';
 import Layout from './components/Layout.jsx'
 import NotFound from './pages/NotFound.jsx'
+import Landing from './components/Landing.jsx'
 import './App.css'
 import Lottie from 'lottie-react'
 import loaderAnimation from './components/loader/animations/62d18998-eb09-48b7-a29a-e69b4e6fb833.json'
@@ -38,7 +39,8 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+      <Route path="/home" element={<Landing />} />
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/home" />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       
       {/* Admin Routes */}

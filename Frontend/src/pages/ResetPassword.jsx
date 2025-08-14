@@ -168,10 +168,10 @@ const ResetPassword = () => {
           </button>
           <div className="mt-4">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/home')}
               className="text-blue-600 hover:underline"
             >
-              Back to Login
+              Back to Home
             </button>
           </div>
         </div>

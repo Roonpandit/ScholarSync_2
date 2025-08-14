@@ -68,7 +68,7 @@ const Layout = ({ children }) => {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/home");
   };
 
   const isActive = (path) => {
@@ -79,9 +79,8 @@ const Layout = ({ children }) => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header
-        className={`bg-white fixed w-full top-0 z-50 transition-all duration-200 ${
-          scrolled ? "shadow-md" : "shadow-sm"
-        }`}
+        className={`bg-white fixed w-full top-0 z-50 transition-all duration-200 ${scrolled ? "shadow-md" : "shadow-sm"
+          }`}
       >
         <div className="w-full px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -121,18 +120,18 @@ const Layout = ({ children }) => {
               )}
             </button>
             <div className="flex items-center justify-center space-x-1.5">
-                <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
-                  <img 
-                    src="/logo.png" 
-                    alt="Logo" 
-                    className="h-full w-full object-contain"
-                    style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-                  />
-                </div>
-                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{fontFamily: 'Times New Roman, Times, serif'}}>
-                  ScholarSync
-                </h1>
+              <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                <img
+                  src="/logo.png"
+                  alt="Logo"
+                  className="h-full w-full object-contain"
+                  style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+                />
               </div>
+              <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                ScholarSync
+              </h1>
+            </div>
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-4">
@@ -173,9 +172,8 @@ const Layout = ({ children }) => {
                   </span>
                 </div>
                 <svg
-                  className={`w-4 h-4 text-gray-500 transition-transform ${
-                    dropdownOpen ? "transform rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 text-gray-500 transition-transform ${dropdownOpen ? "transform rotate-180" : ""
+                    }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -646,9 +644,8 @@ const NavItem = ({ to, isActive, icon, children, badge = false }) => {
       `}
     >
       <div
-        className={`transition-colors duration-150 ${
-          isActive ? "text-blue-600" : "text-gray-500 group-hover:text-blue-500"
-        }`}
+        className={`transition-colors duration-150 ${isActive ? "text-blue-600" : "text-gray-500 group-hover:text-blue-500"
+          }`}
       >
         {icon}
       </div>

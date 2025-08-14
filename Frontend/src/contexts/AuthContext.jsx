@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
           // Only trigger logout if we have a token (not during initial login)
           console.error('Unauthorized:', error);
           logout();
-          navigate('/login');
+          navigate('/home');
         }
         return Promise.reject(error);
       }
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     checkLoggedIn()
   }, [token])
 
-  // Login function
+  // Login function - Just handles authentication, not navigation
   const login = async (email, password) => {
     try {
       const res = await axios.post('/auth/login', { email, password })
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Logout function
+  // Logout function - Just clears auth state, navigation is handled by the router
   const logout = () => {
     setToken(null)
     setUser(null)
