@@ -1477,22 +1477,38 @@ exports.updateTeacher = asyncHandler(async (req, res) => {
 // @route   DELETE /api/admin/teachers/:id
 // @access  Private/Admin
 exports.deleteTeacher = asyncHandler(async (req, res) => {
-  const teacher = await Teacher.findById(req.params.id);
+  const { id } = req.params;
 
-  if (!teacher) {
-    return res.status(404).json({
+  try {
+    // Validate teacher ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid teacher ID',
+      });
+    }
+
+    const result = await Teacher.deleteOne({ _id: id });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Teacher not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Teacher deleted successfully.'
+    });
+  } catch (error) {
+    console.error('Error in deleteTeacher:', error);
+    res.status(500).json({
       success: false,
-      message: 'Teacher not found',
+      message: 'Error deleting teacher',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
-
-  await teacher.remove();
-
-  res.status(200).json({
-    success: true,
-    data: {},
-    message: 'Teacher deleted successfully',
-  });
 });
 
 // @desc    Delete a student and all their related data
