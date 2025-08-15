@@ -39,7 +39,7 @@ const DocumentationPage = () => {
                 "Access recent attendance records and quick panel navigation",
                 "Note: Notification icon in navbar currently uses email system"
             ],
-            image: "photo_3.png"
+            image: "/docs/photo_3.png"
         },
         {
             id: 2,
@@ -54,7 +54,7 @@ const DocumentationPage = () => {
                 "Edit student details and view present slot details with location and photos",
                 "Delete students (removes all attendance records)"
             ],
-            image: "photo_students.png"
+            image: "photo_4.png"
         },
         {
             id: 3,
@@ -68,7 +68,7 @@ const DocumentationPage = () => {
                 "Delete teacher accounts when needed",
                 "Teachers receive login credentials via email automatically"
             ],
-            image: "photo_teachers.png"
+            image: "photo_5.png"
         },
         {
             id: 4,
@@ -81,7 +81,7 @@ const DocumentationPage = () => {
                 "Students receive form links directly in their email",
                 "Track form responses and completion rates"
             ],
-            image: "photo_feedback.png"
+            image: "photo_6.png"
         },
         {
             id: 5,
@@ -350,7 +350,7 @@ const DocumentationPage = () => {
                                 <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                         <ImageWithFallback
-                                            src={`/images/documentation/${step.image}`}
+                                            src={step.image.startsWith('/') ? step.image : `/docs/${step.image}`}
                                             alt={step.title}
                                             className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
                                         />
@@ -436,7 +436,7 @@ const DocumentationPage = () => {
                                                 This is an exact copy of our original webpage: <strong>scholarsync.online</strong>.
                                                 The original version contains live data, so we've provided this test environment for you to explore.
                                                 This testing version has the exact same features and functionality as the production system.
-                                                You can access the <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-medium hover:underline">Portal Link</a>
+                                                You can access the Testing Portal here: <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-medium hover:underline">Portal Link. </a>
                                                 You can perform any activity here as it's made specifically for testing purposes.
                                             </p>
                                         </div>
@@ -528,7 +528,7 @@ const DocumentationPage = () => {
                                                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
-                                                                    src="/images/documentation/screenshot_1.png"
+                                                                    src="/public/docs/photo_1.png"
                                                                     alt="Login page screenshot"
                                                                     className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
                                                                 />
@@ -570,7 +570,7 @@ const DocumentationPage = () => {
                                                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
-                                                                    src="/images/documentation/photo_2.png"
+                                                                    src="/public/docs/photo_2.png"
                                                                     alt="Login options screenshot"
                                                                     className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
                                                                 />
