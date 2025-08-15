@@ -120,7 +120,7 @@ export default function ScholarSyncLanding() {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFAQ, setOpenFAQ] = useState(null);
-  
+
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
   const statsRef = useRef(null);
@@ -142,19 +142,19 @@ export default function ScholarSyncLanding() {
         <div className="fixed top-0 left-0 w-full z-50 bg-white mx-auto px-4 sm:px-6 lg:px-8 shadow-md">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-            <div className="flex items-center justify-center space-x-1.5">
-              <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
-                <img
-                  src="/logo.png"
-                  alt="Logo"
-                  className="h-full w-full object-contain"
-                  style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-                />
+              <div className="flex items-center justify-center space-x-1.5">
+                <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                  <img
+                    src="/logo.png"
+                    alt="Logo"
+                    className="h-full w-full object-contain"
+                    style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+                  />
+                </div>
+                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                  ScholarSync
+                </h1>
               </div>
-              <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
-                ScholarSync
-              </h1>
-            </div>
               <div className="hidden md:ml-6 md:flex md:space-x-8">
                 <a
                   href="#features"
@@ -283,11 +283,7 @@ export default function ScholarSyncLanding() {
                   </button>
 
                   <button
-                    onClick={() =>
-                      document
-                        .getElementById("features")
-                        ?.scrollIntoView({ behavior: "smooth" })
-                    }
+                    onClick={() => navigate("/documentation")}
                     className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 text-base md:text-lg font-semibold shadow-sm hover:bg-indigo-100 transition duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-2"
                   >
                     Learn More
@@ -805,7 +801,7 @@ export default function ScholarSyncLanding() {
               Get Started
             </button>
             <button
-              onClick={() => navigate("/demo")}
+              onClick={() => navigate("/documentation")}
               className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-base font-medium rounded-xl text-white hover:bg-indigo-500 transition duration-300"
             >
               Try Demo
@@ -814,77 +810,54 @@ export default function ScholarSyncLanding() {
         </div>
       </div>
 
-      <footer className="bg-gray-900 text-white py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="flex items-center justify-center space-x-1.5">
-              <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
-                <img
-                  src="/logo.png"
-                  alt="Logo"
-                  className="h-full w-full object-contain"
-                  style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-                />
-              </div>
-              <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-100 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
-                ScholarSync
-              </h1>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#features" className="text-gray-400 hover:text-white">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#testimonials" className="text-gray-400 hover:text-white">
-                    Testimonials
-                  </a>
-                </li>
-                <li>
-                  <a href="#faq" className="text-gray-400 hover:text-white">
-                    FAQ
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white">
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white">
-                    Support
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white">
-                    API Guide
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <ul className="space-y-2">
-                <li className="text-gray-400">tarunvashisth0000@gmail.com</li>
-                <li className="text-gray-400">+91 7082889441</li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-2 pt-4 border-t border-gray-800 text-center text-gray-400">
-            <p>
-              &copy; {new Date().getFullYear()} ScholarSync. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+            <footer className="bg-gray-900 text-white py-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col items-center space-y-2">
+                        <div>
+                            <div className="flex items-center justify-center space-x-1.5 cursor-pointer" onClick={() => navigate('/home')}>
+                                <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                                    <img
+                                        src="/logo.png"
+                                        alt="Logo"
+                                        className="h-full w-full object-contain"
+                                        style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+                                    />
+                                </div>
+                                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-100 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                                    ScholarSync
+                                </h1>
+                            </div>
+                            <p className="text-gray-400 text-center">Smart attendance management for modern educational institutions.</p>
+
+                            {/* Contact Links */}
+                            <div className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-4 mt-3">
+                                <a
+                                    href="mailto:tarunvashisth0000@gmail.com"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
+                                >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                    </svg>
+                                    <span>tarunvashisth0000@gmail.com</span>
+                                </a>
+                                <a
+                                    href="tel:+917082889441"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
+                                >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                    </svg>
+                                    <span>+917082889441</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="border-t border-gray-800 pt-1 pb-1 mt-6 text-center text-gray-400">
+                        <p>&copy; {new Date().getFullYear()} ScholarSync. All rights reserved.</p>
+                    </div>
+                </div>
+            </footer>
     </div>
   );
 }

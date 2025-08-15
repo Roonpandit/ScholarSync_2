@@ -5,6 +5,7 @@ import ResetPassword from './pages/ResetPassword.jsx'
 import Layout from './components/Layout.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Landing from './components/Landing.jsx'
+import DocumentationPage from './components/DocumentationPage.jsx'
 
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import StudentManagements from './pages/admin/StudentManagements.jsx'
@@ -54,6 +55,7 @@ function App() {
       <Route path="/home" element={<Landing />} />
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/home" />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
+      <Route path="/documentation" element={<DocumentationPage />} />
       
       {/* Admin Routes */}
       <Route 
