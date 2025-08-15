@@ -80,24 +80,48 @@ const MarkAttendance = () => {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-      
-      // Set the stream to the video element
-      setTimeout(() => {
-        const videoElement = document.getElementById('cameraVideo');
-        if (videoElement) {
-          videoElement.srcObject = stream;
-        }
-      }, 100);
-      
-      setCameraStream(stream);
-      setShowCamera(true);
+      // First get location before opening camera
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        
+        setLocation_({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          address: 'Location detected',
+          error: null
+        });
+        
+        // Now open camera after getting location
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+        
+        // Set the stream to the video element
+        setTimeout(() => {
+          const videoElement = document.getElementById('cameraVideo');
+          if (videoElement) {
+            videoElement.srcObject = stream;
+          }
+        }, 100);
+        
+        setCameraStream(stream);
+        setShowCamera(true);
+        
+      } catch (error) {
+        console.error('Error getting location:', error);
+        toast.error('Please enable location services to mark attendance');
+        throw error;
+      }
     } catch (err) {
       console.error('Error accessing camera:', err);
       if (err.name === 'NotAllowedError') {
@@ -232,7 +256,7 @@ const MarkAttendance = () => {
 
       
       ctx.fillStyle = '#007bff';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = 'bold 24px "Times New Roman", Times, serif';
       ctx.fillText('ScholarSync', 20, canvas.height - 50);
       
       // Create final image with overlay
@@ -448,38 +472,7 @@ const MarkAttendance = () => {
                 </div>
               </div>
             </div>
-            {/* Location Section */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location
-              </label>
-              <button
-                type="button"
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                onClick={getLocation}
-              >
-                <MapPin className="h-5 w-5 mr-2" />
-                Get Current Location
-              </button>
-              
-              {location_.latitude && (
-                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <CheckCircle className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">Location Detected</h3>
-                      <div className="mt-2 text-sm text-blue-700">
-                        <p>Latitude: {location_.latitude}</p>
-                        <p>Longitude: {location_.longitude}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-            </div>
+            {/* Location is now automatically fetched when camera opens */}
 
             {/* Selfie Section */}
             <div className="mb-6">
