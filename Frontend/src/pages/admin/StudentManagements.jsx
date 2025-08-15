@@ -18,15 +18,19 @@ const StudentManagements = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  // Function to generate password based on student's name
+  const generatePassword = (name) => {
+    // Extract first name and capitalize first letter
+    const firstName = name.split(' ')[0];
+    return `${firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()}@123`;
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     studentCode: '',
-    password: '',
-    confirmPassword: '',
     phone: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
   const validateForm = () => {
     const errors = {};
     
@@ -50,45 +54,18 @@ const StudentManagements = () => {
       errors.phone = 'Please enter a valid 10-digit phone number';
     }
     
-    if (!formData.password.trim()) {
-      errors.password = 'Password is required';
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.password = 'Passwords do not match';
-      errors.confirmPassword = 'Passwords do not match';
-    } else {
-      const password = formData.password;
-      const hasUpperCase = /[A-Z]/.test(password);
-      const hasLowerCase = /[a-z]/.test(password);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      const hasNumber = /[0-9]/.test(password);
-      const isLongEnough = password.length >= 8;
-
-      if (!isLongEnough) {
-        errors.password = 'Password must be at least 8 characters long';
-      } else if (!hasUpperCase) {
-        errors.password = 'Password must contain at least one uppercase letter (A-Z)';
-      } else if (!hasLowerCase) {
-        errors.password = 'Password must contain at least one lowercase letter (a-z)';
-      } else if (!hasNumber) {
-        errors.password = 'Password must contain at least one number (0-9)';
-      } else if (!hasSpecialChar) {
-        errors.password = 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)';
-      }
-    }
-    
     return errors;
   };
 
+  const [errors, setErrors] = useState({});
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-  
     setFormData({
       ...formData,
       [name]: name === "email" ? value.toLowerCase() : value
     });
   };
-  
-  const [errors, setErrors] = useState({});
 
   const viewStudentDetails = (studentId) => {
     navigate(`/admin/students/${studentId}`);
@@ -152,9 +129,12 @@ const StudentManagements = () => {
     
     try {
       setIsSubmitting(true);
-      // Create a copy of formData without confirmPassword
-      const { confirmPassword, ...postData } = formData;
-      const res = await axios.post('/admin/students', postData);
+      // Generate password and create student
+      const password = generatePassword(formData.name);
+      const res = await axios.post('/admin/students', {
+        ...formData,
+        password
+      });
       
       if (res.data.success) {
         toast.success('Student created successfully and Welcome email sent');
@@ -163,7 +143,6 @@ const StudentManagements = () => {
           name: '',
           email: '',
           studentCode: '',
-          password: '',
           phone: ''
         });
         setShowAddForm(false);
@@ -298,87 +277,17 @@ const StudentManagements = () => {
                   onChange={handleInputChange}
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   placeholder="Enter 10-digit phone number"
-                  pattern="[0-9]{10}"
                 />
                 {errors.phone && (
                   <p className="text-red-500 text-xs italic mt-1">{errors.phone}</p>
                 )}
               </div>
               
-              <div className="mb-4">
-                <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
-                  Password
-                </label>
-                <div className="mt-1">
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
-                      placeholder="Enter password"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <Eye size={20} className={`cursor-pointer ${showPassword ? 'opacity-50' : ''}`} />
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-500 text-xs italic mt-1">{errors.password}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-bold mb-2">
-                  Confirm Password
-                </label>
-                <div className="mt-1">
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
-                      placeholder="Confirm password"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <Eye size={20} className={`cursor-pointer ${showPassword ? 'opacity-50' : ''}`} />
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-red-500 text-xs italic mt-1">{errors.confirmPassword}</p>
-                  )}
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least one lowercase letter (a-z)</span>
-                    </div>
-                    <div className={`flex items-center ${/[0-9]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least one number (0-9)</span>
-                    </div>
-                    <div className={`flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least one special character</span>
-                    </div>
-                    <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least 8 characters long</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Password Information */}
+              <div className="mb-4 p-3 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-700">
+                  Password will be automatically generated and sent to the student's email address.
+                </p>
               </div>
             </div>
             
