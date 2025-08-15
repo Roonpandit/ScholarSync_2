@@ -61,11 +61,14 @@ exports.checkEmailExists = asyncHandler(async (req, res) => {
     });
   }
 
-  const user = await User.findOne({ email });
+  // Use the existing checkEmailExists function from emailController
+  const { checkEmailExists } = require('./emailController');
+  const { exists, userType } = await checkEmailExists(email);
   
   res.status(200).json({
     success: true,
-    exists: !!user
+    exists,
+    userType: exists ? userType : null
   });
 });
 
