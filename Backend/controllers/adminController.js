@@ -1369,9 +1369,10 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
     await sendWelcomeEmail({
       name: teacher.name,
       email: teacher.email,
-      password: password, // This is the plain text password
+      teacherCode: teacher.teacherCode,
+      phone: teacher.phone,
       role: 'teacher',
-    });
+    }, 'teacher');
   } catch (error) {
     console.error('Error sending welcome email:', error);
     // Don't fail the request if email fails
