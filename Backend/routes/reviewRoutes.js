@@ -5,7 +5,7 @@ const { sendFeedbackEmails } = require('../controllers/reviewController');
 const User = require('../models/Student');
 
 // Get all students for review page
-router.get('/students', protect, authorize('admin'), async (req, res) => {
+router.get('/students', protect, authorize('admin', 'teacher'), async (req, res) => {
     try {
         console.log('Fetching students from database...');
         const students = await User.find({ role: 'student' }).select('name email studentCode');
@@ -21,6 +21,6 @@ router.get('/students', protect, authorize('admin'), async (req, res) => {
 });
 
 // Send feedback emails
-router.post('/send-feedback', protect, authorize('admin'), sendFeedbackEmails);
+router.post('/send-feedback', protect, authorize('admin', 'teacher'), sendFeedbackEmails);
 
 module.exports = router;

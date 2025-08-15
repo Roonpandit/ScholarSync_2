@@ -65,7 +65,7 @@ exports.authorize = (...roles) => {
     if (roles.length > 0 && !roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `User role ${req.user.role} is not authorized to access this route`,
+        message: `${req.user.role.charAt(0).toUpperCase() + req.user.role.slice(1)} is not authorized to access this route`,
       });
     }
     

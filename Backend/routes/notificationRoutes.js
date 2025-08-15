@@ -5,7 +5,7 @@ const { sendNotification } = require('../controllers/notificationController');
 
 // Protect all routes in this router
 router.use(protect);
-router.use(authorize('admin'));
+router.use(authorize('admin', 'teacher'));
 
 // Send notification to students
 router.post('/send', sendNotification);

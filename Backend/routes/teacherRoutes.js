@@ -17,52 +17,60 @@ const {
   markAttendance,
   getAttendanceStats,
   getAbsentStudents,
-  getAttendanceDetails
+  getAttendanceDetails,
 } = require('../controllers/adminController');
-
 const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Protect all routes with authentication
+// Protect all routes in this router
 router.use(protect);
-
-// Only teachers can access these routes
-router.use(authorize('teacher'));
+router.use(authorize('admin', 'teacher'));
 
 // ========== STUDENT MANAGEMENT ==========
-// Create and view students
 router.route('/students')
-  .post(createStudent)       // Create student
-  .get(getAllStudents);      // Get all students
+  .post(createStudent)
+  .get(getAllStudents);
 
-// Bulk student creation
+// Bulk student creation route
 router.post('/students/bulk', createStudentsBulk);
 
-// Get students by class
+// Get students by class ID
 router.get('/students/class', getStudentsByClass);
 
-// Update student (but not delete)
-router.route('/students/:id')
-  .put(updateStudent)        // Update student
-  .get(getStudentDetailsWithAttendance);  // Get student details with attendance
+// Update student details
+router.put('/students/:id', updateStudent);
 
-// ========== ATTENDANCE MANAGEMENT ==========
-// Attendance slots
+// Get student details with attendance history
+router.get('/students/:id/details', getStudentDetailsWithAttendance);
+
+// Attendance slot management routes
 router.route('/attendance-slots')
-  .post(createAttendanceSlot)    // Create slot
-  .get(getAllAttendanceSlots);   // Get all slots
+  .post(createAttendanceSlot)
+  .get((req, res, next) => {
+    //console.log('GET /api/admin/attendance-slots called with query:', req.query);
+    //console.log('Headers:', req.headers);
+    next();
+  }, getAllAttendanceSlots);
 
-// Close slot (but not delete)
+// Attendance stats route
+router.get('/attendance/stats', (req, res, next) => {
+  //console.log('GET /api/admin/attendance/stats called with query:', req.query);
+  //console.log('Headers:', req.headers);
+  next();
+}, getAttendanceStats);
+
 router.put('/attendance-slots/:id/close', closeAttendanceSlot);
 
-// Attendance records
-router.get('/attendance', getAttendanceByDate);
-router.get('/attendance/slot/:slotId', getAttendanceBySlot);
+// Attendance records routes
+router.get('/attendance', (req, res) => {
+  // Route to appropriate handler based on query params
+  if (req.query.slotId) {
+    return getAttendanceBySlot(req, res);
+  }
+  return getAttendanceByDate(req, res);
+});
 router.post('/attendance/mark', markAttendance);
-
-// Attendance reports
-router.get('/attendance/stats', getAttendanceStats);
 router.get('/attendance/absent', getAbsentStudents);
 router.get('/attendance/details', getAttendanceDetails);
 

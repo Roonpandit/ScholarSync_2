@@ -140,7 +140,7 @@ exports.updatePassword = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Login user or admin
+// @desc    Login user, teacher or admin
 // @route   POST /api/auth/login
 // @access  Public
 exports.login = asyncHandler(async (req, res) => {
@@ -154,15 +154,23 @@ exports.login = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check for user
+  // Check for user in Student collection
   let user = await User.findOne({ email }).select('+password');
   let role = 'student';
 
-  // If no student found, check for admin
+  // If not a student, check Teacher collection
+  if (!user) {
+    const Teacher = require('../models/Teacher');
+    user = await Teacher.findOne({ email }).select('+password');
+    role = 'teacher';
+  }
+
+  // If not a teacher, check Admin collection
   if (!user) {
     user = await Admin.findOne({ email }).select('+password');
     role = 'admin';
 
+    // If no user found in any collection
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -184,16 +192,25 @@ exports.login = asyncHandler(async (req, res) => {
   // Create token
   const token = user.getSignedJwtToken();
 
+  // Prepare user data for response
+  const userData = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: role,
+  };
+
+  // Add role-specific fields
+  if (role === 'student') {
+    userData.studentCode = user.studentCode;
+  } else if (role === 'teacher') {
+    userData.teacherCode = user.teacherCode;
+  }
+
   res.status(200).json({
     success: true,
     token,
-    user: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      studentCode: role === 'student' ? user.studentCode : undefined,
-    },
+    user: userData,
   });
 });
 
@@ -202,23 +219,42 @@ exports.login = asyncHandler(async (req, res) => {
 // @access  Private
 exports.getMe = asyncHandler(async (req, res) => {
   let user;
+  const Teacher = require('../models/Teacher');
 
   if (req.user.role === 'student') {
     user = await User.findById(req.user._id);
+  } else if (req.user.role === 'teacher') {
+    user = await Teacher.findById(req.user._id);
   } else {
     user = await Admin.findById(req.user._id);
   }
 
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+  }
+
+  // Prepare user data based on role
+  const userData = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone || null,
+  };
+
+  // Add role-specific fields
+  if (user.role === 'student') {
+    userData.studentCode = user.studentCode;
+  } else if (user.role === 'teacher') {
+    userData.teacherCode = user.teacherCode;
+  }
+
   res.status(200).json({
     success: true,
-    data: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      studentCode: user.studentCode,
-      phone: user.phone,
-      role: user.role
-    }
+    data: userData
   });
 });
 
