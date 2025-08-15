@@ -83,7 +83,7 @@ connectDB().then(() => {
   app.get('/', (req, res) => {
     res.json({
       success: true,
-      message: 'Masai Elevate Attendance API is running'
+      message: 'ScholarSync Attendance API is running'
     });
   });
   

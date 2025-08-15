@@ -14,66 +14,23 @@ mongoose.connect(process.env.MONGO_URI, {
 // Create admin account
 const createAdmin = async () => {
   try {
-    // Check if admin accounts already exist
-    const admin1Exists = await Admin.findOne({ email: process.env.ADMIN_EMAIL });
-    const admin2Exists = await Admin.findOne({ email: process.env.ADMIN2_EMAIL });
+    // Check if admin already exists
+    const existingAdmin = await Admin.findOne({ email: process.env.ADMIN_EMAIL });
 
-    if (admin1Exists && admin2Exists) {
-      //console.log('Both admin accounts already exist');
-      return;
-    } else if (admin1Exists) {
-      //console.log('First admin exists, creating second admin...');
-      // Create only second admin if first already exists
-      await Admin.create({
-        name: ' Elevate Admin',
-        email: process.env.ADMIN2_EMAIL,
-        password: process.env.ADMIN2_PASSWORD,
-        role: 'admin'
-      });
-      //console.log('Second admin account created successfully');
-      process.exit();
-    } else if (admin2Exists) {
-      //console.log('Second admin exists, creating first admin...');
-      // Create only first admin if second already exists
-      await Admin.create({
-        name: 'Masai Admin',
-        email: process.env.ADMIN_EMAIL,
-        password: process.env.ADMIN_PASSWORD,
-        role: 'admin'
-      });
-      //console.log('First admin account created successfully');
-      process.exit();
-    } else {
-      //console.log('Creating both admin accounts...');
-      // Create both admins if neither exists
-      await Admin.create([
-        {
-          name: 'Masai Admin',
-          email: process.env.ADMIN_EMAIL,
-          password: process.env.ADMIN_PASSWORD,
-          role: 'admin'
-        },
-        {
-          name: ' Elevate Admin',
-          email: process.env.ADMIN2_EMAIL,
-          password: process.env.ADMIN2_PASSWORD,
-          role: 'admin'
-        }
-      ]);
-      //console.log('Both admin accounts created successfully');
+    if (existingAdmin) {
+      console.log('Admin account already exists');
       process.exit();
     }
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
-  }
-};
 
-// Delete existing data
-const deleteData = async () => {
-  try {
-    await Admin.deleteMany();
-    //console.log('All admin data deleted');
+    // Create admin account
+    await Admin.create({
+      name: process.env.ADMIN_NAME,
+      email: process.env.ADMIN_EMAIL,
+      password: process.env.ADMIN_PASSWORD,
+      role: process.env.ADMIN_ROLE
+    });
+
+    console.log('Admin account created successfully');
     process.exit();
   } catch (error) {
     console.error(`Error: ${error.message}`);
@@ -81,9 +38,5 @@ const deleteData = async () => {
   }
 };
 
-// Run command based on argument
-if (process.argv[2] === '-d') {
-  deleteData();
-} else {
-  createAdmin();
-}
+// Always create admin when this script runs
+createAdmin();

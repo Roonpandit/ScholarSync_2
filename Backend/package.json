@@ -1,7 +1,7 @@
 {
-  "name": "masai-attendance-tracker",
+  "name": "scholarsync",
   "version": "1.0.0",
-  "description": "Attendance tracking system for Masai Elevate",
+  "description": "Attendance tracking system",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -51,15 +51,13 @@ Date: ${startTimeWithOffset.toLocaleDateString('en-IN', { year: 'numeric', month
 
 Instructions:
 
-1. Attendance selfies must be taken only in Masai office.
-2. Attendance submitted from outside of Masai office will not be considered.
-   *(Exception: Night shift for girls only. Only they are allowed to give attendance from pg)*
+1. Attendance selfies must be taken in proper lighting.
+2. Attendance submitted without proper face will not be considered.
 3. Use the leave option if you're taking a day off. If you're absent without applying for leave for more than 2 days, you may be subject to Code of Conduct actions.
 4. Do not submit attendance on behalf of others. This is considered a breach of discipline, and strict action will be taken if found involved in such activity.
 
 Best regards,
-Abhishesh
-Masai Elevate Program`
+ScholarSync`
     };
 
     await transporter.sendMail(mailOptions);

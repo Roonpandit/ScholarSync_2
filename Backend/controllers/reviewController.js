@@ -102,8 +102,8 @@ const feedbackEmailTemplate = (studentName, feedbackLink) => `
             </ul>
             <p>Thank you for taking the time to share your thoughts. Your feedback is greatly appreciated!</p>
             <div class="signature">
-                <p>Best regards,<br>The Masai Elevate Team</p>
-                <p style="font-size: 13px; color: #888;">Elevate Attendance Tracker</p>
+                <p>Best regards,<br>The ScholarSync Team</p>
+                <p style="font-size: 13px; color: #888;">ScholarSync</p>
             </div>
         </div>
     </div>
@@ -140,7 +140,7 @@ exports.sendFeedbackEmails = async (req, res) => {
             const mailOptions = {
                 from: process.env.EMAIL_USER,
                 to: student.email,
-                subject: 'Feedback Request - Masai Elevate Program',
+                subject: 'Feedback Request - ScholarSync',
                 html: feedbackEmailTemplate(student.name, feedbackLink)
             };
 
