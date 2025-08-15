@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 const DocumentationPage = () => {
     const [activeSection, setActiveSection] = useState("overview");
     const navigate = useNavigate();
+    
     const sections = [
         { id: "overview", label: "Overview", icon: Home },
         { id: "admin", label: "Admin Guide", icon: Shield },
@@ -270,6 +271,51 @@ const DocumentationPage = () => {
         }
     ];
 
+    // Image component with fallback
+    const ImageWithFallback = ({ src, alt, className }) => {
+        const [imageError, setImageError] = useState(false);
+        const [imageLoading, setImageLoading] = useState(true);
+
+        const handleImageLoad = () => {
+            setImageLoading(false);
+        };
+
+        const handleImageError = () => {
+            setImageError(true);
+            setImageLoading(false);
+        };
+
+        if (imageError) {
+            return (
+                <div className="w-full h-full bg-gradient-to-br from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                        <Camera className="h-12 w-12 text-indigo-600 mx-auto mb-2" />
+                        <p className="text-sm text-indigo-600 font-medium">[{src.split('/').pop()}]</p>
+                        <p className="text-xs text-gray-500 mt-1">Screenshot not available</p>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="relative w-full h-full">
+                <img
+                    src={src}
+                    alt={alt}
+                    className={className}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                    style={{ display: imageLoading ? 'none' : 'block' }}
+                />
+                {imageLoading && (
+                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const renderSteps = (steps) => {
         return (
             <div className="space-y-12 md:space-y-16">
@@ -302,12 +348,12 @@ const DocumentationPage = () => {
                             </div>
                             <div className={`mt-6 md:mt-0 ${index % 2 === 0 ? 'md:pl-8' : 'md:pr-8'}`}>
                                 <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                                    <div className="aspect-video bg-gradient-to-br from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center">
-                                        <div className="text-center">
-                                            <Camera className="h-12 w-12 text-indigo-600 mx-auto mb-2" />
-                                            <p className="text-sm text-indigo-600 font-medium">[{step.image}]</p>
-                                            <p className="text-xs text-gray-500 mt-1">Screenshot will be placed here</p>
-                                        </div>
+                                    <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                                        <ImageWithFallback
+                                            src={`/images/documentation/${step.image}`}
+                                            alt={step.title}
+                                            className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -479,12 +525,12 @@ const DocumentationPage = () => {
                                                     </div>
                                                     <div className="mt-6 md:mt-0 md:pl-8">
                                                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                                                            <div className="aspect-video bg-gradient-to-br from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center">
-                                                                <div className="text-center">
-                                                                    <Camera className="h-12 w-12 text-indigo-600 mx-auto mb-2" />
-                                                                    <p className="text-sm text-indigo-600 font-medium">[screenshot_1.png]</p>
-                                                                    <p className="text-xs text-gray-500 mt-1">Login page screenshot</p>
-                                                                </div>
+                                                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                                                                <ImageWithFallback
+                                                                    src="/images/documentation/screenshot_1.png"
+                                                                    alt="Login page screenshot"
+                                                                    className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
+                                                                />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -521,12 +567,12 @@ const DocumentationPage = () => {
                                                     </div>
                                                     <div className="mt-6 md:mt-0 md:pr-8">
                                                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                                                            <div className="aspect-video bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
-                                                                <div className="text-center">
-                                                                    <Camera className="h-12 w-12 text-blue-600 mx-auto mb-2" />
-                                                                    <p className="text-sm text-blue-600 font-medium">[photo_2.png]</p>
-                                                                    <p className="text-xs text-gray-500 mt-1">Login options screenshot</p>
-                                                                </div>
+                                                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                                                                <ImageWithFallback
+                                                                    src="/images/documentation/photo_2.png"
+                                                                    alt="Login options screenshot"
+                                                                    className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
+                                                                />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -559,25 +605,13 @@ const DocumentationPage = () => {
                                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Dashboard Analytics [photo_3]</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                             <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                                <h5 className="font-medium text-gray-700">Total Students</h5>
-                                                <p className="text-sm text-gray-600">Complete student count across all classes</p>
-                                            </div>
-                                            <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                                <h5 className="font-medium text-gray-700">Total Teachers</h5>
-                                                <p className="text-sm text-gray-600">Active teaching staff members</p>
-                                            </div>
-                                            <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                                <h5 className="font-medium text-gray-700">Active Slots</h5>
-                                                <p className="text-sm text-gray-600">Currently running attendance sessions</p>
-                                            </div>
-                                            <div className="bg-white p-4 rounded-lg shadow-sm border">
                                                 <h5 className="font-medium text-gray-700">Recent Attendance</h5>
                                                 <p className="text-sm text-gray-600">Latest attendance submissions</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="mb-8">
+                                    <div className="mb-8">
                                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Sidebar Navigation Tabs</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-3">
