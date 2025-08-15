@@ -10,6 +10,7 @@ const AdminDashboard = () => {
 
   const [stats, setStats] = useState({
     totalStudents: 0,
+    totalTeachers: 0,
     todayAttendance: 0,
     activeSlots: 0,
     absentStudents: 0
@@ -30,8 +31,11 @@ const AdminDashboard = () => {
       const todayIST = convertToIST(new Date())
       const today = todayIST.toISOString().split('T')[0]
       
-      // Fetch students count
-      const studentsRes = await axios.get('/admin/students')
+      // Fetch students and teachers count
+      const [studentsRes, teachersRes] = await Promise.all([
+        axios.get('/admin/students'),
+        axios.get('/admin/teachers')
+      ])
       
       // Fetch today's attendance
       const attendanceRes = await axios.get(`/admin/attendance?date=${today}`)
@@ -53,6 +57,7 @@ const AdminDashboard = () => {
       
       setStats({
         totalStudents: studentsRes.data.count || 0,
+        totalTeachers: teachersRes.data.count || 0,
         todayAttendance: attendanceRes.data.count || 0,
         activeSlots: activeSlots.length || 0,
         absentStudents: absentRes.data.count || 0
@@ -101,6 +106,19 @@ const AdminDashboard = () => {
             </svg>
           }
           color="blue"
+        />
+        
+        <StatCard 
+          title="Total Teachers" 
+          value={stats.totalTeachers} 
+          linkTo="/admin/teachers"
+          linkText="View All"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          }
+          color="green"
         />
         
         <StatCard 

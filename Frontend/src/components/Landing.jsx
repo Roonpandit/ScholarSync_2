@@ -799,16 +799,16 @@ export default function ScholarSyncLanding() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row sm:justify-center gap-4">
             <button
-              onClick={() => alert("Starting free trial...")}
+              onClick={() => navigate("/login")}
               className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-xl text-indigo-600 bg-white hover:bg-gray-50 transition duration-300"
             >
-              Start Free Trial
+              Get Started
             </button>
             <button
-              onClick={() => alert("Scheduling demo...")}
+              onClick={() => navigate("/demo")}
               className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-base font-medium rounded-xl text-white hover:bg-indigo-500 transition duration-300"
             >
-              Schedule Demo
+              Try Demo
             </button>
           </div>
         </div>
@@ -873,8 +873,8 @@ export default function ScholarSyncLanding() {
             <div>
               <h3 className="text-lg font-semibold mb-4">Contact</h3>
               <ul className="space-y-2">
-                <li className="text-gray-400">support@scholarsync.com</li>
-                <li className="text-gray-400">+1 (555) 987-6543</li>
+                <li className="text-gray-400">tarunvashisth0000@gmail.com</li>
+                <li className="text-gray-400">+91 7082889441</li>
               </ul>
             </div>
           </div>
