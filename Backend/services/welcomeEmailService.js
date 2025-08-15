@@ -103,7 +103,7 @@ const sendWelcomeEmail = async (user, role = 'student') => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Welcome email sent to ${user.email} (${role})`);
+    //console.log(`Welcome email sent to ${user.email} (${role})`);
   } catch (error) {
     console.error(`Error sending welcome email to ${user.email}:`, error);
     throw error;
