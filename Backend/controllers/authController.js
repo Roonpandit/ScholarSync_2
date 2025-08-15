@@ -282,12 +282,7 @@ exports.seedAdmin = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Admin accounts created successfully',
-    data: createdAdmins.map(admin => ({
-      _id: admin._id,
-      name: admin.name,
-      email: admin.email,
-      role: admin.role,
-    })),
+    data: admin,
+    message: 'Admin account created successfully'
   });
 });
