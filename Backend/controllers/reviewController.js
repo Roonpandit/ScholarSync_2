@@ -91,7 +91,7 @@ const feedbackEmailTemplate = (studentName, feedbackLink) => `
         </div>
         <div class="content">
             <p>Dear ${studentName},</p>
-            <p>We hope this email finds you well. As part of our continuous improvement process, we would like to gather your valuable feedback about your experience with our Elevate Attendance Tracker portal.</p>
+            <p>We hope this email finds you well. As part of our continuous improvement process, we would like to gather your valuable feedback about your experience with our ScholarSync portal.</p>
             <p>We value your thoughts and would love to hear about your experience. Your feedback will help us enhance our portal and make it even better for future students.</p>
             <p><a href="${feedbackLink}" class="button">Provide Feedback</a></p>
             <p>Your input is highly valuable to us. It will help us:</p>

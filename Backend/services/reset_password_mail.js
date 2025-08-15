@@ -12,12 +12,12 @@ const sendPasswordResetEmail = async (email, name, resetToken) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Password Reset Request - Attendance Tracker',
+    subject: 'Password Reset Request - ScholarSync',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2>Password Reset Request</h2>
         <p>Hello ${name},</p>
-        <p>We received a request to reset your password for the Attendance Tracker account.</p>
+        <p>We received a request to reset your password for the ScholarSync account.</p>
         <p>Please use the link below to set a new password:</p>
         
         <div style="margin: 25px 0; text-align: center;">
@@ -37,7 +37,7 @@ const sendPasswordResetEmail = async (email, name, resetToken) => {
         
         <div style="margin-top: 30px; font-size: 12px; color: #666; text-align: center;">
           <p>This email was sent to ${email}</p>
-          <p>© ${new Date().getFullYear()} Attendance Tracker. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} ScholarSync. All rights reserved.</p>
         </div>
       </div>
     `
@@ -56,12 +56,12 @@ const sendPasswordResetConfirmation = async (email, name) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Password Reset Successful - Attendance Tracker',
+    subject: 'Password Reset Successful - ScholarSync',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2>Password Reset Successful</h2>
         <p>Hello ${name},</p>
-        <p>Your password has been successfully reset for your Attendance Tracker account.</p>
+        <p>Your password has been successfully reset for your ScholarSync account.</p>
         <p>If you did not make this change, please contact support immediately by replying to this email.</p>
         
         <div style="margin: 25px 0; padding: 15px; background-color: #f0fdf4; border-left: 4px solid #10b981;">
@@ -72,7 +72,7 @@ const sendPasswordResetConfirmation = async (email, name) => {
         
         <p>If you have any questions or need further assistance, please don't hesitate to contact our support team.</p>
         
-        <p>Best regards,<br>The Attendance Tracker Team</p>
+        <p>Best regards,<br>The ScholarSync Team</p>
       </div>
     `
   };

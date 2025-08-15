@@ -28,10 +28,10 @@ const sendWelcomeEmail = async (user, role = 'student') => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: `Welcome to ScholarSync Attendance Tracker - Your ${userType} Account Details`,
+      subject: `Welcome to ScholarSync ScholarSync - Your ${userType} Account Details`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2c3e50;">Welcome to ScholarSync Attendance Tracker</h2>
+          <h2 style="color: #2c3e50;">Welcome to ScholarSync ScholarSync</h2>
           <p>Dear ${user.name},</p>
           
           ${isTeacher 
