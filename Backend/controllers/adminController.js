@@ -888,7 +888,7 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
   }
 
   // Log email sending results
-  console.log('Email sending results:', emailResults);
+  //console.log('Email sending results:', emailResults);
 
   // Prepare response data
   const createdStudentEmails = createdStudents.map(student => student.email);

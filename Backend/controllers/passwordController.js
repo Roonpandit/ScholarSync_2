@@ -84,11 +84,11 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 
   try {
     // Check if new password is same as current password
-    console.log('User password hash from DB:', user.password ? 'exists' : 'missing');
-    console.log('Password to compare:', password ? 'provided' : 'missing');
+    //console.log('User password hash from DB:', user.password ? 'exists' : 'missing');
+    //console.log('Password to compare:', password ? 'provided' : 'missing');
     
     const isSamePassword = await user.matchPassword(password);
-    console.log('Password comparison result:', isSamePassword);
+    //console.log('Password comparison result:', isSamePassword);
     
     if (isSamePassword) {
       return res.status(400).json({
