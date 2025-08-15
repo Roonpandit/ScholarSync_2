@@ -17,11 +17,11 @@ const Review = () => {
 
   const fetchStudents = async () => {
     try {
-      console.log('Fetching students...');
+      //console.log('Fetching students...');
       const response = await axios.get('/reviews/students');
-      console.log('API Response:', response.data);
+      //console.log('API Response:', response.data);
       if (response.data && response.data.students) {
-        console.log('Students data:', response.data.students);
+        //console.log('Students data:', response.data.students);
         setStudents(response.data.students);
       } else {
         console.error('Invalid response format:', response.data);
