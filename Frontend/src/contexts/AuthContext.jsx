@@ -39,6 +39,19 @@ export const AuthProvider = ({ children }) => {
         if (error.response?.status === 401 && token) {
           // Only trigger logout if we have a token (not during initial login)
           console.error('Unauthorized:', error);
+          
+          // Show specific message for token expiration
+          const isTokenExpired = error.response?.data?.message?.includes('expired') || 
+                              error.response?.data?.error?.includes('expired') ||
+                              error.response?.data?.message?.includes('invalid token') ||
+                              error.response?.data?.error?.includes('invalid token');
+          
+          if (isTokenExpired) {
+            toast.error('Your session has expired. Please log in again.');
+          } else {
+            toast.error('You have been logged out. Please log in again.');
+          }
+          
           logout();
           navigate('/home');
         }

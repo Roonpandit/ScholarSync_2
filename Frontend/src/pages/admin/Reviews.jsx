@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const Review = () => {
+const Reviews = () => {
   const [feedbackLink, setFeedbackLink] = useState('');
   const [students, setStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
@@ -18,7 +18,7 @@ const Review = () => {
   const fetchStudents = async () => {
     try {
       console.log('Fetching students...');
-      const response = await axios.get('/review/students');
+      const response = await axios.get('/reviews/students');
       console.log('API Response:', response.data);
       if (response.data && response.data.students) {
         console.log('Students data:', response.data.students);
@@ -66,7 +66,7 @@ const Review = () => {
 
     try {
       setIsLoading(true);
-      await axios.post('/review/send-feedback', {
+      await axios.post('/reviews/send-feedback', {
         feedbackLink,
         studentIds: selectedStudents
       });
@@ -187,4 +187,4 @@ const Review = () => {
   );
 };
 
-export default Review;
+export default Reviews;

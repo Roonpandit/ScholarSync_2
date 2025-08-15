@@ -165,10 +165,10 @@ const Layout = ({ children }) => {
                 </div>
                 <div className="hidden sm:flex flex-col items-start">
                   <span className="text-sm font-medium text-gray-700">
-                    {user?.name || "User"}
+                    {user?.name ? user.name.charAt(0).toUpperCase() + user.name.slice(1) : "User"}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {user?.role || "Student"}
+                    {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "Student"}
                   </span>
                 </div>
                 <svg
@@ -191,7 +191,7 @@ const Layout = ({ children }) => {
                 <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg overflow-hidden z-10 border border-gray-100">
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-700">
-                      {user?.name || "User"}
+                      {user?.name ? user.name.charAt(0).toUpperCase() + user.name.slice(1) : "User"}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
                       {user?.email || "user@example.com"}
@@ -336,6 +336,28 @@ const Layout = ({ children }) => {
                     Students
                   </NavItem>
                   <NavItem
+                    to="/admin/teachers"
+                    isActive={isActive("/admin/teachers")}
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                    }
+                  >
+                    Teachers
+                  </NavItem>
+                  <NavItem
                     to="/admin/review"
                     isActive={isActive("/admin/review")}
                     icon={<FaFileAlt className="h-5 w-5" />}
@@ -393,6 +415,133 @@ const Layout = ({ children }) => {
                   <NavItem
                     to="/admin/attendance/absent"
                     isActive={isActive("/admin/attendance/absent")}
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        />
+                      </svg>
+                    }
+                  >
+                    Absent Students
+                  </NavItem>
+                </div>
+              ) : user?.role === "teacher" ? (
+                <div className="space-y-1">
+                  <div className="mb-3 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Teacher Dashboard
+                  </div>
+                  <NavItem
+                    to="/teacher"
+                    isActive={isActive("/teacher")}
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                        />
+                      </svg>
+                    }
+                  >
+                    Dashboard
+                  </NavItem>
+                  <NavItem
+                    to="/teacher/students"
+                    isActive={isActive("/teacher/students")}
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                        />
+                      </svg>
+                    }
+                  >
+                    Students
+                  </NavItem>
+                  <NavItem
+                    to="/teacher/review"
+                    isActive={isActive("/teacher/review")}
+                    icon={<FaFileAlt className="h-5 w-5" />}
+                  >
+                    Feedback Form
+                  </NavItem>
+
+                  <div className="my-3 px-3 pt-3 text-xs font-semibold text-gray-500 uppercase tracking-wider border-t border-gray-200">
+                    Attendance Management
+                  </div>
+                  <NavItem
+                    to="/teacher/attendance-slots"
+                    isActive={isActive("/teacher/attendance-slots")}
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    }
+                  >
+                    Attendance Slots
+                  </NavItem>
+                  <NavItem
+                    to="/teacher/attendance/stats"
+                    isActive={isActive("/teacher/attendance/stats")}
+                    icon={
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                    }
+                  >
+                    Attendance Stats
+                  </NavItem>
+                  <NavItem
+                    to="/teacher/attendance/absent"
+                    isActive={isActive("/teacher/attendance/absent")}
                     icon={
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

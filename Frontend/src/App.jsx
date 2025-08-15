@@ -2,21 +2,33 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext.jsx'
 import Login from './pages/Login.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
-import AdminDashboard from './pages/admin/Dashboard.jsx'
-import StudentDashboard from './pages/student/Dashboard.jsx'
-import StudentManagement from './pages/admin/StudentManagement.jsx'
+import Layout from './components/Layout.jsx'
+import NotFound from './pages/NotFound.jsx'
+import Landing from './components/Landing.jsx'
+
+import AdminDashboard from './pages/admin/AdminDashboard.jsx'
+import StudentManagements from './pages/admin/StudentManagements.jsx'
+import TeacherManagements from './pages/admin/TeacherManagements.jsx'
 import StudentDetails from './pages/admin/StudentDetails.jsx'
+import Reviews from './pages/admin/Reviews.jsx';
 import AttendanceSlots from './pages/admin/AttendanceSlots.jsx'
 import AttendanceStats from './pages/admin/AttendanceStats.jsx'
 import AbsentStudents from './pages/admin/AbsentStudents.jsx'
+
+import TeacherDashboard from './pages/teacher/TeacherDashboard.jsx'
+import StudentManagement from './pages/teacher/StudentManagement.jsx'
+import StudentDetail from './pages/teacher/StudentDetail.jsx'
+import Review from './pages/teacher/Review.jsx'
+import AttendanceSlot from './pages/teacher/AttendanceSlot.jsx'
+import AttendanceStat from './pages/teacher/AttendanceStat.jsx'
+import AbsentStudent from './pages/teacher/AbsentStudent.jsx'
+
+import StudentDashboard from './pages/student/Dashboard.jsx'
 import MarkAttendance from './pages/student/MarkAttendance.jsx'
 import AttendanceHistory from './pages/student/AttendanceHistory.jsx'
 import AbsenceHistory from './pages/student/AbsenceHistory.jsx'
 import Leave from './pages/student/Leave.jsx'
-import Review from './pages/admin/Review.jsx';
-import Layout from './components/Layout.jsx'
-import NotFound from './pages/NotFound.jsx'
-import Landing from './components/Landing.jsx'
+
 import './App.css'
 import Lottie from 'lottie-react'
 import loaderAnimation from './components/loader/animations/62d18998-eb09-48b7-a29a-e69b4e6fb833.json'
@@ -49,23 +61,31 @@ function App() {
         element={
           user && user.role === 'admin' ? 
           <Layout><AdminDashboard /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
         } 
       />
       <Route 
         path="/admin/review" 
         element={
           user && user.role === 'admin' ? 
-          <Layout><Review /></Layout> : 
-          <Navigate to="/login" />
+          <Layout><Reviews /></Layout> : 
+          <Navigate to="/home" />
         } 
       />
       <Route 
         path="/admin/students" 
         element={
           user && user.role === 'admin' ? 
-          <Layout><StudentManagement /></Layout> : 
-          <Navigate to="/login" />
+          <Layout><StudentManagements /></Layout> : 
+          <Navigate to="/home" />
+        } 
+      />
+      <Route 
+        path="/admin/teachers" 
+        element={
+          user && user.role === 'admin' ? 
+          <Layout><TeacherManagements /></Layout> : 
+          <Navigate to="/home" />
         } 
       />
       <Route 
@@ -73,15 +93,15 @@ function App() {
         element={
           user && user.role === 'admin' ? 
           <Layout><StudentDetails /></Layout> : 
-          <Navigate to="/login" />
-        } 
+          <Navigate to="/home" />
+        }   
       />
       <Route 
         path="/admin/attendance-slots" 
         element={
           user && user.role === 'admin' ? 
           <Layout><AttendanceSlots /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
         } 
       />
       <Route 
@@ -89,7 +109,7 @@ function App() {
         element={
           user && user.role === 'admin' ? 
           <Layout><AttendanceStats /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
         } 
       />
       <Route 
@@ -97,7 +117,7 @@ function App() {
         element={
           user && user.role === 'admin' ? 
           <Layout><AbsentStudents /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
         } 
       />
       
@@ -107,7 +127,7 @@ function App() {
         element={
           user && user.role === 'student' ? 
           <Layout><StudentDashboard /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
         } 
       />
       <Route 
@@ -115,15 +135,15 @@ function App() {
         element={
           user && user.role === 'student' ? 
           <Layout><MarkAttendance /></Layout> : 
-          <Navigate to="/login" />
-        } 
+          <Navigate to="/home" />
+        }   
       />
       <Route 
         path="/student/attendance-history" 
         element={
           user && user.role === 'student' ? 
           <Layout><AttendanceHistory /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
         } 
       />
       <Route 
@@ -131,7 +151,7 @@ function App() {
         element={
           user && user.role === 'student' ? 
           <Layout><AbsenceHistory /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
         } 
       />
       <Route 
@@ -139,7 +159,65 @@ function App() {
         element={
           user && user.role === 'student' ? 
           <Layout><Leave /></Layout> : 
-          <Navigate to="/login" />
+          <Navigate to="/home" />
+        } 
+      />
+      
+      {/* Teacher Routes - Using admin pages */}
+      <Route 
+        path="/teacher" 
+        element={
+          user && user.role === 'teacher' ? 
+          <Layout><TeacherDashboard /></Layout> : 
+          <Navigate to="/home" />
+        } 
+      />
+      <Route 
+        path="/teacher/students" 
+        element={
+          user && user.role === 'teacher' ? 
+          <Layout><StudentManagement /></Layout> : 
+          <Navigate to="/home" />
+        } 
+      />
+      <Route 
+        path="/teacher/review" 
+        element={
+          user && user.role === 'teacher' ? 
+          <Layout><Review /></Layout> : 
+          <Navigate to="/home" />
+        } 
+      />
+      <Route 
+        path="/teacher/attendance-slots" 
+        element={
+          user && user.role === 'teacher' ? 
+          <Layout><AttendanceSlot /></Layout> : 
+          <Navigate to="/home" />
+        } 
+      />
+      <Route 
+        path="/teacher/attendance/stats" 
+        element={
+          user && user.role === 'teacher' ? 
+          <Layout><AttendanceStat /></Layout> : 
+          <Navigate to="/home" />
+        } 
+      />
+      <Route 
+        path="/teacher/attendance/absent" 
+        element={
+          user && user.role === 'teacher' ? 
+          <Layout><AbsentStudent /></Layout> : 
+          <Navigate to="/home" />
+        } 
+      />
+      <Route 
+        path="/teacher/students/:studentId" 
+        element={
+          user && user.role === 'teacher' ? 
+          <Layout><StudentDetail /></Layout> : 
+          <Navigate to="/home" />
         } 
       />
       
@@ -150,6 +228,8 @@ function App() {
           user ? (
             user.role === 'admin' ? 
             <Navigate to="/admin" /> : 
+            user.role === 'teacher' ?
+            <Navigate to="/teacher" /> :
             <Navigate to="/student" />
           ) : (
             <Navigate to="/home" />

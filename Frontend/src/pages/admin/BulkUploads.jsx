@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { Upload, X, File, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const BulkUpload = () => {
+const BulkUploads = () => {
   const [showModal, setShowModal] = useState(false);
   const [file, setFile] = useState(null);
   const [previewData, setPreviewData] = useState([]);
@@ -450,4 +450,4 @@ const BulkUpload = () => {
   );
 };
 
-export default BulkUpload;
+export default BulkUploads;

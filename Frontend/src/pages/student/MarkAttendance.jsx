@@ -231,10 +231,9 @@ const MarkAttendance = () => {
       ctx.fillText(`${currentTime} ${currentDate} `, 20, canvas.height - 80);
 
       
-      // Add Masai logo or watermark
       ctx.fillStyle = '#007bff';
       ctx.font = 'bold 24px Arial';
-      ctx.fillText('Masai School', 20, canvas.height - 50);
+      ctx.fillText('ScholarSync', 20, canvas.height - 50);
       
       // Create final image with overlay
       canvas.toBlob((blob) => {
@@ -589,9 +588,8 @@ const MarkAttendance = () => {
                   </h3>
                   <div className="mt-2 text-sm text-amber-700">
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Only upload selfies taken in Masai office</li>
-                      <li>Photo must be taken with timestamp camera</li>
-                      <li>Ensure your face is clearly visible</li>
+                      <li>Only upload selfies with fully face visible.</li>
+                      <li>Ensure you are in proper lighting</li>
                       <li>Strict disciplinary action will be taken for non-compliance</li>
                     </ul>
                   </div>

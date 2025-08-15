@@ -90,7 +90,7 @@ const Leave = () => {
       `Sincerely,\n${user?.name || "Student"}`;
 
     // Open default email client
-    window.location.href = `mailto:sandhya.r@masaischool.com,umashankar@masaischool.com,bicky.dutta@masaischool.com,abhishesh.kumar@masaischool.com?subject=${encodeURIComponent(
+    window.location.href = `mailto:tarunvashisth0000@gmail.com?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(body)}`;
   };
@@ -454,8 +454,7 @@ const Leave = () => {
               Need help with your leave application?
             </h4>
             <p className="text-sm text-blue-700 mt-1">
-              Contact student support at support@masaischool.com or call +91
-              1234567890
+              Contact student support at tarunvashisth0000@gmail.com or call +917082889441
             </p>
           </div>
         </div>

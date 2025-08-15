@@ -17,7 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { prepareSlotTimes, formatSlotTimes } from "../../utils/slotUtils";
-import Modal from "./Modals";
+import Modal from "./Modal";
 import PropTypes from "prop-types";
 import {
   formatDateTime,
@@ -32,7 +32,7 @@ import {
 } from "../../utils/timeUtils";
 import Loader from '../../components/Loader';
 
-const AttendanceSlots = () => {
+const AttendanceSlot = () => {
   // Helper function to get slot status badge
   const getStatusBadge = (slot) => {
     if (slot.status === 'closed') {
@@ -221,7 +221,7 @@ const AttendanceSlots = () => {
         throw new Error("No authentication token found");
       }
 
-      const url = "/admin/attendance-slots";
+      const url = "/teacher/attendance-slots";
       //console.log("Making request to:", url); 
 
       const config = {
@@ -301,7 +301,7 @@ const AttendanceSlots = () => {
       // }); 
 
       const res = await axios.post(
-        "/admin/attendance/mark",
+        "/teacher/attendance/mark",
         {
           studentId,
           slotId: currentSlot._id,
@@ -410,7 +410,7 @@ const AttendanceSlots = () => {
         slotData.endTime
       );
 
-      const res = await axios.post("/admin/attendance-slots", {
+      const res = await axios.post("/teacher/attendance-slots", {
         ...slotData,
         date: preparedTimes.date,
         startTime: preparedTimes.startTime,
@@ -447,7 +447,7 @@ const AttendanceSlots = () => {
         },
       };
 
-      await axios.delete(`/admin/attendance-slots/${slotId}`, config);
+      await axios.delete(`/teacher/attendance-slots/${slotId}`, config);
       toast.success("Attendance slot deleted successfully");
       setShowDeleteModal(false);
       setSlotToDelete(null);
@@ -482,13 +482,13 @@ const AttendanceSlots = () => {
 
       try {
         // Fetch all students first 
-        const studentsRes = await axios.get("/admin/students", config);
+        const studentsRes = await axios.get("/teacher/students", config);
         const allStudents = studentsRes.data.data || [];
         //console.log("All students:", allStudents); 
 
         // Get attendance for this slot 
         const attendanceRes = await axios.get(
-          `/admin/attendance?slotId=${slot._id}`,
+          `/teacher/attendance?slotId=${slot._id}`,
           config
         );
         const attendanceData = attendanceRes.data.success
@@ -1214,4 +1214,4 @@ const AttendanceSlots = () => {
   );
 };
 
-export default AttendanceSlots;
+export default AttendanceSlot;

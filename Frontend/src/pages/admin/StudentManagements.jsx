@@ -4,11 +4,11 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/timeUtils';
 import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Trash2 } from 'lucide-react';
-import BulkUpload from './BulkUpload';
+import BulkUpload from './BulkUploads';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../../components/Loader';
 
-const StudentManagement = () => {
+const StudentManagements = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -627,4 +627,4 @@ const StudentManagement = () => {
   );
 };
 
-export default StudentManagement; 
+export default StudentManagements; 

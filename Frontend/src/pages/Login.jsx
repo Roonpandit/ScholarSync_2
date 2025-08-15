@@ -381,7 +381,7 @@ const Login = () => {
           <div className="mt-6 text-center">
             <div className="text-gray-500 text-xs">
               <p>
-                {new Date().getFullYear()} Masai School. All rights reserved.
+                {new Date().getFullYear()} ScholarSync. All rights reserved.
               </p>
             </div>
           </div>
