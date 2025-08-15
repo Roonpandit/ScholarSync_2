@@ -1,8 +1,61 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/Student');
+const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
+const Admin = require('../models/Admin');
 const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../services/reset_password_mail');
+
+// Helper function to find user by email across all models
+const findUserByEmail = async (email) => {
+  // Check in Student model first
+  let user = await Student.findOne({ email });
+  if (user) return { user, model: Student };
+  
+  // Check in Teacher model
+  user = await Teacher.findOne({ email });
+  if (user) return { user, model: Teacher };
+  
+  // Check in Admin model
+  user = await Admin.findOne({ email });
+  if (user) return { user, model: Admin };
+  
+  return { user: null, model: null };
+};
+
+// Helper function to find user by reset token across all models
+const findUserByResetToken = async (token) => {
+  const resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  // Check in Student model first
+  let user = await Student.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  }).select('+password');
+  
+  if (user) return { user, model: Student };
+  
+  // Check in Teacher model
+  user = await Teacher.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  }).select('+password');
+  
+  if (user) return { user, model: Teacher };
+  
+  // Check in Admin model
+  user = await Admin.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  }).select('+password');
+  
+  if (user) return { user, model: Admin };
+  
+  return { user: null, model: null };
+};
 
 // @desc    Forgot password
 // @route   POST /api/auth/forgot-password
@@ -10,10 +63,11 @@ const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../se
 exports.forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  // Check if user exists
-  const user = await User.findOne({ email });
+  // Check if user exists in any model
+  const { user, model } = await findUserByEmail(email);
 
-  if (!user) {
+  if (!user || !model) {
+    // Return success even if user not found to prevent email enumeration
     return res.status(200).json({
       success: true,
       message: 'If an account with that email exists, a password reset link has been sent',
@@ -36,7 +90,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
       throw new Error(emailResult.error || 'Failed to send password reset email');
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error sending password reset email:', err);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save({ validateBeforeSave: false });
@@ -63,19 +117,10 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  // Get hashed token
-  const resetPasswordToken = crypto
-    .createHash('sha256')
-    .update(req.params.resetToken)
-    .digest('hex');
+  // Find user by reset token across all models
+  const { user, model } = await findUserByResetToken(req.params.resetToken);
 
-  // Find user with password field explicitly selected
-  const user = await User.findOne({
-    resetPasswordToken,
-    resetPasswordExpire: { $gt: Date.now() },
-  }).select('+password'); // Explicitly include the password field
-
-  if (!user) {
+  if (!user || !model) {
     return res.status(400).json({
       success: false,
       message: 'Invalid or expired token',
@@ -84,11 +129,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 
   try {
     // Check if new password is same as current password
-    //console.log('User password hash from DB:', user.password ? 'exists' : 'missing');
-    //console.log('Password to compare:', password ? 'provided' : 'missing');
-    
     const isSamePassword = await user.matchPassword(password);
-    //console.log('Password comparison result:', isSamePassword);
     
     if (isSamePassword) {
       return res.status(400).json({
@@ -112,7 +153,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  // Set new password (hashing is handled by the pre-save hook in the User model)
+  // Set new password (hashing is handled by the pre-save hook in the model)
   user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
