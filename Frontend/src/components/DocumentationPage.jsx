@@ -436,6 +436,7 @@ const DocumentationPage = () => {
                                                 This is an exact copy of our original webpage: <strong>scholarsync.online</strong>.
                                                 The original version contains live data, so we've provided this test environment for you to explore.
                                                 This testing version has the exact same features and functionality as the production system.
+                                                You can access the <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-medium hover:underline">Portal Link</a>
                                                 You can perform any activity here as it's made specifically for testing purposes.
                                             </p>
                                         </div>
