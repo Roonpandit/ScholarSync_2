@@ -1,10 +1,12 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/Student');
 const Teacher = require('../models/Teacher');
+const Admin = require('../models/Admin');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
 const { sendWelcomeEmail } = require('../services/welcomeEmailService');
+const { checkEmailExists } = require('./emailController');
 
 // Helper to compare dates
 const isDateBefore = (date1, date2) => {
@@ -549,19 +551,21 @@ exports.updateStudent = asyncHandler(async (req, res) => {
     const updateObject = {};
     
     if (name) updateObject.name = name;
-    if (email) {
-      updateObject.email = email;
-      // Check if email is already used by another student
-      const existingStudent = await User.findOne({ email });
-      if (existingStudent && existingStudent._id.toString() !== id) {
+    
+    // Check if email is being updated
+    if (email && email !== student.email) {
+      // Check if email exists in any user collection (student, teacher, or admin)
+      const { exists: emailExists, userType } = await checkEmailExists(email);
+      if (emailExists) {
         return res.status(400).json({
           success: false,
-          message: 'Email is already in use by another student',
+          message: 'This email is already registered. Please use a different email.',
         });
       }
+      updateObject.email = email;
     }
+    
     if (studentCode) {
-      updateObject.studentCode = studentCode;
       // Check if studentCode is already used by another student
       const existingStudent = await User.findOne({ studentCode });
       if (existingStudent && existingStudent._id.toString() !== id) {
@@ -570,7 +574,9 @@ exports.updateStudent = asyncHandler(async (req, res) => {
           message: 'Student code is already in use by another student',
         });
       }
+      updateObject.studentCode = studentCode;
     }
+    
     if (phone) updateObject.phone = phone;
 
     // Update student details
@@ -746,15 +752,21 @@ exports.createStudent = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if student already exists
-  const existingStudent = await User.findOne({
-    $or: [{ email }, { studentCode }],
-  });
-
-  if (existingStudent) {
+  // Check if student code already exists
+  const existingStudentCode = await User.findOne({ studentCode });
+  if (existingStudentCode) {
     return res.status(400).json({
       success: false,
-      message: 'Student with this email or student code already exists',
+      message: 'Student with this student code already exists',
+    });
+  }
+
+  // Check if email exists in any user collection (student, teacher, or admin)
+  const { exists: emailExists, userType } = await checkEmailExists(email);
+  if (emailExists) {
+    return res.status(400).json({
+      success: false,
+      message: `This email is already registered. Please use a different email.`,
     });
   }
 
@@ -772,7 +784,9 @@ exports.createStudent = asyncHandler(async (req, res) => {
   await sendWelcomeEmail({
     name: student.name,
     email: student.email,
-    studentCode: student.studentCode
+    studentCode: student.studentCode,
+    phone: student.phone,
+    role: 'student'
   });
 
   res.status(201).json({
@@ -1342,15 +1356,21 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
 exports.registerTeacher = asyncHandler(async (req, res) => {
   const { name, email, teacherCode, phone, password } = req.body;
 
-  // Check if teacher already exists with email or teacherCode
-  const existingTeacher = await Teacher.findOne({
-    $or: [{ email }, { teacherCode }],
-  });
-
-  if (existingTeacher) {
+  // Check if teacher code already exists
+  const existingTeacherCode = await Teacher.findOne({ teacherCode });
+  if (existingTeacherCode) {
     return res.status(400).json({
       success: false,
-      message: 'Teacher with this email or teacher code already exists',
+      message: 'Teacher with this teacher code already exists',
+    });
+  }
+
+  // Check if email exists in any user collection (student, teacher, or admin)
+  const { exists: emailExists, userType } = await checkEmailExists(email);
+  if (emailExists) {
+    return res.status(400).json({
+      success: false,
+      message: `This email is already registered. Please use a different email.`,
     });
   }
 
@@ -1435,13 +1455,14 @@ exports.updateTeacher = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if email or teacherCode is being updated to an existing one
+  // Check if email is being updated
   if (email && email !== teacher.email) {
-    const existingTeacher = await Teacher.findOne({ email });
-    if (existingTeacher) {
+    // Check if email exists in any user collection (student, teacher, or admin)
+    const { exists: emailExists, userType } = await checkEmailExists(email);
+    if (emailExists) {
       return res.status(400).json({
         success: false,
-        message: 'Email already in use',
+        message: 'This email is already registered. Please use a different email.',
       });
     }
   }
