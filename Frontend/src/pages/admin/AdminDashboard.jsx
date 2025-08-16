@@ -37,7 +37,27 @@ const AdminDashboard = () => {
       ])
       
       // Fetch today's attendance
-      const attendanceRes = await axios.get(`/admin/attendance?date=${today}`)
+      console.log('Fetching attendance for date:', today);
+      let attendanceRes;
+      try {
+        attendanceRes = await axios.get(`/admin/attendance?date=${today}`);
+        console.log('Attendance API response:', {
+          status: attendanceRes.status,
+          data: attendanceRes.data,
+          headers: attendanceRes.headers
+        });
+      } catch (error) {
+        console.error('Error fetching attendance:', {
+          message: error.message,
+          response: error.response ? {
+            status: error.response.status,
+            data: error.response.data,
+            headers: error.response.headers
+          } : 'No response',
+          request: error.request ? 'Request was made but no response received' : 'No request was made'
+        });
+        throw error;
+      }
       
       // Fetch active slots
       const slotsRes = await axios.get('/admin/attendance-slots')
