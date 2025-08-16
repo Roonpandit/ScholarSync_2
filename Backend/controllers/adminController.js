@@ -1145,8 +1145,6 @@ exports.deleteAttendanceSlot = asyncHandler(async (req, res) => {
 exports.getAttendanceByDate = asyncHandler(async (req, res) => {
   const { date, shift } = req.query;
   
-  console.log('Received request with date:', date, 'shift:', shift);
-  
   if (!date) {
     return res.status(400).json({
       success: false,
@@ -1154,49 +1152,28 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validate date format (YYYY-MM-DD)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  // Parse the date and validate it
+  const queryDate = new Date(date);
+  if (isNaN(queryDate.getTime())) {
     return res.status(400).json({
       success: false,
       message: 'Invalid date format. Please provide a valid date in YYYY-MM-DD format',
     });
   }
   
-  // Parse the input date
-  const queryDate = new Date(date);
-  const nextDay = new Date(queryDate);
-  nextDay.setDate(nextDay.getDate() + 1);
+  // Ensure the date is set to the start of the day in the local timezone
+  const localDate = new Date(queryDate);
+  localDate.setHours(0, 0, 0, 0);
   
-  // Log the dates for debugging
-  console.log('Query date range:', {
-    from: queryDate.toISOString(),
-    to: nextDay.toISOString()
-  });
-  
-  // Query for records on the given date (any time between start and end of day)
-  let query = {
-    date: {
-      $gte: queryDate,
-      $lt: nextDay
-    }
-  };
-  
-  // Log the exact query being made
-  console.log('Database query:', JSON.stringify(query));
+  let query = { date: localDate };
   
   if (shift) {
     query.shift = shift;
   }
 
-  // Log the query being executed
-  const queryStr = JSON.stringify(query);
-  console.log('Executing Attendance.find with query:', queryStr);
-  
   const attendance = await Attendance.find(query)
     .populate('student', 'name email studentCode')
     .populate('slot', 'shift startTime endTime');
-    
-  console.log('Found attendance records:', attendance.length);
 
   res.status(200).json({
     success: true,
