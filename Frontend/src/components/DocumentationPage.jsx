@@ -42,7 +42,7 @@ const DocumentationPage = () => {
                 "Access recent attendance records and quick panel navigation",
                 "Note: Notification icon in navbar currently uses email system"
             ],
-            image: "/docs/photo_3.png"
+            image: "photo_3.png"
         },
         {
             id: 2,

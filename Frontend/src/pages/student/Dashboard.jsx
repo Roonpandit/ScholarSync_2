@@ -78,8 +78,9 @@ const StudentDashboard = () => {
   }
 
   const calculateAttendancePercentage = (stats) => {
-    return stats.total > 0
-      ? Math.round((stats.present / (stats.total - stats.pending)) * 100)
+    const totalCountedSlots = stats.total - stats.pending;
+    return totalCountedSlots > 0
+      ? Math.round((stats.present / totalCountedSlots) * 100)
       : 0;
   };
 
@@ -250,8 +251,8 @@ const StudentDashboard = () => {
                 to="/student/mark-attendance"
                 className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center"
               >
-                Manage Slots
-                <svg
+              View Slots
+                <svg  
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 ml-1"
                   viewBox="0 0 20 20"
@@ -327,7 +328,7 @@ const StudentDashboard = () => {
                 to="/student/mark-attendance"
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
               >
-                Manage Slots
+                View Slots
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 ml-1"
