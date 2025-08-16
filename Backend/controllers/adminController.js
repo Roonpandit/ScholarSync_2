@@ -1154,27 +1154,30 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
     });
   }
 
-  // Parse the date and validate it
-  const queryDate = new Date(date);
-  if (isNaN(queryDate.getTime())) {
+  // Validate date format (YYYY-MM-DD)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({
       success: false,
       message: 'Invalid date format. Please provide a valid date in YYYY-MM-DD format',
     });
   }
   
-  // Ensure the date is set to the start of the day in the local timezone
-  const localDate = new Date(queryDate);
-  localDate.setHours(0, 0, 0, 0);
+  // Create date range for the entire day in local time
+  const startOfDay = new Date(date + 'T00:00:00');
+  const endOfDay = new Date(date + 'T23:59:59.999');
   
   // Log the dates for debugging
-  console.log('Input date:', date);
-  console.log('Parsed date:', queryDate);
-  console.log('Local date (start of day):', localDate);
-  console.log('Local date ISO string:', localDate.toISOString());
-  console.log('Local date local string:', localDate.toString());
+  console.log('Input date string:', date);
+  console.log('Start of day (local):', startOfDay);
+  console.log('End of day (local):', endOfDay);
   
-  let query = { date: localDate };
+  // Query for any attendance records within the date range
+  let query = { 
+    date: { 
+      $gte: startOfDay,
+      $lte: endOfDay
+    } 
+  };
   
   // Log the exact query being made
   console.log('Database query:', JSON.stringify(query));
