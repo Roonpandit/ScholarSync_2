@@ -1162,18 +1162,22 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
     });
   }
   
-  // Convert date string to YYYY-MM-DD format for direct string comparison
-  // This ensures we're matching the date part only, regardless of timezone
-  const dateStr = new Date(date).toISOString().split('T')[0];
+  // Parse the input date
+  const queryDate = new Date(date);
+  const nextDay = new Date(queryDate);
+  nextDay.setDate(nextDay.getDate() + 1);
   
-  // Log the date string being used for comparison
-  console.log('Date string for comparison:', dateStr);
+  // Log the dates for debugging
+  console.log('Query date range:', {
+    from: queryDate.toISOString(),
+    to: nextDay.toISOString()
+  });
   
-  // Query using $regex to match the date part of the ISO string
-  // This is more reliable than date range queries across timezones
-  let query = { 
+  // Query for records on the given date (any time between start and end of day)
+  let query = {
     date: {
-      $regex: `^${dateStr}T`
+      $gte: queryDate,
+      $lt: nextDay
     }
   };
   
