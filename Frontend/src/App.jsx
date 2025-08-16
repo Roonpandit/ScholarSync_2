@@ -45,7 +45,19 @@ function App() {
           loop={true}
           className="w-32 h-32"
         />
-        <p className="mt-4 text-gray-600">Hold on! Your page is loading....</p>
+        <div className="flex items-center mt-4 justify-center space-x-1.5 cursor-pointer" onClick={() => navigate('/home')}>
+          <div className="h-6 w-6 sm:h-8 sm:w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-full w-full object-contain"
+              style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+            />
+          </div>
+          <h1 className="text-xl sm:text-3xl font-serif font-bold bg-gradient-to-r from-blue-100 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+            ScholarSync
+          </h1>
+        </div>
       </div>
     );
   }
