@@ -10,6 +10,7 @@ const TeacherDashboard = () => {
 
   const [stats, setStats] = useState({
     totalStudents: 0,
+    totalTeachers: 0,
     todayAttendance: 0,
     activeSlots: 0,
     absentStudents: 0
@@ -26,40 +27,76 @@ const TeacherDashboard = () => {
     try {
       setLoading(true)
       
-      // Get today's date in YYYY-MM-DD format (IST)
-      const todayIST = convertToIST(new Date())
-      const today = todayIST.toISOString().split('T')[0]
+      // Fetch students and teachers count
+      const [studentsRes, teachersRes] = await Promise.all([
+        axios.get('/admin/students'),
+        axios.get('/admin/teachers')
+      ])
       
-      // Fetch students count
-      const studentsRes = await axios.get('/teacher/students')
+      // Fetch all slots and filter active ones on the client side
+      const slotsRes = await axios.get('/admin/attendance-slots')
+      const now = new Date()
       
-      // Fetch today's attendance
-      const attendanceRes = await axios.get(`/teacher/attendance?date=${today}`)
+      //console.log('All slots from API:', slotsRes.data.data)
+      //console.log('Current time:', now)
       
-      // Fetch active slots
-      const slotsRes = await axios.get('/teacher/attendance-slots')
-      const currentTimeIST = getCurrentTimeIST()
+      // Filter active slots (current time is between startTime and endTime)
+      const activeSlots = slotsRes.data.data.filter(slot => {
+        const startTime = new Date(slot.startTime)
+        const endTime = new Date(slot.endTime)
+        const isActive = now >= startTime && now <= endTime
+        //console.log(`Slot ${slot._id}: ${startTime} to ${endTime} - Active: ${isActive}`)
+        return isActive
+      })
       
-      // Get current time in IST
-      const nowIST = convertToIST(new Date())
-      const currentHour = nowIST.getHours()
-      const currentMinute = nowIST.getMinutes()
-
-      // Count only slots with status 'active'
-      const activeSlots = slotsRes.data.data.filter(slot => slot.status === 'active')
+      //console.log('Active slots after filtering:', activeSlots)
+      
+      //console.log('Active slots found:', activeSlots.length, activeSlots)
+      
+      // Only fetch attendance for active slots
+      const attendancePromises = activeSlots.map(slot => 
+        axios.get(`/admin/attendance?slotId=${slot._id}`).catch(() => ({ data: { data: [] } }))
+      )
+      const attendanceResponses = await Promise.all(attendancePromises)
+      
+      // Process attendance data to match the expected format
+      const allAttendance = attendanceResponses.flatMap(res => {
+        if (!res.data || !res.data.data) return [];
+        return res.data.data.map(record => {
+          //console.log('Raw attendance record:', record); // Debug log
+          return {
+            ...record,
+            studentName: record.studentName || record.student?.name || 'Unknown Student',
+            studentCode: record.studentCode || record.student?.studentCode || 'N/A',
+            markingTime: record.markingTime || new Date().toISOString()
+          };
+        });
+      });
+      
+      //console.log('Processed attendance records:', allAttendance);
+      
+      // Sort by markedAt in descending order (newest first) and take first 5 for recent attendance
+      const recentAttendance = allAttendance
+        .filter(record => record.markedAt || record.markingTime)
+        .sort((a, b) => new Date(b.markedAt || b.markingTime) - new Date(a.markedAt || a.markingTime))
+        .slice(0, 5);
+      
+      // Count total attendance across all slots
+      const totalAttendance = allAttendance.length;
       
       // Fetch absent students
-      const absentRes = await axios.get('/teacher/attendance/absent')
+      const absentRes = await axios.get('/admin/attendance/absent')
       
       setStats({
         totalStudents: studentsRes.data.count || 0,
-        todayAttendance: attendanceRes.data.count || 0,
-        activeSlots: activeSlots.length || 0,
+        totalTeachers: teachersRes.data.count || 0,
+        todayAttendance: totalAttendance,
+        activeSlots: activeSlots.length,
         absentStudents: absentRes.data.count || 0
       })
       
-      // Set recent attendance (last 5)
-      setRecentAttendance(attendanceRes.data.data.slice(0, 5) || [])
+      // Set recent attendance (first 5)
+      setRecentAttendance(recentAttendance)
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -77,7 +114,7 @@ const TeacherDashboard = () => {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Teacher Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Admin Dashboard</h1>
           <p className="text-gray-500 mt-1">Overview of attendance system</p>
         </div>
         <div className="flex items-center space-x-3 mt-4 md:mt-0">
@@ -93,7 +130,7 @@ const TeacherDashboard = () => {
         <StatCard 
           title="Total Students" 
           value={stats.totalStudents} 
-          linkTo="/teacher/students"
+          linkTo="/admin/students"
           linkText="View All"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -104,9 +141,22 @@ const TeacherDashboard = () => {
         />
         
         <StatCard 
+          title="Total Teachers" 
+          value={stats.totalTeachers} 
+          linkTo="/admin/teachers"
+          linkText="View All"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          }
+          color="green"
+        />
+        
+        <StatCard 
           title="Active Slots" 
           value={stats.activeSlots} 
-          linkTo="/teacher/attendance-slots"
+          linkTo="/admin/attendance-slots"
           linkText="Manage Slots"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-purple-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -122,7 +172,7 @@ const TeacherDashboard = () => {
           <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-800">Recent Attendance</h2>
             <Link 
-              to="/teacher/attendance-slots" 
+              to="/admin/attendance-slots" 
               className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center"
             >
               View All
@@ -186,7 +236,7 @@ const TeacherDashboard = () => {
           
           <div className="p-6 space-y-4">
             <ActionButton
-              to="/teacher/attendance-slots"
+              to="/admin/attendance-slots"
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -198,7 +248,7 @@ const TeacherDashboard = () => {
             />
             
             <ActionButton
-              to="/teacher/students"
+              to="/admin/students"
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -210,7 +260,7 @@ const TeacherDashboard = () => {
             />
             
             <ActionButton
-              to="/teacher/attendance/stats"
+              to="/admin/attendance/stats"
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -222,7 +272,7 @@ const TeacherDashboard = () => {
             />
             
             <ActionButton
-              to="/teacher/attendance/absent"
+              to="/admin/attendance/absent"
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
