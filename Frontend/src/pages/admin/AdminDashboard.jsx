@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
+import { FaFileAlt } from 'react-icons/fa'
 import { toast } from 'react-toastify'
-import { getCurrentTimeIST, convertToIST, formatDate } from '../../utils/timeUtils'
+import { formatDateDisplay, formatTime24h, getCurrentDateIST, getCurrentTimeIST, convertToIST, isSameDate } from '../../utils/timeUtils'
 import Loader from '../../components/Loader'
 
 const AdminDashboard = () => {
@@ -26,12 +27,9 @@ const AdminDashboard = () => {
     try {
       setLoading(true)
       
-      // Get current date in YYYY-MM-DD format (local timezone)
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const today = `${year}-${month}-${day}`;
+      // Get today's date in YYYY-MM-DD format (IST)
+      const todayIST = convertToIST(new Date())
+      const today = todayIST.toISOString().split('T')[0]
       
       // Fetch students and teachers count
       const [studentsRes, teachersRes] = await Promise.all([
@@ -40,27 +38,7 @@ const AdminDashboard = () => {
       ])
       
       // Fetch today's attendance
-      console.log('Fetching attendance for date:', today);
-      let attendanceRes;
-      try {
-        attendanceRes = await axios.get(`/admin/attendance?date=${today}`);
-        console.log('Attendance API response:', {
-          status: attendanceRes.status,
-          data: attendanceRes.data,
-          headers: attendanceRes.headers
-        });
-      } catch (error) {
-        console.error('Error fetching attendance:', {
-          message: error.message,
-          response: error.response ? {
-            status: error.response.status,
-            data: error.response.data,
-            headers: error.response.headers
-          } : 'No response',
-          request: error.request ? 'Request was made but no response received' : 'No request was made'
-        });
-        throw error;
-      }
+      const attendanceRes = await axios.get(`/admin/attendance?date=${today}`)
       
       // Fetch active slots
       const slotsRes = await axios.get('/admin/attendance-slots')
