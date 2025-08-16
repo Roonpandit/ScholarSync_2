@@ -528,7 +528,7 @@ const DocumentationPage = () => {
                                                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
-                                                                    src="/public/docs/photo_1.png"
+                                                                    src="/docs/photo_1.png"
                                                                     alt="Login page screenshot"
                                                                     className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
                                                                 />
@@ -570,7 +570,7 @@ const DocumentationPage = () => {
                                                         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
-                                                                    src="/public/docs/photo_2.png"
+                                                                    src="/docs/photo_2.png"
                                                                     alt="Login options screenshot"
                                                                     className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
                                                                 />
