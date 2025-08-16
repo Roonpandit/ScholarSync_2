@@ -99,7 +99,7 @@ const DocumentationPage = () => {
                 "View attendance marking time, student location codes, and photos",
                 "Delete slots (removes all associated attendance records)"
             ],
-            image: "photo_slots.png"
+            image: "photo_7.png"
         },
         {
             id: 6,
@@ -113,7 +113,7 @@ const DocumentationPage = () => {
                 "Generate reports for administrative and compliance purposes",
                 "Track attendance trends and patterns"
             ],
-            image: "photo_stats.png"
+            image: "photo_8.png"
         }
     ];
 
@@ -129,7 +129,7 @@ const DocumentationPage = () => {
                 "Monitor attendance statistics for your classes",
                 "Note: Teachers have limited permissions - cannot delete students or slots for security"
             ],
-            image: "photo_teacher_dashboard.png"
+            image: "photo_9.png"
         },
         {
             id: 2,
@@ -143,7 +143,7 @@ const DocumentationPage = () => {
                 "Monitor slot status: upcoming, active, or expired",
                 "View but cannot delete slots (admin-only permission)"
             ],
-            image: "photo_teacher_slots.png"
+            image: "photo_10.png"
         },
         {
             id: 3,
@@ -157,7 +157,7 @@ const DocumentationPage = () => {
                 "View detailed attendance analytics for each slot",
                 "Export attendance data for your classes"
             ],
-            image: "photo_teacher_monitor.png"
+            image: "photo_11.png"
         },
         {
             id: 4,
@@ -171,7 +171,7 @@ const DocumentationPage = () => {
                 "Cannot delete students (security restriction)",
                 "View student attendance analytics and patterns"
             ],
-            image: "photo_teacher_students.png"
+            image: "photo_12.png"
         },
         {
             id: 5,
@@ -185,7 +185,7 @@ const DocumentationPage = () => {
                 "Export reports to Excel for record-keeping",
                 "Track student attendance percentages"
             ],
-            image: "photo_teacher_reports.png"
+            image: "photo_13.png"
         }
     ];
 
@@ -201,7 +201,7 @@ const DocumentationPage = () => {
                 "Access quick action panel with 'Mark Attendance' and 'Apply Leave'",
                 "View profile section with personal details and password update option"
             ],
-            image: "photo_student_dashboard.png"
+            image: "photo_14.png"
         },
         {
             id: 2,
@@ -215,7 +215,7 @@ const DocumentationPage = () => {
                 "Confirm location data and submit attendance",
                 "Receive confirmation of successful attendance marking"
             ],
-            image: "photo_student_attendance.png"
+            image: "photo_15.png"
         },
         {
             id: 3,
@@ -228,7 +228,7 @@ const DocumentationPage = () => {
                 "View past attendance photos and location data",
                 "Check detailed information for each attendance session"
             ],
-            image: "photo_student_history.png"
+            image: "photo_16.png"
         },
         {
             id: 4,
@@ -241,7 +241,7 @@ const DocumentationPage = () => {
                 "Filter absent records by date or slot type",
                 "Track patterns to improve attendance rate"
             ],
-            image: "photo_student_absent.png"
+            image: "photo_17.png"
         },
         {
             id: 5,
@@ -257,7 +257,7 @@ const DocumentationPage = () => {
                 "System generates pre-written email with subject and body",
                 "Review and send the automated leave request email"
             ],
-            image: "photo_student_leave.png"
+            image: "photo_18.png"
         },
         {
             id: 6,
@@ -270,7 +270,7 @@ const DocumentationPage = () => {
                 "Update contact information",
                 "Review account activity and settings"
             ],
-            image: "photo_student_profile.png"
+            image: "photo_19.png"
         }
     ];
 
@@ -649,16 +649,6 @@ const DocumentationPage = () => {
                                 {/* Additional Admin Features */}
                                 <div className="mt-16 bg-gray-50 rounded-xl p-8">
                                     <h3 className="text-2xl font-bold text-gray-900 mb-6">Complete Admin Dashboard Overview</h3>
-
-                                    <div className="mb-8">
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Dashboard Analytics [photo_3]</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                            <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                                <h5 className="font-medium text-gray-700">Recent Attendance</h5>
-                                                <p className="text-sm text-gray-600">Latest attendance submissions</p>
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <div className="mb-8">
                                         <h4 className="text-lg font-semibold text-gray-900 mb-4">Sidebar Navigation Tabs</h4>

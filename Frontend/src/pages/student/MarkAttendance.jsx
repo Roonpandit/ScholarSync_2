@@ -25,7 +25,6 @@ const MarkAttendance = () => {
   })
   const [submitting, setSubmitting] = useState(false)
   const [hasReadInstructions, setHasReadInstructions] = useState(false)
-  const [canCheckInstructions, setCanCheckInstructions] = useState(false)
   const [errors, setErrors] = useState({})
 
 
