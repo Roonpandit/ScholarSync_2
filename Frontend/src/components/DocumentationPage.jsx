@@ -480,13 +480,31 @@ const DocumentationPage = () => {
                                         <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5 mr-3" />
                                         <div>
                                             <h3 className="text-lg font-semibold text-amber-800 mb-2">Important Notice</h3>
-                                            <p className="text-amber-700 leading-relaxed">
-                                                This is an exact copy of our original webpage: <strong>scholarsync.online</strong>.
-                                                The original version contains live data, so we've provided this test environment for you to explore.
-                                                This testing version has the exact same features and functionality as the production system.
-                                                You can access the Testing Portal here: <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-medium hover:underline">Portal Link. </a>
-                                                You can perform any activity here as it's made specifically for testing purposes.
-                                            </p>
+                                            <div className="text-amber-700 leading-relaxed space-y-3">
+                                                <p>
+                                                    This documentation provides comprehensive step-by-step instructions to help you navigate and utilize the ScholarSync portal effectively. 
+                                                    Since our original production system at <strong>scholarsync.online</strong> contains live institutional data and active student records, 
+                                                    we've created an identical testing environment specifically for demonstration and exploration purposes.
+                                                </p>
+                                                <p>
+                                                    <strong>🎯 Complete Testing Environment:</strong> This replicated version maintains 100% feature parity with our production system. 
+                                                    Every functionality, interface element, and workflow you see here operates exactly as it does in real educational institutions 
+                                                    using ScholarSync for their attendance management.
+                                                </p>
+                                                <p>
+                                                    <strong>🔗 Access the Testing Portal:</strong> <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-semibold hover:underline">Click here to launch ScholarSync Test Portal</a>
+                                                </p>
+                                                <p>
+                                                    <strong>✅ What You Can Do:</strong> Feel free to create test accounts, mark attendance with photos, generate reports, 
+                                                    manage student records, create attendance slots, apply for leaves, and explore all administrative features. 
+                                                    This sandbox environment is designed for thorough testing without any restrictions or data concerns.
+                                                </p>
+                                                <p>
+                                                    <strong>📚 How to Use This Documentation:</strong> Each section below contains detailed screenshots, step-by-step procedures, 
+                                                    and practical examples. Follow the guides for Admin, Teacher, or Student roles to understand the complete workflow 
+                                                    and maximize your experience with the ScholarSync system.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
