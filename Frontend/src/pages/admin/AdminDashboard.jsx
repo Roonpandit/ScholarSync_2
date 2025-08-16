@@ -27,9 +27,9 @@ const AdminDashboard = () => {
     try {
       setLoading(true)
       
-      // Get today's date in YYYY-MM-DD format (local time)
-      const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD format
-      
+      // Get today's date in YYYY-MM-DD format (IST)
+      const todayIST = convertToIST(new Date())
+      const today = todayIST.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });      
       // Fetch students and teachers count
       const [studentsRes, teachersRes] = await Promise.all([
         axios.get('/admin/students'),
