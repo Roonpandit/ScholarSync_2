@@ -1162,21 +1162,19 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
     });
   }
   
-  // Create date range for the entire day in local time
-  const startOfDay = new Date(date + 'T00:00:00');
-  const endOfDay = new Date(date + 'T23:59:59.999');
+  // Convert date string to YYYY-MM-DD format for direct string comparison
+  // This ensures we're matching the date part only, regardless of timezone
+  const dateStr = new Date(date).toISOString().split('T')[0];
   
-  // Log the dates for debugging
-  console.log('Input date string:', date);
-  console.log('Start of day (local):', startOfDay);
-  console.log('End of day (local):', endOfDay);
+  // Log the date string being used for comparison
+  console.log('Date string for comparison:', dateStr);
   
-  // Query for any attendance records within the date range
+  // Query using $regex to match the date part of the ISO string
+  // This is more reliable than date range queries across timezones
   let query = { 
-    date: { 
-      $gte: startOfDay,
-      $lte: endOfDay
-    } 
+    date: {
+      $regex: `^${dateStr}T`
+    }
   };
   
   // Log the exact query being made
