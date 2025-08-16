@@ -1145,6 +1145,8 @@ exports.deleteAttendanceSlot = asyncHandler(async (req, res) => {
 exports.getAttendanceByDate = asyncHandler(async (req, res) => {
   const { date, shift } = req.query;
   
+  console.log('Received request with date:', date, 'shift:', shift);
+  
   if (!date) {
     return res.status(400).json({
       success: false,
@@ -1165,15 +1167,31 @@ exports.getAttendanceByDate = asyncHandler(async (req, res) => {
   const localDate = new Date(queryDate);
   localDate.setHours(0, 0, 0, 0);
   
+  // Log the dates for debugging
+  console.log('Input date:', date);
+  console.log('Parsed date:', queryDate);
+  console.log('Local date (start of day):', localDate);
+  console.log('Local date ISO string:', localDate.toISOString());
+  console.log('Local date local string:', localDate.toString());
+  
   let query = { date: localDate };
+  
+  // Log the exact query being made
+  console.log('Database query:', JSON.stringify(query));
   
   if (shift) {
     query.shift = shift;
   }
 
+  // Log the query being executed
+  const queryStr = JSON.stringify(query);
+  console.log('Executing Attendance.find with query:', queryStr);
+  
   const attendance = await Attendance.find(query)
     .populate('student', 'name email studentCode')
     .populate('slot', 'shift startTime endTime');
+    
+  console.log('Found attendance records:', attendance.length);
 
   res.status(200).json({
     success: true,
