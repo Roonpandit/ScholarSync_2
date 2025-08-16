@@ -14,15 +14,17 @@ import {
     AlertTriangle,
     CheckCircle,
     X,
-    ZoomIn
+    ZoomIn,
+    Menu
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const DocumentationPage = () => {
     const [activeSection, setActiveSection] = useState("overview");
     const [selectedImage, setSelectedImage] = useState(null);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
-    
+
     const sections = [
         { id: "overview", label: "Overview", icon: Home },
         { id: "admin", label: "Admin Guide", icon: Shield },
@@ -279,23 +281,23 @@ const DocumentationPage = () => {
         if (!selectedImage) return null;
 
         return (
-            <div 
-                className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4"
+            <div
+                className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-2 sm:p-4"
                 onClick={() => setSelectedImage(null)}
             >
                 <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
-                    <div 
+                    <div
                         className="relative bg-white rounded-lg shadow-2xl max-w-full max-h-full overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <img
                             src={selectedImage.src}
                             alt={selectedImage.alt}
-                            className="max-w-full max-h-[80vh] object-contain"
+                            className="max-w-full max-h-[70vh] sm:max-h-[80vh] object-contain"
                         />
-                        <div className="text-center p-2 bg-white border-t border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900">{selectedImage.alt}</h3>
-                            <p className="text-sm text-gray-600">Click outside the image to close</p>
+                        <div className="text-center p-2 sm:p-4 bg-white border-t border-gray-200">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900">{selectedImage.alt}</h3>
+                            <p className="text-xs sm:text-sm text-gray-600">Click outside the image to close</p>
                         </div>
                     </div>
                 </div>
@@ -325,10 +327,10 @@ const DocumentationPage = () => {
 
         if (imageError) {
             return (
-                <div className="w-full h-full bg-gradient-to-br from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                        <Camera className="h-12 w-12 text-indigo-600 mx-auto mb-2" />
-                        <p className="text-sm text-indigo-600 font-medium">[{src.split('/').pop()}]</p>
+                <div className="w-full h-full bg-gradient-to-br from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center min-h-[200px]">
+                    <div className="text-center p-4">
+                        <Camera className="h-8 sm:h-12 w-8 sm:w-12 text-indigo-600 mx-auto mb-2" />
+                        <p className="text-xs sm:text-sm text-indigo-600 font-medium break-all">[{src.split('/').pop()}]</p>
                         <p className="text-xs text-gray-500 mt-1">Screenshot not available</p>
                     </div>
                 </div>
@@ -336,7 +338,7 @@ const DocumentationPage = () => {
         }
 
         return (
-            <div className="relative w-full h-full group">
+            <div className="relative w-full h-full group min-h-[200px]">
                 <img
                     src={src}
                     alt={alt}
@@ -349,12 +351,12 @@ const DocumentationPage = () => {
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer" onClick={handleImageClick}>
                     <div className="transform scale-75 group-hover:scale-100 transition-transform duration-300">
-                        <ZoomIn className="h-6 w-6 text-gray-800" />
+                        <ZoomIn className="h-4 w-4 sm:h-6 sm:w-6 text-gray-800" />
                     </div>
                 </div>
                 {imageLoading && (
-                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center min-h-[200px]">
+                        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-indigo-600"></div>
                     </div>
                 )}
             </div>
@@ -415,33 +417,74 @@ const DocumentationPage = () => {
             <ImageModal />
 
             {/* Header */}
-            <div className="fixed top-0 left-0 w-full z-50 bg-white mx-auto px-4 sm:px-6 lg:px-8 shadow-md">
-                <div className="flex justify-between h-16">
-                    <div className="flex items-center">
-                        <div className="flex items-center justify-center space-x-1.5 cursor-pointer" onClick={() => navigate('/home')}>
-                            <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
-                                <img
-                                    src="/logo.png"
-                                    alt="Logo"
-                                    className="h-full w-full object-contain"
-                                    style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-                                />
+            <div className="fixed top-0 left-0 w-full z-50 bg-white shadow-md">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-14 sm:h-16">
+                        <div className="flex items-center">
+                            <div className="flex items-center justify-center space-x-1.5 cursor-pointer" onClick={() => navigate('/home')}>
+                                <div className="h-6 w-6 sm:h-8 sm:w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                                    <img
+                                        src="/logo.png"
+                                        alt="Logo"
+                                        className="h-full w-full object-contain"
+                                        style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+                                    />
+                                </div>
+                                <h1 className="text-xl sm:text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                                    ScholarSync
+                                </h1>
                             </div>
-                            <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
-                                ScholarSync
-                            </h1>
+                            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 mx-1 sm:mx-2" />
+                            <h2 className="text-sm sm:text-xl font-semibold text-gray-700">Documentation</h2>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
-                        <h2 className="text-xl font-semibold text-gray-700">Documentation</h2>
+
+                        {/* Mobile menu button */}
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        >
+                            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                        </button>
                     </div>
                 </div>
             </div>
+            {/* Mobile Sidebar Overlay */}
+            {sidebarOpen && (
+                <div className="fixed inset-0 z-40 lg:hidden">
+                    <div className="absolute inset-0 bg-black opacity-50" onClick={() => setSidebarOpen(false)}></div>
+                    <div className="absolute right-0 w-64 h-full bg-white shadow-xl">
+                        <div className="p-6 pt-20">
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Navigation</h3>
+                            </div>
+                            <nav className="space-y-2">
+                                {sections.map((section) => (
+                                    <button
+                                        key={section.id}
+                                        onClick={() => {
+                                            setActiveSection(section.id);
+                                            setSidebarOpen(false);
+                                        }}
+                                        className={`w-full flex items-center px-3 py-2 rounded-lg transition-colors ${activeSection === section.id
+                                            ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-700'
+                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                            }`}
+                                    >
+                                        <section.icon className="h-5 w-5 mr-3" />
+                                        {section.label}
+                                    </button>
+                                ))}
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                 <div className="lg:grid lg:grid-cols-4 lg:gap-8">
-                    {/* Sidebar */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-xl mt-36 shadow-sm border border-gray-200 p-6 sticky top-24">
+                    {/* Desktop Sidebar */}
+                    <div className="hidden lg:block lg:col-span-1">
+                        <div className="bg-white rounded-xl mt-20 shadow-sm border border-gray-200 p-6 sticky top-24">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Navigation</h3>
                             <nav className="space-y-2">
                                 {sections.map((section) => (
@@ -462,46 +505,46 @@ const DocumentationPage = () => {
                     </div>
 
                     {/* Main Content */}
-                    <div className="lg:col-span-3 mt-8 lg:mt-0">
+                    <div className="lg:col-span-3 mt-16 sm:mt-20 lg:mt-0">
                         {activeSection === "overview" && (
-                            <div className="bg-white rounded-xl mt-12 shadow-sm border border-gray-200 p-8">
-                                <div className="text-center mb-12">
-                                    <h2 className="text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                            <div className="bg-white rounded-xl mt-20 shadow-sm border border-gray-200 p-4 sm:p-8">
+                                <div className="text-center mb-8 sm:mb-12">
+                                    <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
                                         ScholarSync Documentation
                                     </h2>
-                                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                                    <p className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto">
                                         Smart Photo-Verified Attendance Management System for Educational Institutions
                                     </p>
                                 </div>
 
                                 {/* Important Notice */}
-                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
                                     <div className="flex items-start">
-                                        <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5 mr-3" />
+                                        <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 flex-shrink-0 mt-0.5 mr-3" />
                                         <div>
-                                            <h3 className="text-lg font-semibold text-amber-800 mb-2">Important Notice</h3>
-                                            <div className="text-amber-700 leading-relaxed space-y-3">
+                                            <h3 className="text-base sm:text-lg font-semibold text-amber-800 mb-2">Important Notice</h3>
+                                            <div className="text-sm sm:text-base text-amber-700 leading-relaxed space-y-3">
                                                 <p>
-                                                    This documentation provides comprehensive step-by-step instructions to help you navigate and utilize the ScholarSync portal effectively. 
-                                                    Since our original production system at <strong>scholarsync.online</strong> contains live institutional data and active student records, 
+                                                    This documentation provides comprehensive step-by-step instructions to help you navigate and utilize the ScholarSync portal effectively.
+                                                    Since our original production system at <strong>scholarsync.online</strong> contains live institutional data and active student records,
                                                     we've created an identical testing environment specifically for demonstration and exploration purposes.
                                                 </p>
                                                 <p>
-                                                    <strong>🎯 Complete Testing Environment:</strong> This replicated version maintains 100% feature parity with our production system. 
-                                                    Every functionality, interface element, and workflow you see here operates exactly as it does in real educational institutions 
+                                                    <strong>🎯 Complete Testing Environment:</strong> This replicated version maintains 100% feature parity with our production system.
+                                                    Every functionality, interface element, and workflow you see here operates exactly as it does in real educational institutions
                                                     using ScholarSync for their attendance management.
                                                 </p>
                                                 <p>
-                                                    <strong>🔗 Access the Testing Portal:</strong> <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-semibold hover:underline">Click here to launch ScholarSync Test Portal</a>
+                                                    <strong>🔗 Access the Testing Portal:</strong> <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-semibold hover:underline break-all">Click here to launch ScholarSync Test Portal</a>
                                                 </p>
                                                 <p>
-                                                    <strong>✅ What You Can Do:</strong> Feel free to create test accounts, mark attendance with photos, generate reports, 
-                                                    manage student records, create attendance slots, apply for leaves, and explore all administrative features. 
+                                                    <strong>✅ What You Can Do:</strong> Feel free to create test accounts, mark attendance with photos, generate reports,
+                                                    manage student records, create attendance slots, apply for leaves, and explore all administrative features.
                                                     This sandbox environment is designed for thorough testing without any restrictions or data concerns.
                                                 </p>
                                                 <p>
-                                                    <strong>📚 How to Use This Documentation:</strong> Each section below contains detailed screenshots, step-by-step procedures, 
-                                                    and practical examples. Follow the guides for Admin, Teacher, or Student roles to understand the complete workflow 
+                                                    <strong>📚 How to Use This Documentation:</strong> Each section below contains detailed screenshots, step-by-step procedures,
+                                                    and practical examples. Follow the guides for Admin, Teacher, or Student roles to understand the complete workflow
                                                     and maximize your experience with the ScholarSync system.
                                                 </p>
                                             </div>
@@ -510,40 +553,40 @@ const DocumentationPage = () => {
                                 </div>
 
                                 {/* System Overview */}
-                                <div className="space-y-8">
+                                <div className="space-y-6 sm:space-y-8">
                                     <div>
-                                        <h3 className="text-2xl font-bold text-gray-900 mb-4">What is ScholarSync?</h3>
-                                        <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">What is ScholarSync?</h3>
+                                        <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6">
                                             ScholarSync is a comprehensive attendance management system that revolutionizes how educational institutions track student attendance.
                                             Using advanced photo verification technology, real-time analytics, and automated notifications, ScholarSync eliminates proxy attendance
                                             and provides accurate, reliable attendance tracking.
                                         </p>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-indigo-50 p-6 rounded-xl">
-                                            <Camera className="h-8 w-8 text-indigo-600 mb-3" />
-                                            <h4 className="text-lg font-semibold text-gray-900 mb-2">Photo Verification</h4>
-                                            <p className="text-gray-600">Students mark attendance by taking a selfie, preventing proxy attendance through facial recognition.</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                        <div className="bg-indigo-50 p-4 sm:p-6 rounded-xl">
+                                            <Camera className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-600 mb-3" />
+                                            <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Photo Verification</h4>
+                                            <p className="text-sm sm:text-base text-gray-600">Students mark attendance by taking a selfie, preventing proxy attendance through facial recognition.</p>
                                         </div>
-                                        <div className="bg-blue-50 p-6 rounded-xl">
-                                            <BarChart3 className="h-8 w-8 text-blue-600 mb-3" />
-                                            <h4 className="text-lg font-semibold text-gray-900 mb-2">Real-time Analytics</h4>
-                                            <p className="text-gray-600">Comprehensive reports and analytics provide insights into attendance patterns and trends.</p>
+                                        <div className="bg-blue-50 p-4 sm:p-6 rounded-xl">
+                                            <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mb-3" />
+                                            <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Real-time Analytics</h4>
+                                            <p className="text-sm sm:text-base text-gray-600">Comprehensive reports and analytics provide insights into attendance patterns and trends.</p>
                                         </div>
                                     </div>
 
                                     {/* Login Credentials */}
-                                    <div className="bg-indigo-900 text-white rounded-xl p-6">
-                                        <h3 className="text-xl font-bold mb-4">Super Admin Test Credentials</h3>
+                                    <div className="bg-indigo-900 text-white rounded-xl p-4 sm:p-6">
+                                        <h3 className="text-lg sm:text-xl font-bold mb-4">Super Admin Test Credentials</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-indigo-200 text-sm font-medium mb-1">Email:</label>
-                                                <p className="bg-indigo-800 px-3 py-2 rounded font-mono">tarunvashisth0000@gmail.com</p>
+                                                <p className="bg-indigo-800 px-3 py-2 rounded font-mono text-sm break-all">tarunvashisth0000@gmail.com</p>
                                             </div>
                                             <div>
                                                 <label className="block text-indigo-200 text-sm font-medium mb-1">Password:</label>
-                                                <p className="bg-indigo-800 px-3 py-2 rounded font-mono">Admin@123</p>
+                                                <p className="bg-indigo-800 px-3 py-2 rounded font-mono text-sm">Admin@123</p>
                                             </div>
                                         </div>
                                         <div className="mt-4 p-3 bg-indigo-800 rounded">
@@ -559,39 +602,39 @@ const DocumentationPage = () => {
                                     </div>
 
                                     {/* Getting Started Process */}
-                                    <div className="bg-gray-50 rounded-xl p-8">
-                                        <div className="text-center mb-8">
-                                            <h3 className="text-2xl font-bold text-gray-900 mb-4">Getting Started Process</h3>
-                                            <p className="text-lg text-gray-600">Step-by-step guide to access ScholarSync system</p>
+                                    <div className="bg-gray-50 rounded-xl p-4 sm:p-8">
+                                        <div className="text-center mb-6 sm:mb-8">
+                                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Getting Started Process</h3>
+                                            <p className="text-base sm:text-lg text-gray-600">Step-by-step guide to access ScholarSync system</p>
                                         </div>
 
-                                        <div className="space-y-12">
+                                        <div className="space-y-8 sm:space-y-12">
                                             {/* Step 1 */}
                                             <div className="relative">
-                                                <div className="md:grid md:grid-cols-2 md:gap-8 md:items-center">
+                                                <div className="flex flex-col space-y-6 md:grid md:grid-cols-2 md:gap-8 md:items-center md:space-y-0">
                                                     <div className="md:text-right md:pr-8">
-                                                        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-indigo-600 text-white mb-4">
-                                                            <span className="text-lg font-bold">1</span>
+                                                        <div className="inline-flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-600 text-white mb-4">
+                                                            <span className="text-base sm:text-lg font-bold">1</span>
                                                         </div>
-                                                        <h4 className="text-xl font-bold text-gray-900 mb-3">
+                                                        <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">
                                                             Click "Get Started" → Redirects to Login Page
                                                         </h4>
-                                                        <p className="text-gray-600 text-lg mb-4">
+                                                        <p className="text-sm sm:text-lg text-gray-600 mb-4">
                                                             Navigate from homepage to the secure login interface where you can access your account.
                                                         </p>
                                                         <ul className="space-y-2">
                                                             <li className="flex items-start">
-                                                                <CheckCircle className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
-                                                                <span className="text-gray-700">Homepage "Get Started" button redirects automatically</span>
+                                                                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
+                                                                <span className="text-sm sm:text-base text-gray-700">Homepage "Get Started" button redirects automatically</span>
                                                             </li>
                                                             <li className="flex items-start">
-                                                                <CheckCircle className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
-                                                                <span className="text-gray-700">Secure login page loads with credential input fields</span>
+                                                                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
+                                                                <span className="text-sm sm:text-base text-gray-700">Secure login page loads with credential input fields</span>
                                                             </li>
                                                         </ul>
                                                     </div>
-                                                    <div className="mt-6 md:mt-0 md:pl-8">
-                                                        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                                                    <div className="md:pl-8">
+                                                        <div className="bg-white p-3 sm:p-6 rounded-xl shadow-lg border border-gray-200">
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
                                                                     src="/docs/photo_1.png"
@@ -606,34 +649,34 @@ const DocumentationPage = () => {
 
                                             {/* Step 2 */}
                                             <div className="relative">
-                                                <div className="md:grid md:grid-cols-2 md:gap-8 md:items-center">
+                                                <div className="flex flex-col space-y-6 md:grid md:grid-cols-2 md:gap-8 md:items-center md:space-y-0">
                                                     <div className="md:order-last md:text-left md:pl-8">
-                                                        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-indigo-600 text-white mb-4">
-                                                            <span className="text-lg font-bold">2</span>
+                                                        <div className="inline-flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-600 text-white mb-4">
+                                                            <span className="text-base sm:text-lg font-bold">2</span>
                                                         </div>
-                                                        <h4 className="text-xl font-bold text-gray-900 mb-3">
+                                                        <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">
                                                             Login Options Available
                                                         </h4>
-                                                        <p className="text-gray-600 text-lg mb-4">
+                                                        <p className="text-sm sm:text-lg text-gray-600 mb-4">
                                                             Multiple authentication options available based on your account type and access requirements.
                                                         </p>
                                                         <ul className="space-y-2">
                                                             <li className="flex items-start">
-                                                                <CheckCircle className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
-                                                                <span className="text-gray-700">Use teacher/student credentials if available</span>
+                                                                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
+                                                                <span className="text-sm sm:text-base text-gray-700">Use teacher/student credentials if available</span>
                                                             </li>
                                                             <li className="flex items-start">
-                                                                <CheckCircle className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
-                                                                <span className="text-gray-700">Forgot password? Click "Forget Password" and enter email for reset</span>
+                                                                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
+                                                                <span className="text-sm sm:text-base text-gray-700">Forgot password? Click "Forget Password" and enter email for reset</span>
                                                             </li>
                                                             <li className="flex items-start">
-                                                                <CheckCircle className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
-                                                                <span className="text-gray-700">Use provided super admin credentials for full system access</span>
+                                                                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0 mt-0.5 mr-2" />
+                                                                <span className="text-sm sm:text-base text-gray-700">Use provided super admin credentials for full system access</span>
                                                             </li>
                                                         </ul>
                                                     </div>
-                                                    <div className="mt-6 md:mt-0 md:pr-8">
-                                                        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                                                    <div className="md:pr-8">
+                                                        <div className="bg-white p-3 sm:p-6 rounded-xl shadow-lg border border-gray-200">
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
                                                                     src="/docs/photo_2.png"
@@ -652,12 +695,12 @@ const DocumentationPage = () => {
                         )}
 
                         {activeSection === "admin" && (
-                            <div className="bg-white mt-12 rounded-xl shadow-sm border border-gray-200 p-8">
-                                <div className="text-center mb-12">
-                                    <h2 className="text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                            <div className="bg-white rounded-xl mt-20 shadow-sm border border-gray-200 p-4 sm:p-8">
+                                <div className="text-center mb-8 sm:mb-12">
+                                    <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
                                         Super Admin Guide
                                     </h2>
-                                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                                    <p className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto">
                                         Complete system administration with full access to all features and management tools
                                     </p>
                                 </div>
@@ -665,50 +708,50 @@ const DocumentationPage = () => {
                                 {renderSteps(adminSteps)}
 
                                 {/* Additional Admin Features */}
-                                <div className="mt-16 bg-gray-50 rounded-xl p-8">
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-6">Complete Admin Dashboard Overview</h3>
+                                <div className="mt-12 sm:mt-16 bg-gray-50 rounded-xl p-4 sm:p-8">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Complete Admin Dashboard Overview</h3>
 
-                                    <div className="mb-8">
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Sidebar Navigation Tabs</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="mb-6 sm:mb-8">
+                                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Sidebar Navigation Tabs</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                             <div className="space-y-3">
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
-                                                    <Home className="h-5 w-5 text-indigo-600 mr-3" />
-                                                    <span className="font-medium">Dashboard - Overview & Analytics</span>
+                                                    <Home className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">Dashboard - Overview & Analytics</span>
                                                 </div>
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
-                                                    <Users className="h-5 w-5 text-blue-600 mr-3" />
-                                                    <span className="font-medium">Students - Complete Student Management</span>
+                                                    <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">Students - Complete Student Management</span>
                                                 </div>
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
-                                                    <UserCheck className="h-5 w-5 text-green-600 mr-3" />
-                                                    <span className="font-medium">Teachers - Teacher Account Management</span>
+                                                    <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">Teachers - Teacher Account Management</span>
                                                 </div>
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
-                                                    <FileText className="h-5 w-5 text-purple-600 mr-3" />
-                                                    <span className="font-medium">Feedback Forms - Instant Student Surveys</span>
+                                                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">Feedback Forms - Instant Student Surveys</span>
                                                 </div>
                                             </div>
                                             <div className="space-y-3">
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
-                                                    <Clock className="h-5 w-5 text-orange-600 mr-3" />
-                                                    <span className="font-medium">Attendance Slots - Session Management</span>
+                                                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">Attendance Slots - Session Management</span>
                                                 </div>
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
-                                                    <BarChart3 className="h-5 w-5 text-red-600 mr-3" />
-                                                    <span className="font-medium">Attendance Stats - Analytics & Reports</span>
+                                                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">Attendance Stats - Analytics & Reports</span>
                                                 </div>
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
-                                                    <AlertTriangle className="h-5 w-5 text-yellow-600 mr-3" />
-                                                    <span className="font-medium">Absent Students - Absence Tracking</span>
+                                                    <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">Absent Students - Absence Tracking</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-blue-50 p-6 rounded-lg">
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-3">Important Admin Notes</h4>
-                                        <ul className="space-y-2 text-gray-700">
+                                    <div className="bg-blue-50 p-4 sm:p-6 rounded-lg">
+                                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Important Admin Notes</h4>
+                                        <ul className="space-y-2 text-sm sm:text-base text-gray-700">
                                             <li>• Notification icon in navbar currently routes to email system instead of in-app notifications</li>
                                             <li>• All student and teacher account creation sends automatic email with credentials</li>
                                             <li>• Deleting students removes ALL associated attendance records permanently</li>
@@ -722,12 +765,12 @@ const DocumentationPage = () => {
                         )}
 
                         {activeSection === "teacher" && (
-                            <div className="bg-white mt-12 rounded-xl shadow-sm border border-gray-200 p-8">
-                                <div className="text-center mb-12">
-                                    <h2 className="text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                            <div className="bg-white rounded-xl mt-20 shadow-sm border border-gray-200 p-4 sm:p-8">
+                                <div className="text-center mb-8 sm:mb-12">
+                                    <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
                                         Teacher Guide
                                     </h2>
-                                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                                    <p className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto">
                                         Manage your classes and track student attendance with limited administrative permissions
                                     </p>
                                 </div>
@@ -735,12 +778,12 @@ const DocumentationPage = () => {
                                 {renderSteps(teacherSteps)}
 
                                 {/* Teacher Permissions and Access Note */}
-                                <div className="mt-12 bg-amber-50 border border-amber-200 rounded-xl p-6">
+                                <div className="mt-8 sm:mt-12 bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-6">
                                     <div className="flex items-start">
-                                        <Shield className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5 mr-3" />
+                                        <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 flex-shrink-0 mt-0.5 mr-3" />
                                         <div>
-                                            <h3 className="text-lg font-semibold text-amber-800 mb-2">Teacher Permissions & Limitations</h3>
-                                            <div className="text-amber-700 space-y-2">
+                                            <h3 className="text-base sm:text-lg font-semibold text-amber-800 mb-2">Teacher Permissions & Limitations</h3>
+                                            <div className="text-sm sm:text-base text-amber-700 space-y-2">
                                                 <p>
                                                     <strong>Similar UI to Admin:</strong> Teachers have the same interface design as administrators but with restricted permissions for security and data integrity.
                                                 </p>
@@ -759,23 +802,23 @@ const DocumentationPage = () => {
                                 </div>
 
                                 {/* Teacher Account Creation Process */}
-                                <div className="mt-8 bg-blue-50 rounded-xl p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">How to Create Teacher Accounts (Admin Process)</h3>
-                                    <div className="space-y-3 text-gray-700">
+                                <div className="mt-6 sm:mt-8 bg-blue-50 rounded-xl p-4 sm:p-6">
+                                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">How to Create Teacher Accounts (Admin Process)</h3>
+                                    <div className="space-y-3 text-sm sm:text-base text-gray-700">
                                         <div className="flex items-start">
-                                            <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0 mt-0.5">1</div>
+                                            <div className="bg-blue-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs sm:text-sm font-bold mr-3 flex-shrink-0 mt-0.5">1</div>
                                             <span>Admin navigates to Teachers tab and clicks "Add New Teacher"</span>
                                         </div>
                                         <div className="flex items-start">
-                                            <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0 mt-0.5">2</div>
+                                            <div className="bg-blue-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs sm:text-sm font-bold mr-3 flex-shrink-0 mt-0.5">2</div>
                                             <span>Fill in teacher details with authentic email address</span>
                                         </div>
                                         <div className="flex items-start">
-                                            <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0 mt-0.5">3</div>
+                                            <div className="bg-blue-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs sm:text-sm font-bold mr-3 flex-shrink-0 mt-0.5">3</div>
                                             <span>Teacher receives welcome email with login credentials automatically</span>
                                         </div>
                                         <div className="flex items-start">
-                                            <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0 mt-0.5">4</div>
+                                            <div className="bg-blue-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs sm:text-sm font-bold mr-3 flex-shrink-0 mt-0.5">4</div>
                                             <span>Teacher can login and explore all available features with limited permissions</span>
                                         </div>
                                     </div>
@@ -784,12 +827,12 @@ const DocumentationPage = () => {
                         )}
 
                         {activeSection === "student" && (
-                            <div className="bg-white mt-12 rounded-xl shadow-sm border border-gray-200 p-8">
-                                <div className="text-center mb-12">
-                                    <h2 className="text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                            <div className="bg-white rounded-xl mt-20 shadow-sm border border-gray-200 p-4 sm:p-8">
+                                <div className="text-center mb-8 sm:mb-12">
+                                    <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
                                         Student Guide
                                     </h2>
-                                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                                    <p className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto">
                                         Mark your attendance, view history, and manage your academic records
                                     </p>
                                 </div>
@@ -797,73 +840,73 @@ const DocumentationPage = () => {
                                 {renderSteps(studentSteps)}
 
                                 {/* Student Features Overview */}
-                                <div className="mt-16 bg-indigo-50 rounded-xl p-8">
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-6">Complete Student Experience Overview</h3>
+                                <div className="mt-12 sm:mt-16 bg-indigo-50 rounded-xl p-4 sm:p-8">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Complete Student Experience Overview</h3>
 
-                                    <div className="mb-6">
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-3">Account Creation & Access</h4>
+                                    <div className="mb-4 sm:mb-6">
+                                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Account Creation & Access</h4>
                                         <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                            <p className="text-gray-700 mb-2">
+                                            <p className="text-sm sm:text-base text-gray-700 mb-2">
                                                 <strong>Important:</strong> Students cannot create accounts independently. All student accounts are created by administrators to ensure security and proper enrollment verification.
                                             </p>
-                                            <p className="text-gray-600 text-sm">
+                                            <p className="text-xs sm:text-sm text-gray-600">
                                                 When administrators create student accounts, students receive their login credentials via email along with welcome instructions.
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                                         <div className="space-y-4">
                                             <div className="flex items-start">
-                                                <CheckCircle className="h-6 w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
+                                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
                                                 <div>
-                                                    <h4 className="font-semibold text-gray-900">Dashboard Analytics</h4>
-                                                    <p className="text-gray-600">Real-time attendance rate calculation, total presents/absents, and active slots overview</p>
+                                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Dashboard Analytics</h4>
+                                                    <p className="text-xs sm:text-sm text-gray-600">Real-time attendance rate calculation, total presents/absents, and active slots overview</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start">
-                                                <CheckCircle className="h-6 w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
+                                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
                                                 <div>
-                                                    <h4 className="font-semibold text-gray-900">Quick Actions Panel</h4>
-                                                    <p className="text-gray-600">Two main buttons: "Mark Attendance" and "Apply Leave" for instant access</p>
+                                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Quick Actions Panel</h4>
+                                                    <p className="text-xs sm:text-sm text-gray-600">Two main buttons: "Mark Attendance" and "Apply Leave" for instant access</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start">
-                                                <CheckCircle className="h-6 w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
+                                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
                                                 <div>
-                                                    <h4 className="font-semibold text-gray-900">Active & Upcoming Slots</h4>
-                                                    <p className="text-gray-600">Live listing of attendance sessions with status indicators</p>
+                                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Active & Upcoming Slots</h4>
+                                                    <p className="text-xs sm:text-sm text-gray-600">Live listing of attendance sessions with status indicators</p>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="space-y-4">
                                             <div className="flex items-start">
-                                                <CheckCircle className="h-6 w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
+                                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
                                                 <div>
-                                                    <h4 className="font-semibold text-gray-900">Profile Management</h4>
-                                                    <p className="text-gray-600">Update personal details and change password securely</p>
+                                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Profile Management</h4>
+                                                    <p className="text-xs sm:text-sm text-gray-600">Update personal details and change password securely</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start">
-                                                <CheckCircle className="h-6 w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
+                                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
                                                 <div>
-                                                    <h4 className="font-semibold text-gray-900">Photo Verification System</h4>
-                                                    <p className="text-gray-600">Take selfie → Review → Submit with location data for accurate attendance</p>
+                                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Photo Verification System</h4>
+                                                    <p className="text-xs sm:text-sm text-gray-600">Take selfie → Review → Submit with location data for accurate attendance</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start">
-                                                <CheckCircle className="h-6 w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
+                                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 flex-shrink-0 mt-0.5 mr-3" />
                                                 <div>
-                                                    <h4 className="font-semibold text-gray-900">Comprehensive History Tracking</h4>
-                                                    <p className="text-gray-600">View all attendance records with photos, locations, and timestamps</p>
+                                                    <h4 className="text-sm sm:text-base font-semibold text-gray-900">Comprehensive History Tracking</h4>
+                                                    <p className="text-xs sm:text-sm text-gray-600">View all attendance records with photos, locations, and timestamps</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                                        <h4 className="text-lg font-semibold text-gray-900 mb-3">Leave Application Process Details</h4>
-                                        <div className="space-y-2 text-gray-700">
+                                    <div className="bg-green-50 p-4 sm:p-6 rounded-lg border border-green-200">
+                                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Leave Application Process Details</h4>
+                                        <div className="space-y-2 text-sm sm:text-base text-gray-700">
                                             <p><strong>Step 1:</strong> Choose from predefined leave types: Sick Leave, Personal Leave, Other Leave</p>
                                             <p><strong>Step 2:</strong> Select specific leave dates and mention duration</p>
                                             <p><strong>Step 3:</strong> Write detailed description and reason for leave</p>
@@ -886,7 +929,7 @@ const DocumentationPage = () => {
                     <div className="flex flex-col items-center space-y-2">
                         <div>
                             <div className="flex items-center justify-center space-x-1.5 cursor-pointer" onClick={() => navigate('/home')}>
-                                <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                                <div className="h-6 w-6 sm:h-8 sm:w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
                                     <img
                                         src="/logo.png"
                                         alt="Logo"
@@ -894,29 +937,29 @@ const DocumentationPage = () => {
                                         style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
                                     />
                                 </div>
-                                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-100 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                                <h1 className="text-xl sm:text-3xl font-serif font-bold bg-gradient-to-r from-blue-100 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
                                     ScholarSync
                                 </h1>
                             </div>
-                            <p className="text-gray-400 text-center">Smart attendance management for modern educational institutions.</p>
+                            <p className="text-gray-400 text-center text-sm sm:text-base">Smart attendance management for modern educational institutions.</p>
 
                             {/* Contact Links */}
                             <div className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-4 mt-3">
                                 <a
                                     href="mailto:tarunvashisth0000@gmail.com"
-                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-xs sm:text-sm flex items-center space-x-1"
                                 >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                                         <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                                     </svg>
-                                    <span>tarunvashisth0000@gmail.com</span>
+                                    <span className="break-all">tarunvashisth0000@gmail.com</span>
                                 </a>
                                 <a
                                     href="tel:+917082889441"
-                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-xs sm:text-sm flex items-center space-x-1"
                                 >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                     </svg>
                                     <span>+917082889441</span>
@@ -925,7 +968,7 @@ const DocumentationPage = () => {
                         </div>
                     </div>
                     <div className="border-t border-gray-800 pt-1 pb-1 mt-6 text-center text-gray-400">
-                        <p>&copy; {new Date().getFullYear()} ScholarSync. All rights reserved.</p>
+                        <p className="text-xs sm:text-sm">&copy; {new Date().getFullYear()} ScholarSync. All rights reserved.</p>
                     </div>
                 </div>
             </footer>
