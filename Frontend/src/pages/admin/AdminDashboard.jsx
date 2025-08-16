@@ -26,8 +26,8 @@ const AdminDashboard = () => {
     try {
       setLoading(true)
       
-      // Get today's date in YYYY-MM-DD format using existing time utilities
-      const today = formatDate(new Date()).split(', ')[1]; 
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
       
       // Fetch students and teachers count
       const [studentsRes, teachersRes] = await Promise.all([
