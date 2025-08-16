@@ -92,10 +92,26 @@ const AttendanceSlot = mongoose.model('AttendanceSlot', attendanceSlotSchema);
 
 // Add a static method to update status for all slots
 AttendanceSlot.updateAllStatuses = async function() {
-  const slots = await this.find();
-  for (const slot of slots) {
-    slot.status = slot.calculateStatus();
-    await slot.save();
+  try {
+    const slots = await this.find();
+    const updatePromises = slots.map(slot => {
+      const newStatus = slot.calculateStatus();
+      if (slot.status !== newStatus) {
+        return this.findByIdAndUpdate(
+          slot._id,
+          { status: newStatus },
+          { new: true }
+        ).catch(error => {
+          console.error(`Error updating slot ${slot._id}:`, error.message);
+          return null; // Skip this slot if there's an error
+        });
+      }
+      return Promise.resolve();
+    });
+
+    await Promise.all(updatePromises);
+  } catch (error) {
+    console.error('Error in updateAllStatuses:', error);
   }
 };
 
