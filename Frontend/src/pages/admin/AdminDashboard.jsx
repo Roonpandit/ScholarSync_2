@@ -27,30 +27,62 @@ const AdminDashboard = () => {
     try {
       setLoading(true)
       
-      // Get today's date in YYYY-MM-DD format (IST)
-      const todayIST = convertToIST(new Date())
-      const today = todayIST.toISOString().split('T')[0]
-      
       // Fetch students and teachers count
       const [studentsRes, teachersRes] = await Promise.all([
         axios.get('/admin/students'),
         axios.get('/admin/teachers')
       ])
       
-      // Fetch today's attendance
-      const attendanceRes = await axios.get(`/admin/attendance?date=${today}`)
-      
-      // Fetch active slots
+      // Fetch all slots and filter active ones on the client side
       const slotsRes = await axios.get('/admin/attendance-slots')
-      const currentTimeIST = getCurrentTimeIST()
+      const now = new Date()
       
-      // Get current time in IST
-      const nowIST = convertToIST(new Date())
-      const currentHour = nowIST.getHours()
-      const currentMinute = nowIST.getMinutes()
-
-      // Count only slots with status 'active'
-      const activeSlots = slotsRes.data.data.filter(slot => slot.status === 'active')
+      console.log('All slots from API:', slotsRes.data.data)
+      console.log('Current time:', now)
+      
+      // Filter active slots (current time is between startTime and endTime)
+      const activeSlots = slotsRes.data.data.filter(slot => {
+        const startTime = new Date(slot.startTime)
+        const endTime = new Date(slot.endTime)
+        const isActive = now >= startTime && now <= endTime
+        console.log(`Slot ${slot._id}: ${startTime} to ${endTime} - Active: ${isActive}`)
+        return isActive
+      })
+      
+      console.log('Active slots after filtering:', activeSlots)
+      
+      console.log('Active slots found:', activeSlots.length, activeSlots)
+      
+      // Only fetch attendance for active slots
+      const attendancePromises = activeSlots.map(slot => 
+        axios.get(`/admin/attendance?slotId=${slot._id}`).catch(() => ({ data: { data: [] } }))
+      )
+      const attendanceResponses = await Promise.all(attendancePromises)
+      
+      // Process attendance data to match the expected format
+      const allAttendance = attendanceResponses.flatMap(res => {
+        if (!res.data || !res.data.data) return [];
+        return res.data.data.map(record => {
+          console.log('Raw attendance record:', record); // Debug log
+          return {
+            ...record,
+            studentName: record.studentName || record.student?.name || 'Unknown Student',
+            studentCode: record.studentCode || record.student?.studentCode || 'N/A',
+            markingTime: record.markingTime || new Date().toISOString()
+          };
+        });
+      });
+      
+      console.log('Processed attendance records:', allAttendance);
+      
+      // Sort by markedAt in descending order (newest first) and take first 5 for recent attendance
+      const recentAttendance = allAttendance
+        .filter(record => record.markedAt || record.markingTime)
+        .sort((a, b) => new Date(b.markedAt || b.markingTime) - new Date(a.markedAt || a.markingTime))
+        .slice(0, 5);
+      
+      // Count total attendance across all slots
+      const totalAttendance = allAttendance.length;
       
       // Fetch absent students
       const absentRes = await axios.get('/admin/attendance/absent')
@@ -58,13 +90,13 @@ const AdminDashboard = () => {
       setStats({
         totalStudents: studentsRes.data.count || 0,
         totalTeachers: teachersRes.data.count || 0,
-        todayAttendance: attendanceRes.data.count || 0,
-        activeSlots: activeSlots.length || 0,
+        todayAttendance: totalAttendance,
+        activeSlots: activeSlots.length,
         absentStudents: absentRes.data.count || 0
       })
       
-      // Set recent attendance (last 5)
-      setRecentAttendance(attendanceRes.data.data.slice(0, 5) || [])
+      // Set recent attendance (first 5)
+      setRecentAttendance(recentAttendance)
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
