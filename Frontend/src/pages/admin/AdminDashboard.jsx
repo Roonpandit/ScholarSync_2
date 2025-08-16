@@ -26,8 +26,9 @@ const AdminDashboard = () => {
     try {
       setLoading(true)
       
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
+      // Get current date in local timezone and format as YYYY-MM-DD
+      const now = new Date();
+      const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
       
       // Fetch students and teachers count
       const [studentsRes, teachersRes] = await Promise.all([
