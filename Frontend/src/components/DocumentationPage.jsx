@@ -12,12 +12,15 @@ import {
     ChevronRight,
     Home,
     AlertTriangle,
-    CheckCircle
+    CheckCircle,
+    X,
+    ZoomIn
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const DocumentationPage = () => {
     const [activeSection, setActiveSection] = useState("overview");
+    const [selectedImage, setSelectedImage] = useState(null);
     const navigate = useNavigate();
     
     const sections = [
@@ -30,7 +33,7 @@ const DocumentationPage = () => {
     const adminSteps = [
         {
             id: 1,
-            title: "Login to Admin Dashboard",
+            title: "Admin Dashboard",
             description: "Access the super admin dashboard with provided credentials to manage the entire attendance system.",
             details: [
                 "Click 'Get Started' on homepage - redirects to login page",
@@ -117,7 +120,7 @@ const DocumentationPage = () => {
     const teacherSteps = [
         {
             id: 1,
-            title: "Teacher Dashboard Access",
+            title: "Teacher Dashboard",
             description: "Login with teacher credentials to access your personalized dashboard with limited admin permissions.",
             details: [
                 "Use teacher credentials provided via email after admin creates your account",
@@ -189,7 +192,7 @@ const DocumentationPage = () => {
     const studentSteps = [
         {
             id: 1,
-            title: "Student Dashboard Overview",
+            title: "Student Dashboard",
             description: "Access your personalized dashboard with attendance statistics and active session management.",
             details: [
                 "Login with student credentials received via email",
@@ -202,7 +205,7 @@ const DocumentationPage = () => {
         },
         {
             id: 2,
-            title: "Mark Attendance with Photo Verification",
+            title: "Mark Attendance with Photo",
             description: "Use the photo verification system to mark attendance for active slots with location tracking.",
             details: [
                 "Navigate to 'Mark Attendance' tab",
@@ -271,7 +274,36 @@ const DocumentationPage = () => {
         }
     ];
 
-    // Image component with fallback
+    // Image Modal Component
+    const ImageModal = () => {
+        if (!selectedImage) return null;
+
+        return (
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4"
+                onClick={() => setSelectedImage(null)}
+            >
+                <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
+                    <div 
+                        className="relative bg-white rounded-lg shadow-2xl max-w-full max-h-full overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={selectedImage.src}
+                            alt={selectedImage.alt}
+                            className="max-w-full max-h-[80vh] object-contain"
+                        />
+                        <div className="text-center p-2 bg-white border-t border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900">{selectedImage.alt}</h3>
+                            <p className="text-sm text-gray-600">Click outside the image to close</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Image component with fallback and click handler
     const ImageWithFallback = ({ src, alt, className }) => {
         const [imageError, setImageError] = useState(false);
         const [imageLoading, setImageLoading] = useState(true);
@@ -283,6 +315,12 @@ const DocumentationPage = () => {
         const handleImageError = () => {
             setImageError(true);
             setImageLoading(false);
+        };
+
+        const handleImageClick = () => {
+            if (!imageError) {
+                setSelectedImage({ src, alt });
+            }
         };
 
         if (imageError) {
@@ -298,15 +336,22 @@ const DocumentationPage = () => {
         }
 
         return (
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full group">
                 <img
                     src={src}
                     alt={alt}
-                    className={className}
+                    className={`${className} cursor-pointer`}
                     onLoad={handleImageLoad}
                     onError={handleImageError}
+                    onClick={handleImageClick}
                     style={{ display: imageLoading ? 'none' : 'block' }}
                 />
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer" onClick={handleImageClick}>
+                    <div className="transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                        <ZoomIn className="h-6 w-6 text-gray-800" />
+                    </div>
+                </div>
                 {imageLoading && (
                     <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -352,7 +397,7 @@ const DocumentationPage = () => {
                                         <ImageWithFallback
                                             src={step.image.startsWith('/') ? step.image : `/docs/${step.image}`}
                                             alt={step.title}
-                                            className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
+                                            className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
                                         />
                                     </div>
                                 </div>
@@ -366,6 +411,9 @@ const DocumentationPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 text-gray-800">
+            {/* Image Modal */}
+            <ImageModal />
+
             {/* Header */}
             <div className="fixed top-0 left-0 w-full z-50 bg-white mx-auto px-4 sm:px-6 lg:px-8 shadow-md">
                 <div className="flex justify-between h-16">
@@ -529,7 +577,7 @@ const DocumentationPage = () => {
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
                                                                     src="/docs/photo_1.png"
-                                                                    alt="Login page screenshot"
+                                                                    alt="Login Page"
                                                                     className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
                                                                 />
                                                             </div>
@@ -571,7 +619,7 @@ const DocumentationPage = () => {
                                                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                                                                 <ImageWithFallback
                                                                     src="/docs/photo_2.png"
-                                                                    alt="Login options screenshot"
+                                                                    alt="Reset Password"
                                                                     className="w-full h-full object-cover rounded-lg hover:scale-105 transition-transform duration-300"
                                                                 />
                                                             </div>
