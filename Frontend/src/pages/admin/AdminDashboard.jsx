@@ -37,21 +37,21 @@ const AdminDashboard = () => {
       const slotsRes = await axios.get('/admin/attendance-slots')
       const now = new Date()
       
-      console.log('All slots from API:', slotsRes.data.data)
-      console.log('Current time:', now)
+      //console.log('All slots from API:', slotsRes.data.data)
+      //console.log('Current time:', now)
       
       // Filter active slots (current time is between startTime and endTime)
       const activeSlots = slotsRes.data.data.filter(slot => {
         const startTime = new Date(slot.startTime)
         const endTime = new Date(slot.endTime)
         const isActive = now >= startTime && now <= endTime
-        console.log(`Slot ${slot._id}: ${startTime} to ${endTime} - Active: ${isActive}`)
+        //console.log(`Slot ${slot._id}: ${startTime} to ${endTime} - Active: ${isActive}`)
         return isActive
       })
       
-      console.log('Active slots after filtering:', activeSlots)
+      //console.log('Active slots after filtering:', activeSlots)
       
-      console.log('Active slots found:', activeSlots.length, activeSlots)
+      //console.log('Active slots found:', activeSlots.length, activeSlots)
       
       // Only fetch attendance for active slots
       const attendancePromises = activeSlots.map(slot => 
@@ -63,7 +63,7 @@ const AdminDashboard = () => {
       const allAttendance = attendanceResponses.flatMap(res => {
         if (!res.data || !res.data.data) return [];
         return res.data.data.map(record => {
-          console.log('Raw attendance record:', record); // Debug log
+          //console.log('Raw attendance record:', record); // Debug log
           return {
             ...record,
             studentName: record.studentName || record.student?.name || 'Unknown Student',
@@ -73,7 +73,7 @@ const AdminDashboard = () => {
         });
       });
       
-      console.log('Processed attendance records:', allAttendance);
+      //console.log('Processed attendance records:', allAttendance);
       
       // Sort by markedAt in descending order (newest first) and take first 5 for recent attendance
       const recentAttendance = allAttendance
