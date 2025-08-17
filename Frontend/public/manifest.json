@@ -1,0 +1,13 @@
+{
+    "name": "ScholarSync",
+    "short_name": "ScholarSync",
+    "start_url": "/",
+    "display": "standalone",
+    "icons": [
+      {
+        "src": "/app-logo-1.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }
