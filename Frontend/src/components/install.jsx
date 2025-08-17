@@ -12,21 +12,40 @@ const InstallButton = ({ className = "" }) => {
     // Check if app is already installed
     const checkIfInstalled = () => {
       // Check for standalone mode (iOS Safari)
-      if (window.navigator.standalone) {
+      const isIos = () => {
+        const userAgent = window.navigator.userAgent.toLowerCase();
+        return /iphone|ipad|ipod/.test(userAgent);
+      };
+
+      // Check for standalone mode (iOS)
+      if (isIos() && window.navigator.standalone) {
         setIsInstalled(true);
         return;
       }
       
-      // Check for display-mode (Android Chrome)
-      if (window.matchMedia('(display-mode: standalone)').matches) {
+      // Check for display-mode (Android/Desktop Chrome)
+      if (window.matchMedia('(display-mode: standalone)').matches || 
+          window.matchMedia('(display-mode: fullscreen)').matches ||
+          window.matchMedia('(display-mode: minimal-ui)').matches) {
         setIsInstalled(true);
         return;
       }
       
-      // Check for display-mode (Desktop Chrome)
-      if (window.matchMedia('(display-mode: minimal-ui)').matches) {
+      // Check for PWAs installed on Windows
+      if (window.matchMedia('(display-mode: window-controls-overlay)').matches) {
         setIsInstalled(true);
         return;
+      }
+      
+      // Check for browsers that support getInstalledRelatedApps
+      if ('getInstalledRelatedApps' in window.navigator) {
+        window.navigator.getInstalledRelatedApps().then((relatedApps) => {
+          if (relatedApps && relatedApps.length > 0) {
+            setIsInstalled(true);
+          }
+        }).catch((error) => {
+          console.log('Error checking installed apps:', error);
+        });
       }
     };
 
@@ -68,19 +87,25 @@ const InstallButton = ({ className = "" }) => {
 
   const handleInstallClick = async () => {
     if (isInstalled) {
-      showToastMessage('App is already installed');
+      showToastMessage('App is already installed on your device');
       return;
     }
 
+    // Show installation instructions for iOS
+    const isIos = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+
+    // Handle iOS Safari which doesn't support beforeinstallprompt
+    if (isIos()) {
+      showToastMessage('Tap the share icon and select "Add to Home Screen"');
+      return;
+    }
+
+    // Handle browsers that don't support PWA installation
     if (!deferredPrompt) {
-      // Provide helpful installation instructions based on the platform
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        showToastMessage('Tap the Share icon and select "Add to Home Screen"');
-      } else if (/Android/.test(navigator.userAgent)) {
-        showToastMessage('Tap the menu icon (⋮) and select "Install App"');
-      } else {
-        showToastMessage('Look for the install icon in your browser\'s address bar');
-      }
+      showToastMessage('Use the browser menu to install this app');
       return;
     }
 
@@ -106,19 +131,24 @@ const InstallButton = ({ className = "" }) => {
     }
   };
 
+  // Always show the install button, but handle different states
+  const buttonText = isInstalled ? 'Installed' : 'Install App';
+  const buttonIcon = isInstalled ? <Check className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />;
+
   return (
     <>
       <button
         onClick={handleInstallClick}
-        className={`inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+        className={`inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
           isInstalled
-            ? 'bg-gray-100 text-gray-500 cursor-default'
+            ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-default'
             : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 hover:scale-105'
         } ${className}`}
         disabled={isInstalled}
+        title={isInstalled ? 'App is already installed' : 'Install this app on your device'}
       >
-        <Download className="h-4 w-4 mr-2" />
-        Install App
+        {buttonIcon}
+        {buttonText}
       </button>
 
       {/* Toast Notification */}
