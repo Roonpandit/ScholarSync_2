@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import InstallButton from './install';
 import {
   BookOpen,
   Users,
@@ -182,14 +183,16 @@ export default function ScholarSyncLanding() {
                 </a>
               </div>
             </div>
-            <div className="hidden md:flex items-center">
-              <button
-                onClick={() => navigate("/login")}
-                className="ml-4 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
-              >
-                Get Started
-              </button>
-            </div>
+            <div className="hidden md:flex items-center space-x-3">
+  {/* Install Button */}
+  <InstallButton />
+  <button
+    onClick={() => navigate("/login")}
+    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+  >
+    Get Started
+  </button>
+</div>
             <div className="flex items-center md:hidden">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -233,16 +236,20 @@ export default function ScholarSyncLanding() {
               </div>
 
               <div className="border-t border-gray-300 pt-5 space-y-4">
-                <button
-                  onClick={() => {
-                    navigate("/login");
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full text-center py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-                >
-                  Get Started
-                </button>
-              </div>
+  {/* Mobile Install Button */}
+  <div className="w-full">
+    <InstallButton className="w-full justify-center" />
+  </div>
+  <button
+    onClick={() => {
+      navigate("/login");
+      setIsMenuOpen(false);
+    }}
+    className="w-full text-center py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+  >
+    Get Started
+  </button>
+</div>
             </div>
           </div>
         )}
