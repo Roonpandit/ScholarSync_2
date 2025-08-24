@@ -535,7 +535,7 @@ const DocumentationPage = () => {
                                                     using ScholarSync for their attendance management.
                                                 </p>
                                                 <p>
-                                                    <strong>🔗 Access the Testing Portal:</strong> <a href="https://devattendance.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-semibold hover:underline break-all">Click here to launch ScholarSync Test Portal</a>
+                                                    <strong>🔗 Access the Testing Portal:</strong> <a href="https://scholarsync-dev.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-700 font-semibold hover:underline break-all">Click here</a>
                                                 </p>
                                                 <p>
                                                     <strong>✅ What You Can Do:</strong> Feel free to create test accounts, mark attendance with photos, generate reports,
