@@ -46,11 +46,20 @@ connectDB().then(() => {
   
   // Keep-alive endpoint
   app.get('/keep-alive', (req, res) => {
-    console.log(`Keep-alive ping received at ${new Date().toISOString()}`);
+    console.log(`Keep-alive ping from IP: ${req.ip} at ${new Date().toISOString()}`);
+    console.log('User-Agent:', req.get('User-Agent'));
+    
+    // Set headers that Render and monitoring services expect
+    res.set({
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    });
+    
     res.status(200).json({ 
       status: 'alive', 
       timestamp: new Date().toISOString(),
-      message: 'Server is awake and running'
+      message: 'Server is awake and running',
+      service: 'render'
     });
   });
 
