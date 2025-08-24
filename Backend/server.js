@@ -30,16 +30,49 @@ connectDB().then(() => {
   app.use(express.json());
 
   // Enable CORS with specific origin and credentials
+  const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+  
   const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS.split(","), // Your frontend URL
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true, // Allow credentials (cookies, authorization headers)
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+    maxAge: 86400, // 24 hours
   };
+  
+  // Apply CORS middleware
   app.use(cors(corsOptions));
   
   // Handle preflight requests
   app.options('*', cors(corsOptions));
+  
+  // Add headers before the routes are defined
+  app.use(function (req, res, next) {
+    // Website you wish to allow to connect
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
+    // Set to true if you need the website to include cookies in the requests sent
+    // to the API (e.g. in case you use sessions)
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    // Pass to next layer of middleware
+    next();
+  });
   
   // Static folder for uploads
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
