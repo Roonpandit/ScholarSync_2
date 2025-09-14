@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const DocumentationPage = () => {
+const UserDocumentation = () => {
     const [activeSection, setActiveSection] = useState("overview");
     const [selectedImage, setSelectedImage] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -976,4 +976,4 @@ const DocumentationPage = () => {
     );
 };
 
-export default DocumentationPage;
+export default UserDocumentation;
