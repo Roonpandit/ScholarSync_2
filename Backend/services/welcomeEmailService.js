@@ -28,10 +28,10 @@ const sendWelcomeEmail = async (user, role = 'student') => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: `Welcome to ScholarSync ScholarSync - Your ${userType} Account Details`,
+      subject: `Welcome to ScholarSync - Your ${userType} Account Details`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2c3e50;">Welcome to ScholarSync ScholarSync</h2>
+          <h2 style="color: #2c3e50;">Welcome to ScholarSync</h2>
           <p>Dear ${user.name},</p>
           
           ${isTeacher 
@@ -54,7 +54,7 @@ const sendWelcomeEmail = async (user, role = 'student') => {
           }</p>
           
           <div style="text-align: center; margin: 25px 0;">
-            <a href=${isTeacher ? "https://docs.example.com/attendance-tracker/teacher-instructions" : "https://docs.example.com/attendance-tracker/student-instructions"} style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            <a href=${isTeacher ? "https://scholarsync.online/documentation/teachers" : "https://scholarsync.online/documentation/teachers"} style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
               ${isTeacher ? "View Teacher Instructions" : "View Student Instructions"}
             </a>
           </div>
