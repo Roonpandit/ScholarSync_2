@@ -54,7 +54,7 @@ const sendWelcomeEmail = async (user, role = 'student') => {
           }</p>
           
           <div style="text-align: center; margin: 25px 0;">
-            <a href=${isTeacher ? "https://scholarsync.online/documentation/teachers" : "https://scholarsync.online/documentation/teachers"} style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            <a href=${isTeacher ? "https://scholarsync.online/documentation/teachers" : "https://scholarsync.online/documentation/students"} style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
               ${isTeacher ? "View Teacher Instructions" : "View Student Instructions"}
             </a>
           </div>
