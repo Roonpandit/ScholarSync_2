@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import InstallButton from './install';
+import InstallButton from "./install";
 import {
   BookOpen,
   Users,
@@ -72,19 +72,22 @@ const features = [
   {
     id: 4,
     title: "Advanced Analytics",
-    description: "Comprehensive reports, attendance trends, and detailed insights for data-driven decisions.",
+    description:
+      "Comprehensive reports, attendance trends, and detailed insights for data-driven decisions.",
     icon: BarChart3,
   },
   {
     id: 5,
     title: "Bulk Import System",
-    description: "Import students in bulk via CSV/Excel files for quick setup and management.",
+    description:
+      "Import students in bulk via CSV/Excel files for quick setup and management.",
     icon: FileText,
   },
   {
     id: 6,
     title: "Mobile Responsive",
-    description: "Access from any device with our fully responsive design and mobile-optimized interface.",
+    description:
+      "Access from any device with our fully responsive design and mobile-optimized interface.",
     icon: Smartphone,
   },
 ];
@@ -149,10 +152,15 @@ export default function ScholarSyncLanding() {
                     src="/logo.png"
                     alt="Logo"
                     className="h-full w-full object-contain"
-                    style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+                    style={{
+                      filter: "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))",
+                    }}
                   />
                 </div>
-                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                <h1
+                  className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-500 to-indigo-900 text-transparent bg-clip-text"
+                  style={{ fontFamily: "Times New Roman, Times, serif" }}
+                >
                   ScholarSync
                 </h1>
               </div>
@@ -184,15 +192,13 @@ export default function ScholarSyncLanding() {
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-3">
-  {/* Install Button */}
-  <InstallButton />
-  <button
-    onClick={() => navigate("/login")}
-    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
-  >
-    Get Started
-  </button>
-</div>
+              <button
+                onClick={() => navigate("/login")}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+              >
+                Get Started
+              </button>
+            </div>
             <div className="flex items-center md:hidden">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -236,20 +242,20 @@ export default function ScholarSyncLanding() {
               </div>
 
               <div className="border-t border-gray-300 pt-5 space-y-4">
-  {/* Mobile Install Button */}
-  <div className="w-full">
-    <InstallButton className="w-full justify-center" />
-  </div>
-  <button
-    onClick={() => {
-      navigate("/login");
-      setIsMenuOpen(false);
-    }}
-    className="w-full text-center py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
-  >
-    Get Started
-  </button>
-</div>
+                {/* Mobile Install Button */}
+                <div className="w-full">
+                  <InstallButton className="w-full justify-center" />
+                </div>
+                <button
+                  onClick={() => {
+                    navigate("/login");
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-center py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition"
+                >
+                  Get Started
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -279,7 +285,10 @@ export default function ScholarSyncLanding() {
                   </span>
                 </h1>
                 <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Revolutionize attendance tracking with ScholarSync. Photo-verified attendance, real-time analytics, and comprehensive management tools for modern educational institutions.
+                  Revolutionize attendance tracking with ScholarSync.
+                  Photo-verified attendance, real-time analytics, and
+                  comprehensive management tools for modern educational
+                  institutions.
                 </p>
                 <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row sm:justify-center lg:justify-start gap-3">
                   <button
@@ -293,7 +302,7 @@ export default function ScholarSyncLanding() {
                     onClick={() => navigate("/documentation")}
                     className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 text-base md:text-lg font-semibold shadow-sm hover:bg-indigo-100 transition duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-2"
                   >
-                    Learn More
+                    Documentation
                   </button>
                 </div>
               </div>
@@ -310,7 +319,10 @@ export default function ScholarSyncLanding() {
       </div>
 
       <div id="features" className="py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" ref={featuresRef}>
+        <div
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          ref={featuresRef}
+        >
           <div className="lg:text-center">
             <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">
               Features
@@ -319,7 +331,9 @@ export default function ScholarSyncLanding() {
               Everything You Need for Smart Attendance Management
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              ScholarSync provides comprehensive tools for photo-verified attendance, real-time tracking, and powerful analytics for educational institutions.
+              ScholarSync provides comprehensive tools for photo-verified
+              attendance, real-time tracking, and powerful analytics for
+              educational institutions.
             </p>
           </div>
 
@@ -352,7 +366,9 @@ export default function ScholarSyncLanding() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div className="bg-indigo-700 rounded-[10px] p-6">
               <div className="text-4xl font-bold text-white">50,000+</div>
-              <div className="mt-2 text-lg text-indigo-100">Active Students</div>
+              <div className="mt-2 text-lg text-indigo-100">
+                Active Students
+              </div>
             </div>
             <div className="bg-indigo-700 rounded-[10px] p-6">
               <div className="text-4xl font-bold text-white">1,000+</div>
@@ -393,7 +409,9 @@ export default function ScholarSyncLanding() {
                     Setup & Registration
                   </h3>
                   <p className="mt-2 text-gray-600">
-                    Register your institution and import students via bulk CSV upload or individual registration. Setup is complete in minutes.
+                    Register your institution and import students via bulk CSV
+                    upload or individual registration. Setup is complete in
+                    minutes.
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 md:pl-8">
@@ -416,7 +434,8 @@ export default function ScholarSyncLanding() {
                     Create Attendance Slots
                   </h3>
                   <p className="mt-2 text-gray-600">
-                    Teachers create attendance slots for their classes. Students receive notifications when attendance tracking begins.
+                    Teachers create attendance slots for their classes. Students
+                    receive notifications when attendance tracking begins.
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 md:pr-8">
@@ -439,7 +458,9 @@ export default function ScholarSyncLanding() {
                     Photo-Verified Attendance
                   </h3>
                   <p className="mt-2 text-gray-600">
-                    Students mark attendance by taking a photo. Facial recognition technology verifies identity and prevents proxy attendance.
+                    Students mark attendance by taking a photo. Facial
+                    recognition technology verifies identity and prevents proxy
+                    attendance.
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 md:pl-8">
@@ -462,7 +483,9 @@ export default function ScholarSyncLanding() {
                     Analytics & Reports
                   </h3>
                   <p className="mt-2 text-gray-600">
-                    View real-time attendance analytics, generate reports, and get insights on attendance patterns for better decision making.
+                    View real-time attendance analytics, generate reports, and
+                    get insights on attendance patterns for better decision
+                    making.
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 md:pr-8">
@@ -703,7 +726,10 @@ export default function ScholarSyncLanding() {
           <div className="mt-12 space-y-8 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
             <div className="flex flex-col bg-white rounded-2xl shadow-xl border border-indigo-300 transition-transform transform hover:scale-105 duration-300">
               <div className="px-6 py-8">
-                <h3 className="text-xl font-medium text-gray-900 text-center" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+                <h3
+                  className="text-xl font-medium text-gray-900 text-center"
+                  style={{ fontFamily: "Times New Roman, Times, serif" }}
+                >
                   Traditional Systems
                 </h3>
                 <div className="mt-6 space-y-4">
@@ -713,7 +739,9 @@ export default function ScholarSyncLanding() {
                   </div>
                   <div className="flex items-start">
                     <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <p className="ml-3 text-gray-500">Prone to proxy attendance</p>
+                    <p className="ml-3 text-gray-500">
+                      Prone to proxy attendance
+                    </p>
                   </div>
                   <div className="flex items-start">
                     <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -725,7 +753,9 @@ export default function ScholarSyncLanding() {
                   </div>
                   <div className="flex items-start">
                     <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <p className="ml-3 text-gray-500">Time-consuming processes</p>
+                    <p className="ml-3 text-gray-500">
+                      Time-consuming processes
+                    </p>
                   </div>
                 </div>
               </div>
@@ -733,19 +763,30 @@ export default function ScholarSyncLanding() {
 
             <div className="flex flex-col bg-gradient-to-r from-blue-500 to-indigo-900 rounded-2xl shadow-xl text-white transition-transform transform hover:scale-105 duration-300">
               <div className="px-6 py-8">
-                <h3 className="text-2xl font-medium text-center" style={{ fontFamily: 'Times New Roman, Times, serif' }}>ScholarSync</h3>
+                <h3
+                  className="text-2xl font-medium text-center"
+                  style={{ fontFamily: "Times New Roman, Times, serif" }}
+                >
+                  ScholarSync
+                </h3>
                 <div className="mt-6 space-y-4">
                   <div className="flex items-start">
                     <Check className="h-5 w-5 text-white flex-shrink-0 mt-0.5" />
-                    <p className="ml-3 text-indigo-50">Photo-verified attendance</p>
+                    <p className="ml-3 text-indigo-50">
+                      Photo-verified attendance
+                    </p>
                   </div>
                   <div className="flex items-start">
                     <Check className="h-5 w-5 text-white flex-shrink-0 mt-0.5" />
-                    <p className="ml-3 text-indigo-50">Eliminates proxy attendance</p>
+                    <p className="ml-3 text-indigo-50">
+                      Eliminates proxy attendance
+                    </p>
                   </div>
                   <div className="flex items-start">
                     <Check className="h-5 w-5 text-white flex-shrink-0 mt-0.5" />
-                    <p className="ml-3 text-indigo-50">Automated data processing</p>
+                    <p className="ml-3 text-indigo-50">
+                      Automated data processing
+                    </p>
                   </div>
                   <div className="flex items-start">
                     <Check className="h-5 w-5 text-white flex-shrink-0 mt-0.5" />
@@ -771,7 +812,9 @@ export default function ScholarSyncLanding() {
                   </div>
                   <div className="flex items-start">
                     <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <p className="ml-3 text-gray-500">Still allows proxy attendance</p>
+                    <p className="ml-3 text-gray-500">
+                      Still allows proxy attendance
+                    </p>
                   </div>
                   <div className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -794,11 +837,15 @@ export default function ScholarSyncLanding() {
 
       <div className="py-16 bg-blue-800" ref={ctaRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
+          <h2
+            className="text-3xl font-extrabold text-white sm:text-4xl"
+            style={{ fontFamily: "Times New Roman, Times, serif" }}
+          >
             Ready to Transform Your Attendance Management?
           </h2>
           <p className="mt-4 text-1xl text-indigo-100">
-            Join thousands of institutions already using ScholarSync for accurate, efficient attendance tracking.
+            Join thousands of institutions already using ScholarSync for
+            accurate, efficient attendance tracking.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row sm:justify-center gap-4">
             <button
@@ -811,60 +858,81 @@ export default function ScholarSyncLanding() {
               onClick={() => navigate("/documentation")}
               className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-base font-medium rounded-xl text-white hover:bg-indigo-500 transition duration-300"
             >
-              Try Demo
+              Documentation
             </button>
           </div>
         </div>
       </div>
 
-            <footer className="bg-gray-900 text-white py-4">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col items-center space-y-2">
-                        <div>
-                            <div className="flex items-center justify-center space-x-1.5 cursor-pointer" onClick={() => navigate('/home')}>
-                                <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
-                                    <img
-                                        src="/logo.png"
-                                        alt="Logo"
-                                        className="h-full w-full object-contain"
-                                        style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
-                                    />
-                                </div>
-                                <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-100 to-indigo-900 text-transparent bg-clip-text" style={{ fontFamily: 'Times New Roman, Times, serif' }}>
-                                    ScholarSync
-                                </h1>
-                            </div>
-                            <p className="text-gray-400 text-center">Smart attendance management for modern educational institutions.</p>
-
-                            {/* Contact Links */}
-                            <div className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-4 mt-3">
-                                <a
-                                    href="mailto:tarunvashisth0000@gmail.com"
-                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
-                                >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                    </svg>
-                                    <span>tarunvashisth0000@gmail.com</span>
-                                </a>
-                                <a
-                                    href="tel:+917082889441"
-                                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
-                                >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                    </svg>
-                                    <span>+917082889441</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="border-t border-gray-800 pt-1 pb-1 mt-6 text-center text-gray-400">
-                        <p>&copy; {new Date().getFullYear()} ScholarSync. All rights reserved.</p>
-                    </div>
+      <footer className="bg-gray-900 text-white py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center space-y-2">
+            <div>
+              <div
+                className="flex items-center justify-center space-x-1.5 cursor-pointer"
+                onClick={() => navigate("/home")}
+              >
+                <div className="h-8 w-8 transform transition-transform duration-300 hover:scale-105 hover:rotate-3">
+                  <img
+                    src="/logo.png"
+                    alt="Logo"
+                    className="h-full w-full object-contain"
+                    style={{
+                      filter: "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))",
+                    }}
+                  />
                 </div>
-            </footer>
+                <h1
+                  className="text-3xl font-serif font-bold bg-gradient-to-r from-blue-100 to-indigo-900 text-transparent bg-clip-text"
+                  style={{ fontFamily: "Times New Roman, Times, serif" }}
+                >
+                  ScholarSync
+                </h1>
+              </div>
+              <p className="text-gray-400 text-center">
+                Smart attendance management for modern educational institutions.
+              </p>
+
+              {/* Contact Links */}
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-4 mt-3">
+                <a
+                  href="mailto:tarunvashisth0000@gmail.com"
+                  className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                  <span>tarunvashisth0000@gmail.com</span>
+                </a>
+                <a
+                  href="tel:+917082889441"
+                  className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm flex items-center space-x-1"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                  <span>+917082889441</span>
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-1 pb-1 mt-6 text-center text-gray-400">
+            <p>
+              &copy; {new Date().getFullYear()} ScholarSync. All rights
+              reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
