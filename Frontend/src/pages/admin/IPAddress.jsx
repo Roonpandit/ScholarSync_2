@@ -87,7 +87,7 @@ const IPAddress = () => {
       }
     }
 
-    // Validate location name
+    // Validates location name
     if (!formData.locationName.trim()) {
       errors.locationName = 'Location name is required';
     } else if (formData.locationName.trim().length < 10) {
