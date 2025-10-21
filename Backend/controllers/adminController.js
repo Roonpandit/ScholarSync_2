@@ -5,6 +5,7 @@ const Admin = require('../models/Admin');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const AllowedIP = require('../models/AllowedIP');
+const IPSettings = require('../models/IPSettings');
 const mongoose = require('mongoose');
 const { sendWelcomeEmail } = require('../services/welcomeEmailService');
 const { checkEmailExists } = require('./emailController');
@@ -1841,6 +1842,85 @@ exports.getAllowedIPs = asyncHandler(async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching allowed IPs',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// @desc    Toggle IP restriction on/off
+// @route   POST /api/admin/toggle-ip-restriction
+// @access  Private/Admin
+exports.toggleIPRestriction = asyncHandler(async (req, res) => {
+  try {
+    const { isEnabled } = req.body;
+
+    if (typeof isEnabled !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid boolean value for isEnabled',
+      });
+    }
+
+    // Find or create IP settings (only one document should exist)
+    let settings = await IPSettings.findOne();
+
+    if (!settings) {
+      // Create new settings document
+      settings = await IPSettings.create({
+        isEnabled,
+        updatedBy: req.user._id
+      });
+    } else {
+      // Update existing settings
+      settings.isEnabled = isEnabled;
+      settings.updatedBy = req.user._id;
+      await settings.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `IP restrictions ${isEnabled ? 'enabled' : 'disabled'} successfully`,
+      data: settings
+    });
+  } catch (error) {
+    console.error('Error toggling IP restriction:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while toggling IP restriction',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// @desc    Get IP restriction status
+// @route   GET /api/admin/ip-restriction-status
+// @access  Private/Admin
+exports.getIPRestrictionStatus = asyncHandler(async (req, res) => {
+  try {
+    let settings = await IPSettings.findOne().populate('updatedBy', 'name email');
+
+    if (!settings) {
+      // Return default settings if none exist
+      return res.status(200).json({
+        success: true,
+        data: {
+          isEnabled: false,
+          updatedBy: null,
+          createdAt: null,
+          updatedAt: null
+        }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('Error fetching IP restriction status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching IP restriction status',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }

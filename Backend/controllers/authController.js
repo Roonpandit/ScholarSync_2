@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/Student');
 const Admin = require('../models/Admin');
 const AllowedIP = require('../models/AllowedIP');
+const IPSettings = require('../models/IPSettings');
 
 // Password validation
 const validatePassword = (password) => {
@@ -202,27 +203,33 @@ exports.login = asyncHandler(async (req, res) => {
 
   // IP RESTRICTION CHECK - Only for students
   if (role === 'student') {
-    // Get all allowed IPs
-    const allowedIPs = await AllowedIP.find();
+    // Check if IP restriction is enabled
+    const ipSettings = await IPSettings.findOne();
 
-    // If there are allowed IPs configured, enforce restriction
-    if (allowedIPs.length > 0) {
-      const clientIP = getClientIP(req);
+    // Only enforce IP restriction if it's enabled
+    if (ipSettings && ipSettings.isEnabled) {
+      // Get all allowed IPs
+      const allowedIPs = await AllowedIP.find();
 
-      // Clean IPv6 localhost to IPv4
-      const normalizedClientIP = clientIP === '::1' ? '127.0.0.1' : clientIP.replace(/^::ffff:/, '');
+      // If there are allowed IPs configured, enforce restriction
+      if (allowedIPs.length > 0) {
+        const clientIP = getClientIP(req);
 
-      // Check if client IP is in allowed list
-      const isAllowed = allowedIPs.some(allowed => allowed.ipAddress === normalizedClientIP);
+        // Clean IPv6 localhost to IPv4
+        const normalizedClientIP = clientIP === '::1' ? '127.0.0.1' : clientIP.replace(/^::ffff:/, '');
 
-      if (!isAllowed) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. You are not authorized to login outside of your institute.'
-        });
+        // Check if client IP is in allowed list
+        const isAllowed = allowedIPs.some(allowed => allowed.ipAddress === normalizedClientIP);
+
+        if (!isAllowed) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied. You are not authorized to login outside of your institute.'
+          });
+        }
       }
     }
-    // If no IPs configured, allow all students to login
+    // If IP restriction is disabled or no IPs configured, allow all students to login
   }
 
   // Create token

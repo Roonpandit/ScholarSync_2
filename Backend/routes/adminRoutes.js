@@ -32,6 +32,8 @@ const {
   addIP,
   deleteIP,
   getAllowedIPs,
+  toggleIPRestriction,
+  getIPRestrictionStatus,
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -104,5 +106,7 @@ router.get('/attendance/details', getAttendanceDetails);
 router.post('/add-ip', addIP);
 router.delete('/delete-ip/:id', deleteIP);
 router.get('/allowed-ips', getAllowedIPs);
+router.post('/toggle-ip-restriction', toggleIPRestriction);
+router.get('/ip-restriction-status', getIPRestrictionStatus);
 
 module.exports = router;
