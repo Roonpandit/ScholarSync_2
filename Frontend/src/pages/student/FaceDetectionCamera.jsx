@@ -360,7 +360,7 @@ const FaceDetectionCamera = ({ show, onCapture, onCancel, videoRef }) => {
           className="w-full h-auto transform scale-x-[-1]"
           style={{ maxHeight: "480px" }}
         />
-        {/* Circular guide overlay */}
+        {/* Circular guide overlay
         <div
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           style={{
@@ -370,7 +370,7 @@ const FaceDetectionCamera = ({ show, onCapture, onCancel, videoRef }) => {
             borderRadius: "50%",
             transition: "border-color 0.3s ease",
           }}
-        />
+        /> */}
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
 
