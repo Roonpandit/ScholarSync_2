@@ -9,7 +9,7 @@ const allowedIPSchema = new mongoose.Schema(
       trim: true,
       validate: {
         validator: function(ip) {
-          // Validate IPv4 format (basic validation)
+          // Validates IPv4 format (basic validation)
           return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip);
         },
         message: 'Please enter a valid IPv4 address (e.g., 192.168.1.1)'
