@@ -8,7 +8,7 @@ const {
   updateStudent,
   deleteStudent,
   getStudentDetailsWithAttendance,
-  
+
   // Attendance Management
   createAttendanceSlot,
   getAllAttendanceSlots,
@@ -20,13 +20,18 @@ const {
   getAttendanceStats,
   getAbsentStudents,
   getAttendanceDetails,
-  
+
   // Teacher Management
   registerTeacher,
   getTeachers,
   getTeacher,
   updateTeacher,
   deleteTeacher,
+
+  // IP Management
+  addIP,
+  deleteIP,
+  getAllowedIPs,
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -94,5 +99,10 @@ router.get('/attendance', (req, res) => {
 router.post('/attendance/mark', markAttendance);
 router.get('/attendance/absent', getAbsentStudents);
 router.get('/attendance/details', getAttendanceDetails);
+
+// ========== IP MANAGEMENT ==========
+router.post('/add-ip', addIP);
+router.delete('/delete-ip/:id', deleteIP);
+router.get('/allowed-ips', getAllowedIPs);
 
 module.exports = router;

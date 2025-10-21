@@ -4,6 +4,7 @@ const Teacher = require('../models/Teacher');
 const Admin = require('../models/Admin');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
+const AllowedIP = require('../models/AllowedIP');
 const mongoose = require('mongoose');
 const { sendWelcomeEmail } = require('../services/welcomeEmailService');
 const { checkEmailExists } = require('./emailController');
@@ -1712,6 +1713,134 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching absent students',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// ========== IP MANAGEMENT ==========
+
+// @desc    Add IP to allowed list
+// @route   POST /api/admin/add-ip
+// @access  Private/Admin
+exports.addIP = asyncHandler(async (req, res) => {
+  try {
+    const { ipAddress, locationName, description } = req.body;
+
+    // Validate required fields
+    if (!ipAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide an IP address',
+      });
+    }
+
+    if (!locationName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a location name',
+      });
+    }
+
+    // Validate location name minimum length
+    if (locationName.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Location name must be at least 10 characters long',
+      });
+    }
+
+    // Check if IP already exists
+    const existingIP = await AllowedIP.findOne({ ipAddress });
+    if (existingIP) {
+      return res.status(400).json({
+        success: false,
+        message: 'This IP address is already in the allowed list',
+      });
+    }
+
+    // Create new allowed IP
+    const allowedIP = await AllowedIP.create({
+      ipAddress,
+      locationName,
+      description: description || '',
+      addedBy: req.user._id
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'IP address added successfully',
+      data: allowedIP
+    });
+  } catch (error) {
+    console.error('Error adding IP address:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while adding IP address',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// @desc    Delete IP from allowed list
+// @route   DELETE /api/admin/delete-ip/:id
+// @access  Private/Admin
+exports.deleteIP = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid IP ID',
+      });
+    }
+
+    // Find and delete IP
+    const allowedIP = await AllowedIP.findByIdAndDelete(id);
+
+    if (!allowedIP) {
+      return res.status(404).json({
+        success: false,
+        message: 'IP address not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'IP address deleted successfully',
+      data: allowedIP
+    });
+  } catch (error) {
+    console.error('Error deleting IP address:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while deleting IP address',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// @desc    Get all allowed IPs
+// @route   GET /api/admin/allowed-ips
+// @access  Private/Admin
+exports.getAllowedIPs = asyncHandler(async (req, res) => {
+  try {
+    const allowedIPs = await AllowedIP.find()
+      .populate('addedBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: allowedIPs.length,
+      data: allowedIPs
+    });
+  } catch (error) {
+    console.error('Error fetching allowed IPs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching allowed IPs',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }

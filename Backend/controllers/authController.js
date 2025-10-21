@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/Student');
 const Admin = require('../models/Admin');
+const AllowedIP = require('../models/AllowedIP');
 
 // Password validation
 const validatePassword = (password) => {
@@ -140,6 +141,16 @@ exports.updatePassword = asyncHandler(async (req, res) => {
   });
 });
 
+// Helper function to get client IP address
+const getClientIP = (req) => {
+  // Check for IP from various headers (handles proxies, load balancers, etc.)
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+         req.headers['x-real-ip'] ||
+         req.connection.remoteAddress ||
+         req.socket.remoteAddress ||
+         req.ip;
+};
+
 // @desc    Login user, teacher or admin
 // @route   POST /api/auth/login
 // @access  Public
@@ -187,6 +198,31 @@ exports.login = asyncHandler(async (req, res) => {
       success: false,
       message: 'You have entered the wrong password',
     });
+  }
+
+  // IP RESTRICTION CHECK - Only for students
+  if (role === 'student') {
+    // Get all allowed IPs
+    const allowedIPs = await AllowedIP.find();
+
+    // If there are allowed IPs configured, enforce restriction
+    if (allowedIPs.length > 0) {
+      const clientIP = getClientIP(req);
+
+      // Clean IPv6 localhost to IPv4
+      const normalizedClientIP = clientIP === '::1' ? '127.0.0.1' : clientIP.replace(/^::ffff:/, '');
+
+      // Check if client IP is in allowed list
+      const isAllowed = allowedIPs.some(allowed => allowed.ipAddress === normalizedClientIP);
+
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You are not authorized to login outside of your institute.'
+        });
+      }
+    }
+    // If no IPs configured, allow all students to login
   }
 
   // Create token
