@@ -44,19 +44,19 @@ const StudentsGuide = () => {
     },
     {
       id: 2,
-      title: "Marking Attendance with Photo Verification",
+      title: "Marking Attendance with Photo & Face Detection",
       description:
-        "Use the advanced photo verification system to mark your attendance for active classes with location tracking and instant confirmation.",
+        "Advanced photo verification with real-time face detection to ensure authentic attendance marking from institute premises.",
       details: [
         "Navigate to 'Mark Attendance' section from the main dashboard or quick action panel",
         "Select the appropriate attendance slot from the list of active sessions available for your enrolled classes",
-        "Ensure you are within the designated location area as specified by your teacher (location verification is required)",
-        "Click 'Take Photo' to activate your device camera for the selfie verification process",
-        "Take a clear, well-lit selfie ensuring your face is clearly visible and properly framed",
-        "Review your captured photo before submission - retake if the image quality is poor or unclear",
-        "Confirm your location data is accurate and matches the required attendance location",
-        "Submit your attendance with photo and location verification for instant processing",
-        "Receive immediate confirmation of successful attendance marking with timestamp and reference number",
+        "Grant camera permission when asked by your browser",
+        "Position your face in front of camera - system will detect your face automatically",
+        "Wait for green checkmark confirmation that your face is properly detected",
+        "Take a clear selfie when capture button becomes enabled",
+        "Review your selfie and confirm location data before submission",
+        "Receive immediate confirmation of successful attendance marking with timestamp",
+        "Note: You can only login and mark attendance from institute premises (if IP restrictions are enabled)",
         "Important: Each attendance slot has a specific time window - late submissions may not be accepted",
       ],
       image: "photo_15.png",
@@ -392,12 +392,12 @@ const StudentsGuide = () => {
                     <p>
                       <strong>Portal URL:</strong>{" "}
                       <a
-                        href="https://scholarsync.online/"
+                        href="https://scholarsync.online"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-800 font-semibold hover:underline"
                       >
-                        https://scholarsync.online/
+                        https://scholarsync.online
                       </a>
                     </p>
                     <p>
@@ -407,10 +407,10 @@ const StudentsGuide = () => {
                       the welcome email containing your student ID and password.
                     </p>
                     <p>
-                      <strong>First Time Login:</strong> After logging in for
-                      the first time, you may be prompted to change your
-                      password for security. Choose a strong password that
-                      includes letters, numbers, and symbols.
+                      <strong>Login Restrictions:</strong> You can only login
+                      from institute premises (if IP restrictions are enabled by admin).
+                      Teachers and admins can login from anywhere. If no IP addresses
+                      are configured, you can login from any location.
                     </p>
                     <p>
                       <strong>Account Issues:</strong> If you cannot find your
