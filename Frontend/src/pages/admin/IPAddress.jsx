@@ -13,6 +13,8 @@ const IPAddress = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [ipToDelete, setIpToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRestrictionEnabled, setIsRestrictionEnabled] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
 
   const [formData, setFormData] = useState({
     ipAddress: '',
@@ -24,6 +26,7 @@ const IPAddress = () => {
 
   useEffect(() => {
     fetchAllowedIPs();
+    fetchIPRestrictionStatus();
   }, []);
 
   const fetchAllowedIPs = async () => {
@@ -36,6 +39,34 @@ const IPAddress = () => {
       toast.error('Failed to load allowed IP addresses');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchIPRestrictionStatus = async () => {
+    try {
+      const res = await axios.get('/admin/ip-restriction-status');
+      setIsRestrictionEnabled(res.data.data.isEnabled || false);
+    } catch (error) {
+      console.error('Error fetching IP restriction status:', error);
+    }
+  };
+
+  const handleToggleRestriction = async () => {
+    try {
+      setIsToggling(true);
+      const res = await axios.post('/admin/toggle-ip-restriction', {
+        isEnabled: !isRestrictionEnabled
+      });
+
+      if (res.data.success) {
+        setIsRestrictionEnabled(!isRestrictionEnabled);
+        toast.success(res.data.message);
+      }
+    } catch (error) {
+      console.error('Error toggling IP restriction:', error);
+      toast.error(error.response?.data?.message || 'Failed to toggle IP restriction');
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -145,54 +176,88 @@ const IPAddress = () => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-800 flex items-center">
-            <Shield className="mr-2 text-blue-500" size={20} />
-            IP Address Management
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">Manage allowed IP addresses for student login</p>
-        </div>
-
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            showAddForm
-              ? 'bg-red-100 text-red-700 hover:bg-red-200'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {showAddForm ? (
-            <>
-              <X size={16} className="mr-2" />
-              Cancel
-            </>
-          ) : (
-            <>
-              <Plus size={16} className="mr-2" />
-              Add IP Address
-            </>
-          )}
-        </button>
+      <div className="mb-6">
+        <h1 className="text-xl md:text-2xl font-semibold text-gray-800 flex items-center">
+          <Shield className="mr-2 text-blue-500" size={20} />
+          IP Address Management
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">Control student login access with IP-based restrictions</p>
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 md:p-4 mb-6">
-        <div className="flex items-start">
-          <Globe className="h-5 w-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
-          <div className="text-sm">
-            <p className="text-yellow-800 font-medium">
-              Students can only login from allowed IP addresses. If no IPs are configured, all students can login from anywhere.
-            </p>
-            <p className="text-yellow-700 mt-1">
-              Teachers and Admins can login from any location.
-            </p>
+      {/* IP Restriction Toggle Switch */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start">
+            <Shield className="h-6 w-6 text-blue-600 mr-3 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-base md:text-lg font-semibold text-gray-800">
+                IP-Based Login Restriction
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {isRestrictionEnabled
+                  ? 'Students can only login from configured IP addresses.'
+                  : 'IP restrictions are disabled. Students can login from anywhere.'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Teachers and Admins can always login from any location.
+              </p>
+            </div>
+          </div>
+
+          {/* Toggle Switch */}
+          <div className="flex items-center gap-3">
+            <span className={`text-sm font-medium ${isRestrictionEnabled ? 'text-gray-400' : 'text-gray-700'}`}>
+              OFF
+            </span>
+            <button
+              onClick={handleToggleRestriction}
+              disabled={isToggling}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
+                isRestrictionEnabled ? 'bg-green-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isRestrictionEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm font-medium ${isRestrictionEnabled ? 'text-green-600' : 'text-gray-400'}`}>
+              ON
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Add IP Form */}
-      {showAddForm && (
+      {/* Show IP Management Only When Toggle is ON */}
+      {isRestrictionEnabled && (
+        <>
+          {/* Add IP Button */}
+          <div className="flex justify-end mb-6">
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                showAddForm
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {showAddForm ? (
+                <>
+                  <X size={16} className="mr-2" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus size={16} className="mr-2" />
+                  Add IP Address
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Add IP Form */}
+          {showAddForm && (
         <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-100 transition-all">
           <h2 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
             <Shield className="mr-2 text-blue-500" size={18} />
@@ -487,6 +552,8 @@ const IPAddress = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
