@@ -406,12 +406,9 @@ const FaceDetectionCamera = ({ show, onCapture, onCancel, videoRef }) => {
           disabled={!canCapture || !modelReady}
         >
           <Camera className="h-5 w-5 mr-2" />
-          {!modelReady
-            ? "Loading Model..."
-            : canCapture
-            ? "Take Selfie"
-            : "Position Face"}
+          {!modelReady ? "Loading Model..." : "Take Selfie"}
         </button>
+
         <button
           type="button"
           className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md shadow-sm hover:bg-gray-700 transition-colors"
