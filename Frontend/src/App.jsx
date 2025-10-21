@@ -17,6 +17,7 @@ import Reviews from './pages/admin/Reviews.jsx';
 import AttendanceSlots from './pages/admin/AttendanceSlots.jsx'
 import AttendanceStats from './pages/admin/AttendanceStats.jsx'
 import AbsentStudents from './pages/admin/AbsentStudents.jsx'
+import IPAddress from './pages/admin/IPAddress.jsx'
 
 import TeacherDashboard from './pages/teacher/TeacherDashboard.jsx'
 import StudentManagement from './pages/teacher/StudentManagement.jsx'
@@ -130,15 +131,23 @@ function App() {
           <Navigate to="/home" />
         } 
       />
-      <Route 
-        path="/admin/attendance/absent" 
+      <Route
+        path="/admin/attendance/absent"
         element={
-          user && user.role === 'admin' ? 
-          <Layout><AbsentStudents /></Layout> : 
+          user && user.role === 'admin' ?
+          <Layout><AbsentStudents /></Layout> :
           <Navigate to="/home" />
-        } 
+        }
       />
-      
+      <Route
+        path="/admin/ip-management"
+        element={
+          user && user.role === 'admin' ?
+          <Layout><IPAddress /></Layout> :
+          <Navigate to="/home" />
+        }
+      />
+
       {/* Student Routes */}
       <Route 
         path="/student" 
