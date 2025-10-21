@@ -116,6 +116,23 @@ const UserDocumentation = () => {
                 "Track attendance trends and patterns"
             ],
             image: "photo_8.png"
+        },
+        {
+            id: 7,
+            title: "Secure Logins - IP Management",
+            description: "Control student login access with IP-based restrictions to prevent attendance marking outside institution premises.",
+            details: [
+                "Navigate to IP Management tab from Security section in sidebar",
+                "View all allowed IP addresses with location details",
+                "Add new IP addresses with location name (minimum 10 characters) and description",
+                "IP address format validation ensures correct IPv4 addresses (e.g., 192.168.1.100)",
+                "Students can only login from configured IP addresses when IPs are added",
+                "Delete IP addresses when locations are no longer valid",
+                "If no IPs configured, students can login from anywhere",
+                "Teachers and admins bypass IP restrictions and can login from any location",
+                "Prevents proxy attendance by restricting student access to institution premises only"
+            ],
+            image: "photo_20.png"
         }
     ];
 
@@ -207,15 +224,16 @@ const UserDocumentation = () => {
         },
         {
             id: 2,
-            title: "Mark Attendance with Photo",
-            description: "Use the photo verification system to mark attendance for active slots with location tracking.",
+            title: "Mark Attendance with Photo & Face Detection",
+            description: "Advanced photo verification with real-time face detection to ensure authentic attendance marking.",
             details: [
-                "Navigate to 'Mark Attendance' tab",
-                "Select active attendance slot from available options",
-                "Take a clear selfie using device camera",
-                "Review your selfie before submission",
-                "Confirm location data and submit attendance",
-                "Receive confirmation of successful attendance marking"
+                "Navigate to 'Mark Attendance' tab and select active attendance slot",
+                "Grant camera permission when asked by your browser",
+                "Position your face in front of camera - system will detect your face automatically",
+                "Wait for green checkmark confirmation that your face is properly detected",
+                "Take a clear selfie when capture button becomes enabled",
+                "Review your selfie and confirm location data before submission",
+                "Note: You can only login and mark attendance from institute premises (if IP restrictions are enabled)"
             ],
             image: "photo_15.png"
         },
@@ -558,9 +576,24 @@ const UserDocumentation = () => {
                                         <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">What is ScholarSync?</h3>
                                         <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6">
                                             ScholarSync is a comprehensive attendance management system that revolutionizes how educational institutions track student attendance.
-                                            Using advanced photo verification technology, real-time analytics, and automated notifications, ScholarSync eliminates proxy attendance
-                                            and provides accurate, reliable attendance tracking.
+                                            Using advanced photo verification technology, face detection, real-time analytics, IP-based access control, and automated notifications,
+                                            ScholarSync eliminates proxy attendance and provides accurate, reliable attendance tracking.
                                         </p>
+
+                                        {/* Security & Access Control */}
+                                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-4">
+                                            <div className="flex items-start">
+                                                <Shield className="h-5 w-5 text-yellow-600 mr-3 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Secure Login & Access Control</h4>
+                                                    <ul className="text-sm sm:text-base text-gray-700 space-y-1">
+                                                        <li>• <strong>Students:</strong> Can only login from IP addresses added by admin. If no IP addresses are configured, students can login from anywhere.</li>
+                                                        <li>• <strong>Teachers & Admins:</strong> Can login from any location without IP restrictions.</li>
+                                                        <li>• <strong>Security Feature:</strong> IP-based access control prevents students from marking attendance outside the institution premises.</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -744,6 +777,10 @@ const UserDocumentation = () => {
                                                 <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
                                                     <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 mr-3 flex-shrink-0" />
                                                     <span className="text-sm sm:text-base font-medium">Absent Students - Absence Tracking</span>
+                                                </div>
+                                                <div className="flex items-center p-3 bg-white rounded-lg shadow-sm border">
+                                                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 mr-3 flex-shrink-0" />
+                                                    <span className="text-sm sm:text-base font-medium">IP Management - Secure Login Control</span>
                                                 </div>
                                             </div>
                                         </div>
