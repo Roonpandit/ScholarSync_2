@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
 import { AlertCircle, CheckCircle, Camera, X, MapPin, Calendar, Clock } from 'lucide-react'
 import { formatDate, formatTime, formatTime24h, formatDateandTime, getCurrentTimeIST, convertToIST } from '../../utils/timeUtils'
-import Loader from '../../components/Loader';
+import Loader from '../../components/Loader'
+import FaceDetectionCamera from '../student/FaceDetectionCamera'
 
 const MarkAttendance = () => {
   const navigate = useNavigate()
@@ -26,7 +27,7 @@ const MarkAttendance = () => {
   const [submitting, setSubmitting] = useState(false)
   const [hasReadInstructions, setHasReadInstructions] = useState(false)
   const [errors, setErrors] = useState({})
-
+  const videoRef = useRef()
 
   useEffect(() => {
     // Get slotId from URL query params
@@ -107,9 +108,8 @@ const MarkAttendance = () => {
         
         // Set the stream to the video element
         setTimeout(() => {
-          const videoElement = document.getElementById('cameraVideo');
-          if (videoElement) {
-            videoElement.srcObject = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
           }
         }, 100);
         
@@ -163,8 +163,8 @@ const MarkAttendance = () => {
     );
   };
 
-
-  const capturePhoto = async () => {
+  // New function to handle face detection capture
+  const handleFaceDetectionCapture = (canvas) => {
     if (!cameraStream) return;
 
     // Check if slot is selected
@@ -175,62 +175,25 @@ const MarkAttendance = () => {
 
     // Check if slot time is valid
     if (slot) {
-      // Get current time in IST
-      const currentTimeIST = getCurrentTimeIST();
-      //console.log('Current time IST:', currentTimeIST);
-      
-      // Convert slot times to IST
-      const endTimeIST = formatTime24h(new Date(slot.endTime));
-      //console.log('Slot end time:', endTimeIST);
-      
-      // Get current time as Date object in IST
       const currentTime = new Date();
       const currentIST = convertToIST(currentTime);
-      
-      // Get slot end time as Date object in IST
       const slotEndTime = new Date(slot.endTime);
       const slotEndIST = convertToIST(slotEndTime);
       
-      //console.log('Capture Photo - Current time:', currentIST);
-      //console.log('Capture Photo - Slot end time:', slotEndIST);
-      //console.log('Capture Photo - Comparison:', currentIST, '>=', slotEndIST);
-      
       if (currentIST >= slotEndIST) {
-        //console.log('Capture Photo - Slot time expired');
         toast.error('You got late. Slot time expired. Please mark attendance on time next time.');
         return;
       }
-      //console.log('Capture Photo - Time is valid, proceeding with capture');
     }
 
     try {
-      // First get location if not available
-      if (!location_.latitude || !location_.longitude) {
-        try {
-          const location = await getLocation();
-          if (!location.latitude || !location.longitude) {
-            throw new Error('Failed to get location data');
-          }
-        } catch (error) {
-          toast.error(error.message);
-          return;
-        }
-      }
-
       // Check if we have location data
       if (!location_.latitude || !location_.longitude) {
         throw new Error('Location data not available. Please get your location first.');
       }
 
-      const video = document.getElementById('cameraVideo');
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
+      // Use the canvas from FaceDetectionCamera
       const ctx = canvas.getContext('2d');
-      
-      // Draw the video frame
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       // Add location overlay
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -251,8 +214,7 @@ const MarkAttendance = () => {
       // Format and display timestamp with date
       const currentDate = formatDate(new Date());
       const currentTime = formatTime24h(new Date());
-      ctx.fillText(`${currentTime} ${currentDate} `, 20, canvas.height - 80);
-
+      ctx.fillText(`${currentTime} ${currentDate}`, 20, canvas.height - 80);
       
       ctx.fillStyle = '#007bff';
       ctx.font = 'bold 24px "Times New Roman", Times, serif';
@@ -264,7 +226,7 @@ const MarkAttendance = () => {
         const metadata = {
           latitude: location_.latitude,
           longitude: location_.longitude,
-          timestamp: formatDateandTime(new Date()).replace(' - ', ', '), // Format as "May 19, 2025, 14:05"
+          timestamp: formatDateandTime(new Date()).replace(' - ', ', '),
           locationText
         };
         
@@ -286,6 +248,7 @@ const MarkAttendance = () => {
       toast.error(error.message || 'Failed to capture photo. Please try again.');
     }
   };
+
 
   const handleCheckboxChange = (e) => {
     if (!photo) {
@@ -473,45 +436,25 @@ const MarkAttendance = () => {
             </div>
             {/* Location is now automatically fetched when camera opens */}
 
-            {/* Selfie Section */}
+            {/* Selfie Section with Face Detection */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Take Selfie
               </label>
               <div className="camera-container">
                 {showCamera ? (
-                  <div className="bg-black rounded-lg overflow-hidden">
-                    <video
-                      id="cameraVideo"
-                      autoPlay
-                      playsInline
-                      className="w-full h-auto transform scale-x-[-1] max-w-full rounded-lg"
-                    />
-                    <div className="bg-gray-800 p-4 flex justify-center space-x-4">
-                      <button
-                        type="button"
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                        onClick={capturePhoto}
-                      >
-                        <Camera className="h-5 w-5 mr-2" />
-                        Take Selfie
-                      </button>
-                      <button
-                        type="button"
-                        className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-                        onClick={() => {
-                          setShowCamera(false);
-                          if (cameraStream) {
-                            cameraStream.getTracks().forEach(track => track.stop());
-                            setCameraStream(null);
-                          }
-                        }}
-                      >
-                        <X className="h-5 w-5 mr-2" />
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+                  <FaceDetectionCamera
+                    show={showCamera}
+                    videoRef={videoRef}
+                    onCapture={handleFaceDetectionCapture}
+                    onCancel={() => {
+                      setShowCamera(false);
+                      if (cameraStream) {
+                        cameraStream.getTracks().forEach(track => track.stop());
+                        setCameraStream(null);
+                      }
+                    }}
+                  />
                 ) : (
                   <div>
                     <button
@@ -540,8 +483,6 @@ const MarkAttendance = () => {
                 <p className="mt-2 text-sm text-red-600">{errors.photo}</p>
               )}
             </div>
-
-
 
             {/* Instructions Confirmation */}
             <div className="mb-6">
@@ -580,8 +521,10 @@ const MarkAttendance = () => {
                   </h3>
                   <div className="mt-2 text-sm text-amber-700">
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Only upload selfies with fully face visible.</li>
+                      <li>Face must be centered and fully visible</li>
+                      <li>Only one person should be in frame</li>
                       <li>Ensure you are in proper lighting</li>
+                      <li>Wait for green "Face detected ✓" message before capturing</li>
                       <li>Strict disciplinary action will be taken for non-compliance</li>
                     </ul>
                   </div>
@@ -624,3 +567,4 @@ const MarkAttendance = () => {
 };
 
 export default MarkAttendance;
+
