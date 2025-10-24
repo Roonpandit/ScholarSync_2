@@ -244,9 +244,9 @@ const StudentDetails = ({ isModal = false, studentIdProp = null, onClose = null 
   }
 
   const attendanceStats = student?.attendance?.stats || {
-    total: 0,
-    pending: 0,
-    awaiting_approval: 0,
+    totalSlots: 0,
+    pendingSlots: 0,
+    awaitingSlots: 0,
     present: 0,
     absent: 0
   };
@@ -327,16 +327,16 @@ const StudentDetails = ({ isModal = false, studentIdProp = null, onClose = null 
               <label className="block text-sm font-medium text-gray-500 mb-2">Attendance Overview</label>
               <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-500">Total</h3>
-                  <p className="text-2xl font-bold text-gray-900">{attendanceStats.total}</p>
+                  <h3 className="text-sm font-medium text-gray-500">Total Slots</h3>
+                  <p className="text-2xl font-bold text-gray-900">{attendanceStats.totalSlots}</p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-yellow-600">Pending</h3>
-                  <p className="text-2xl font-bold text-yellow-600">{attendanceStats.pending}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{attendanceStats.pendingSlots}</p>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-orange-600">Awaiting Approval</h3>
-                  <p className="text-2xl font-bold text-orange-600">{attendanceStats.awaiting_approval}</p>
+                  <p className="text-2xl font-bold text-orange-600">{attendanceStats.awaitingSlots}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-green-600">Present</h3>
@@ -525,16 +525,16 @@ const StudentDetails = ({ isModal = false, studentIdProp = null, onClose = null 
             {/* Attendance Statistics */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-700">Total</h3>
-                <p className="text-2xl font-bold">{attendanceStats.total}</p>
+                <h3 className="text-lg font-semibold text-gray-700">Total Slots</h3>
+                <p className="text-2xl font-bold">{attendanceStats.totalSlots}</p>
               </div>
               <div className="bg-yellow-50 p-4 rounded-lg shadow-sm">
                 <h3 className="text-lg font-semibold text-yellow-600">Pending</h3>
-                <p className="text-2xl font-bold text-yellow-600">{attendanceStats.pending}</p>
+                <p className="text-2xl font-bold text-yellow-600">{attendanceStats.pendingSlots}</p>
               </div>
               <div className="bg-orange-50 p-4 rounded-lg shadow-sm">
                 <h3 className="text-lg font-semibold text-orange-600">Awaiting Approval</h3>
-                <p className="text-2xl font-bold text-orange-600">{attendanceStats.awaiting_approval}</p>
+                <p className="text-2xl font-bold text-orange-600">{attendanceStats.awaitingSlots}</p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg shadow-sm">
                 <h3 className="text-lg font-semibold text-green-600">Present</h3>
@@ -909,16 +909,16 @@ const StudentDetails = ({ isModal = false, studentIdProp = null, onClose = null 
           {/* Attendance Statistics */}
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6">
             <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-700">Total</h3>
-              <p className="text-2xl font-bold">{attendanceStats.total}</p>
+              <h3 className="text-lg font-semibold text-gray-700">Total Slots</h3>
+              <p className="text-2xl font-bold">{attendanceStats.totalSlots}</p>
             </div>
             <div className="bg-yellow-50 p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold text-yellow-600">Pending</h3>
-              <p className="text-2xl font-bold text-yellow-600">{attendanceStats.pending}</p>
+              <p className="text-2xl font-bold text-yellow-600">{attendanceStats.pendingSlots}</p>
             </div>
             <div className="bg-orange-50 p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold text-orange-600">Awaiting Approval</h3>
-              <p className="text-2xl font-bold text-orange-600">{attendanceStats.awaiting_approval}</p>
+              <p className="text-2xl font-bold text-orange-600">{attendanceStats.awaitingSlots}</p>
             </div>
             <div className="bg-green-50 p-4 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold text-green-600">Present</h3>
