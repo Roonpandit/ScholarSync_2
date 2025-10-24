@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Batch = require('../models/Batch');
 const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
@@ -545,6 +546,78 @@ exports.unassignBatchesFromStudents = asyncHandler(async (req, res) => {
       success: false,
       message: 'Server error while unassigning batches',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @desc    Get student's non-default batches (for leave application)
+// @route   GET /api/batches/non-default
+// @access  Private (Student)
+exports.getNonDefaultBatches = asyncHandler(async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // Get student with batches
+    const student = await Student.findById(studentId).populate({
+      path: 'batches',
+      match: { isDefault: false, isActive: true }
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: student.batches
+    });
+  } catch (error) {
+    console.error('Error fetching non-default batches:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching batches'
+    });
+  }
+});
+
+// @desc    Get teacher for a specific batch
+// @route   GET /api/batches/:batchId/teacher
+// @access  Private (Student)
+exports.getTeacherForBatch = asyncHandler(async (req, res) => {
+  try {
+    const { batchId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(batchId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid batch ID'
+      });
+    }
+
+    // Find teacher assigned to this batch
+    const teacher = await Teacher.findOne({
+      batches: batchId
+    }).select('_id name teacherCode email');
+
+    if (!teacher) {
+      return res.status(404).json({
+        success: false,
+        message: 'No teacher assigned to this batch'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: teacher
+    });
+  } catch (error) {
+    console.error('Error fetching teacher for batch:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching teacher'
     });
   }
 });

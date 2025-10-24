@@ -3,6 +3,53 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/Student');
 const Admin = require('../models/Admin');
 const Teacher = require('../models/Teacher');
+const AllowedIP = require('../models/AllowedIP');
+const IPSettings = require('../models/IPSettings');
+
+// Helper function to get client IP address
+const getClientIP = (req) => {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+         req.headers['x-real-ip'] ||
+         req.connection.remoteAddress ||
+         req.socket.remoteAddress ||
+         req.ip;
+};
+
+// Helper function to check if IP is allowed for students
+const checkIPRestriction = async (user, req) => {
+  // Only apply IP restriction to students
+  if (user.role !== 'student') {
+    return { allowed: true };
+  }
+
+  // Check if IP restriction is enabled
+  const ipSettings = await IPSettings.findOne();
+
+  // If IP restriction is disabled, allow access
+  if (!ipSettings || !ipSettings.isEnabled) {
+    return { allowed: true };
+  }
+
+  // Get all allowed IPs
+  const allowedIPs = await AllowedIP.find();
+
+  // If no IPs configured, allow access
+  if (allowedIPs.length === 0) {
+    return { allowed: true };
+  }
+
+  // Get client IP and normalize it
+  const clientIP = getClientIP(req);
+  const normalizedClientIP = clientIP === '::1' ? '127.0.0.1' : clientIP.replace(/^::ffff:/, '');
+
+  // Check if client IP is in allowed list
+  const isAllowed = allowedIPs.some(allowed => allowed.ipAddress === normalizedClientIP);
+
+  return {
+    allowed: isAllowed,
+    clientIP: normalizedClientIP
+  };
+};
 
 // Protect routes
 exports.protect = asyncHandler(async (req, res, next) => {
@@ -30,11 +77,11 @@ exports.protect = asyncHandler(async (req, res, next) => {
 
     // Check if user is still in the database
     let user = await User.findById(decoded.id);
-    
+
     if (!user) {
       // Try to find admin
       user = await Admin.findById(decoded.id);
-      
+
       if (!user) {
         // Try to find teacher
         user = await Teacher.findById(decoded.id);
@@ -46,6 +93,38 @@ exports.protect = asyncHandler(async (req, res, next) => {
         success: false,
         message: 'Not authorized to access this route',
       });
+    }
+
+    // IP RESTRICTION CHECK - For students only
+    if (user.role === 'student') {
+      // If token has sessionIP, verify it matches current IP
+      if (decoded.sessionIP) {
+        const currentIP = getClientIP(req);
+        const normalizedCurrentIP = currentIP === '::1' ? '127.0.0.1' : currentIP.replace(/^::ffff:/, '');
+
+        // If IP has changed, force logout
+        if (decoded.sessionIP !== normalizedCurrentIP) {
+          return res.status(401).json({
+            success: false,
+            message: 'Session expired. Your IP address has changed. Please login again.',
+            reason: 'IP_CHANGE_DETECTED',
+            requiresLogin: true
+          });
+        }
+      } else {
+        // Token doesn't have sessionIP (older token or IP restriction was disabled during login)
+        // Still check current IP against allowed list
+        const ipCheck = await checkIPRestriction(user, req);
+
+        if (!ipCheck.allowed) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied. You are not authorized to access from outside your institute.',
+            reason: 'IP_RESTRICTION_VIOLATION',
+            requiresLogin: true
+          });
+        }
+      }
     }
 
     req.user = user;

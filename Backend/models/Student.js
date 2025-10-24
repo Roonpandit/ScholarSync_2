@@ -99,8 +99,15 @@ userSchema.pre('save', async function (next) {
 });
 
 // Sign JWT and return
-userSchema.methods.getSignedJwtToken = function () {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+userSchema.methods.getSignedJwtToken = function (sessionIP = null) {
+  const payload = { id: this._id };
+
+  // Only add sessionIP to token for students
+  if (sessionIP) {
+    payload.sessionIP = sessionIP;
+  }
+
+  return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };

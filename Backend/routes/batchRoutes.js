@@ -8,7 +8,9 @@ const {
   getDefaultBatch,
   getStudentsByBatch,
   assignBatchesToStudents,
-  unassignBatchesFromStudents
+  unassignBatchesFromStudents,
+  getNonDefaultBatches,
+  getTeacherForBatch
 } = require('../controllers/batchController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -31,5 +33,9 @@ router.post('/unassign', authorize('admin'), unassignBatchesFromStudents);
 router.post('/', authorize('admin'), createBatch);
 router.put('/:id', authorize('admin'), updateBatch);
 router.delete('/:id', authorize('admin'), deleteBatch);
+
+// Student routes for leave management
+router.get('/non-default', authorize('student'), getNonDefaultBatches);
+router.get('/:batchId/teacher', authorize('student'), getTeacherForBatch);
 
 module.exports = router;

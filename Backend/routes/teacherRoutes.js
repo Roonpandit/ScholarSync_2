@@ -26,6 +26,12 @@ const {
   approveAttendance,
   rejectAttendance,
 } = require('../controllers/adminController');
+const {
+  getPendingLeaveRequests,
+  getAllLeaveRequestsForTeacher,
+  approveLeaveRequest,
+  rejectLeaveRequest
+} = require('../controllers/leaveController');
 const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -89,5 +95,11 @@ router.get('/attendance/details', getAttendanceDetails);
 router.post('/attendance/:id/mark-absent', markAttendanceAsAbsent);
 router.post('/attendance/:id/approve', approveAttendance);
 router.post('/attendance/:id/reject', rejectAttendance);
+
+// ========== LEAVE MANAGEMENT ==========
+router.get('/leave/pending', getPendingLeaveRequests);
+router.get('/leave/all', getAllLeaveRequestsForTeacher);
+router.post('/leave/:requestId/approve', approveLeaveRequest);
+router.post('/leave/:requestId/reject', rejectLeaveRequest);
 
 module.exports = router;

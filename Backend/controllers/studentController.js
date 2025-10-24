@@ -229,6 +229,17 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     });
   }
 
+  // Check if student has leave applied for this slot
+  const LeaveSlot = require('../models/LeaveSlot');
+  const hasLeave = await LeaveSlot.hasLeaveForSlot(req.user._id, slotId);
+
+  if (hasLeave) {
+    return res.status(400).json({
+      success: false,
+      message: 'You have applied leave for this time. Please ask your teacher to approve/reject it or you can delete the request'
+    });
+  }
+
   // Find the attendance slot
   const slot = await AttendanceSlot.findById(slotId);
 

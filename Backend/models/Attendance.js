@@ -28,9 +28,16 @@ const attendanceSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'awaiting_approval', 'present', 'absent'],
+      enum: ['pending', 'awaiting_approval', 'present', 'absent', 'on_leave'],
       default: 'pending',
       required: true
+    },
+    leaveRequestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LeaveRequest',
+      required: function() {
+        return this.status === 'on_leave';
+      }
     },
     photo: {
       url: {

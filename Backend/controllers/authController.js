@@ -202,6 +202,7 @@ exports.login = asyncHandler(async (req, res) => {
   }
 
   // IP RESTRICTION CHECK - Only for students
+  let sessionIP = null;
   if (role === 'student') {
     // Check if IP restriction is enabled
     const ipSettings = await IPSettings.findOne();
@@ -227,13 +228,16 @@ exports.login = asyncHandler(async (req, res) => {
             message: 'Access denied. You are not authorized to login outside of your institute.'
           });
         }
+
+        // Store the session IP for token generation
+        sessionIP = normalizedClientIP;
       }
     }
     // If IP restriction is disabled or no IPs configured, allow all students to login
   }
 
-  // Create token
-  const token = user.getSignedJwtToken();
+  // Create token with session IP (only for students with IP restriction enabled)
+  const token = user.getSignedJwtToken(sessionIP);
 
   // Prepare user data for response
   const userData = {

@@ -44,6 +44,11 @@ const {
   approveAttendance,
   rejectAttendance,
 } = require('../controllers/adminController');
+const {
+  getAllLeaveRequests,
+  getLeaveStats,
+  getLeaveRequestDetails
+} = require('../controllers/leaveController');
 const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -126,5 +131,10 @@ router.delete('/delete-ip/:id', deleteIP);
 router.get('/allowed-ips', getAllowedIPs);
 router.post('/toggle-ip-restriction', toggleIPRestriction);
 router.get('/ip-restriction-status', getIPRestrictionStatus);
+
+// ========== LEAVE MANAGEMENT ==========
+router.get('/leave/all', getAllLeaveRequests);
+router.get('/leave/stats', getLeaveStats);
+router.get('/leave/:requestId', getLeaveRequestDetails);
 
 module.exports = router;

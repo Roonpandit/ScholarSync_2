@@ -9,6 +9,14 @@ const {
   checkEmailExists
 } = require('../controllers/studentController');
 const { getStudentAttendanceCounts } = require('../controllers/adminController');
+const {
+  applyLeave,
+  getMyLeaveRequests,
+  getLeaveRequestDetails,
+  deleteLeaveRequest,
+  resendLeaveRequest,
+  cancelLeaveRequest
+} = require('../controllers/leaveController');
 const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -39,5 +47,13 @@ router.get('/attendance-counts', getStudentAttendanceCounts);
 
 // Get students by class ID (accessible to both admin and students)
 router.get('/class', getStudentsByClass);
+
+// Leave Management Routes
+router.post('/leave/apply', authorize('student'), applyLeave);
+router.get('/leave/my-requests', authorize('student'), getMyLeaveRequests);
+router.get('/leave/:requestId', authorize('student'), getLeaveRequestDetails);
+router.delete('/leave/:requestId', authorize('student'), deleteLeaveRequest);
+router.post('/leave/:requestId/resend', authorize('student'), resendLeaveRequest);
+router.post('/leave/:requestId/cancel', authorize('student'), cancelLeaveRequest);
 
 module.exports = router;
