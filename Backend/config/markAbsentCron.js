@@ -20,16 +20,16 @@ const markPendingAsAbsent = async () => {
 
     let totalMarkedAbsent = 0;
 
-    // For each closed slot, mark students from that batch as absent
+    // For each closed slot, mark students from that lecture as absent
     for (const slot of closedSlots) {
-      // Get all students in this batch
+      // Get all students in this lecture
       const User = require('../models/Student');
-      const studentsInBatch = await User.find({
-        batches: slot.batch,
+      const studentsInLecture = await User.find({
+        lectures: slot.lecture,
         role: 'student'
       }).select('_id');
 
-      const studentIds = studentsInBatch.map(s => s._id);
+      const studentIds = studentsInLecture.map(s => s._id);
 
       // IMPORTANT: Only mark 'pending' status as absent
       // Do NOT touch 'awaiting_approval' records - those need teacher review
@@ -47,7 +47,7 @@ const markPendingAsAbsent = async () => {
       );
 
       if (result.modifiedCount > 0) {
-        console.log(`Marked ${result.modifiedCount} students as absent for slot ${slot._id} (${slot.shift} shift, Batch: ${slot.batch})`);
+        console.log(`Marked ${result.modifiedCount} students as absent for slot ${slot._id} (${slot.shift} shift, Lecture: ${slot.lecture})`);
         totalMarkedAbsent += result.modifiedCount;
       }
 
@@ -63,7 +63,7 @@ const markPendingAsAbsent = async () => {
 
         // Send email to teachers
         sendTeacherReviewEmail({
-          batchId: slot.batch,
+          lectureId: slot.lecture,
           slotId: slot._id,
           shift: slot.shift,
           date: slot.date,

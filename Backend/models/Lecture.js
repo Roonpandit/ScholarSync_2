@@ -1,15 +1,15 @@
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const batchSchema = new mongoose.Schema(
+const lectureSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Please add a batch name'],
+      required: [true, 'Please add a lecture name'],
       trim: true,
-      minlength: [3, 'Batch name must be at least 3 characters long']
+      minlength: [3, 'Lecture name must be at least 3 characters long']
     },
-    batchId: {
+    lectureId: {
       type: String,
       unique: true,
       default: () => uuidv4(),
@@ -41,27 +41,27 @@ const batchSchema = new mongoose.Schema(
 );
 
 // Create index for faster lookups
-batchSchema.index({ batchId: 1 });
-batchSchema.index({ isDefault: 1 });
-batchSchema.index({ isActive: 1 });
+lectureSchema.index({ lectureId: 1 });
+lectureSchema.index({ isDefault: 1 });
+lectureSchema.index({ isActive: 1 });
 
-// Prevent deletion of default batch
-batchSchema.pre('remove', function(next) {
+// Prevent deletion of default lecture
+lectureSchema.pre('remove', function(next) {
   if (this.isDefault) {
-    const error = new Error('Cannot delete the default batch');
+    const error = new Error('Cannot delete the default lecture');
     return next(error);
   }
   next();
 });
 
-// Prevent deletion of default batch using findOneAndDelete
-batchSchema.pre('findOneAndDelete', async function(next) {
+// Prevent deletion of default lecture using findOneAndDelete
+lectureSchema.pre('findOneAndDelete', async function(next) {
   const docToDelete = await this.model.findOne(this.getQuery());
   if (docToDelete && docToDelete.isDefault) {
-    const error = new Error('Cannot delete the default batch');
+    const error = new Error('Cannot delete the default lecture');
     return next(error);
   }
   next();
 });
 
-module.exports = mongoose.model('Batch', batchSchema);
+module.exports = mongoose.model('Lecture', lectureSchema);

@@ -12,9 +12,9 @@ const attendanceSchema = new mongoose.Schema(
       ref: 'AttendanceSlot',
       required: true,
     },
-    batch: {
+    lecture: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Batch',
+      ref: 'Lecture',
       required: true,
     },
     date: {
@@ -110,7 +110,7 @@ const attendanceSchema = new mongoose.Schema(
 attendanceSchema.index({ student: 1, slot: 1 }, { unique: true });
 attendanceSchema.index({ date: 1 });
 attendanceSchema.index({ slot: 1 });
-attendanceSchema.index({ batch: 1 });
+attendanceSchema.index({ lecture: 1 });
 attendanceSchema.index({ studentCode: 1 });
 attendanceSchema.index({ status: 1 });
 attendanceSchema.index({ slot: 1, status: 1 });

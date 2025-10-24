@@ -12,10 +12,10 @@ const leaveSlotSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Student ID is required']
     },
-    batchId: {
+    lectureId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Batch',
-      required: [true, 'Batch ID is required']
+      ref: 'Lecture',
+      required: [true, 'Lecture ID is required']
     },
     attendanceSlotId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,7 +39,7 @@ const leaveSlotSchema = new mongoose.Schema(
 );
 
 // Create indexes for better query performance
-leaveSlotSchema.index({ studentId: 1, batchId: 1, date: 1 });
+leaveSlotSchema.index({ studentId: 1, lectureId: 1, date: 1 });
 leaveSlotSchema.index({ attendanceSlotId: 1, studentId: 1 }, { unique: true });
 leaveSlotSchema.index({ leaveRequestId: 1 });
 leaveSlotSchema.index({ status: 1 });
@@ -60,13 +60,13 @@ leaveSlotSchema.statics.hasLeaveForSlot = async function(studentId, attendanceSl
 };
 
 // Static method to create leave slots for a date range
-leaveSlotSchema.statics.createSlotsForLeave = async function(leaveRequestId, studentId, batchId, fromDate, toDate) {
+leaveSlotSchema.statics.createSlotsForLeave = async function(leaveRequestId, studentId, lectureId, fromDate, toDate) {
   try {
     const AttendanceSlot = mongoose.model('AttendanceSlot');
 
-    // Find all attendance slots in the date range for the batch
+    // Find all attendance slots in the date range for the lecture
     const slots = await AttendanceSlot.find({
-      batch: batchId,
+      lecture: lectureId,
       date: {
         $gte: new Date(fromDate),
         $lte: new Date(toDate)
@@ -82,7 +82,7 @@ leaveSlotSchema.statics.createSlotsForLeave = async function(leaveRequestId, stu
     const leaveSlots = slots.map(slot => ({
       leaveRequestId,
       studentId,
-      batchId,
+      lectureId,
       attendanceSlotId: slot._id,
       date: slot.date,
       status: 'blocked'

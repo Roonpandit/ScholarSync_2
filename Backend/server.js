@@ -8,7 +8,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/studentRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
-const batchRoutes = require('./routes/batchRoutes');
+const lectureRoutes = require('./routes/lectureRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 const cron = require('./config/cron');
 const attendanceReminder = require('./config/attendanceReminderCron');
@@ -73,7 +73,7 @@ connectDB().then(() => {
   app.use('/api/teacher', teacherRoutes);
   app.use('/api/students', userRoutes);
   app.use('/api/reviews', reviewRoutes);
-  app.use('/api/batches', batchRoutes);
+  app.use('/api/lectures', lectureRoutes);
   app.use('/api/leave', leaveRoutes);
 
   // Error handling middleware (should be after all other middleware and routes)

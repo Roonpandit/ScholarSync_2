@@ -8,7 +8,7 @@ const {
   updateStudent,
   getStudentDetailsWithAttendance,
   getStudentAttendanceCounts,
-  addBatchesToStudent,
+  addLecturesToStudent,
 
   // Attendance Management
   createAttendanceSlot,
@@ -54,8 +54,8 @@ router.get('/students/class', getStudentsByClass);
 // Update student details
 router.put('/students/:id', updateStudent);
 
-// Add batches to student
-router.post('/students/:id/add-batches', addBatchesToStudent);
+// Add lectures to student
+router.post('/students/:id/add-lectures', addLecturesToStudent);
 
 // Get student details with attendance history
 router.get('/students/:id/details', getStudentDetailsWithAttendance);

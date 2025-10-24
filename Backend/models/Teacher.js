@@ -70,9 +70,9 @@ const teacherSchema = new mongoose.Schema(
       enum: ['teacher'],
       default: 'teacher',
     },
-    batches: [{
+    lectures: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Batch'
+      ref: 'Lecture'
     }],
     resetPasswordToken: String,
     resetPasswordExpire: Date,

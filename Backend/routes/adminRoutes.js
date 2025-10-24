@@ -9,7 +9,7 @@ const {
   deleteStudent,
   getStudentDetailsWithAttendance,
   getStudentAttendanceCounts,
-  addBatchesToStudent,
+  addLecturesToStudent,
 
   // Attendance Management
   createAttendanceSlot,
@@ -82,8 +82,8 @@ router.get('/students/class', getStudentsByClass);
 router.put('/students/:id', updateStudent);
 router.delete('/students/:id', deleteStudent);
 
-// Add batches to student (both admin and teacher can access)
-router.post('/students/:id/add-batches', addBatchesToStudent);
+// Add lectures to student (both admin and teacher can access)
+router.post('/students/:id/add-lectures', addLecturesToStudent);
 
 // Get student details with attendance history
 router.get('/students/:id/details', getStudentDetailsWithAttendance);

@@ -7,10 +7,10 @@ const leaveRequestSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Student ID is required']
     },
-    batchId: {
+    lectureId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Batch',
-      required: [true, 'Batch ID is required']
+      ref: 'Lecture',
+      required: [true, 'Lecture ID is required']
     },
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -130,7 +130,7 @@ const leaveRequestSchema = new mongoose.Schema(
 // Create indexes for better query performance
 leaveRequestSchema.index({ studentId: 1, status: 1 });
 leaveRequestSchema.index({ teacherId: 1, status: 1 });
-leaveRequestSchema.index({ batchId: 1, fromDate: 1, toDate: 1 });
+leaveRequestSchema.index({ lectureId: 1, fromDate: 1, toDate: 1 });
 leaveRequestSchema.index({ status: 1, rejectExpiresAt: 1 });
 leaveRequestSchema.index({ fromDate: 1, toDate: 1 });
 

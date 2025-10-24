@@ -3,7 +3,7 @@ const LeaveSlot = require('../models/LeaveSlot');
 const Attendance = require('../models/Attendance');
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
-const Batch = require('../models/Batch');
+const Lecture = require('../models/Lecture');
 const mongoose = require('mongoose');
 
 // ========================
@@ -21,7 +21,7 @@ exports.applyLeave = async (req, res) => {
     if (!leaveRequests || !Array.isArray(leaveRequests) || leaveRequests.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide at least one batch-teacher pair'
+        message: 'Please provide at least one lecture-teacher pair'
       });
     }
 
@@ -35,7 +35,7 @@ exports.applyLeave = async (req, res) => {
     const studentId = req.user.id;
 
     // Get student details
-    const student = await Student.findById(studentId).populate('batches');
+    const student = await Student.findById(studentId).populate('lectures');
     if (!student) {
       return res.status(404).json({
         success: false,
@@ -43,38 +43,38 @@ exports.applyLeave = async (req, res) => {
       });
     }
 
-    // Validate all batch-teacher pairs
-    const studentBatchIds = student.batches.map(b => b._id.toString());
+    // Validate all lecture-teacher pairs
+    const studentLectureIds = student.lectures.map(l => l._id.toString());
     const createdRequests = [];
 
     for (const request of leaveRequests) {
-      const { batchId, teacherId } = request;
+      const { lectureId, teacherId } = request;
 
-      // Check if student is enrolled in the batch
-      if (!studentBatchIds.includes(batchId)) {
+      // Check if student is enrolled in the lecture
+      if (!studentLectureIds.includes(lectureId)) {
         return res.status(400).json({
           success: false,
-          message: `You are not enrolled in the selected batch`
+          message: `You are not enrolled in the selected lecture`
         });
       }
 
-      // Check if batch is not default
-      const batch = await Batch.findById(batchId);
-      if (!batch) {
+      // Check if lecture is not default
+      const lecture = await Lecture.findById(lectureId);
+      if (!lecture) {
         return res.status(404).json({
           success: false,
-          message: 'Batch not found'
+          message: 'Lecture not found'
         });
       }
 
-      if (batch.isDefault) {
+      if (lecture.isDefault) {
         return res.status(400).json({
           success: false,
-          message: 'Cannot apply leave for default batch'
+          message: 'Cannot apply leave for default lecture'
         });
       }
 
-      // Verify teacher is assigned to the batch
+      // Verify teacher is assigned to the lecture
       const teacher = await Teacher.findById(teacherId);
       if (!teacher) {
         return res.status(404).json({
@@ -83,17 +83,17 @@ exports.applyLeave = async (req, res) => {
         });
       }
 
-      if (!teacher.batches.some(b => b.toString() === batchId)) {
+      if (!teacher.lectures.some(l => l.toString() === lectureId)) {
         return res.status(400).json({
           success: false,
-          message: 'Selected teacher is not assigned to the batch'
+          message: 'Selected teacher is not assigned to the lecture'
         });
       }
 
       // Create leave request
       const leaveRequest = await LeaveRequest.create({
         studentId,
-        batchId,
+        lectureId,
         teacherId,
         leaveType,
         fromDate,
@@ -107,7 +107,7 @@ exports.applyLeave = async (req, res) => {
       await LeaveSlot.createSlotsForLeave(
         leaveRequest._id,
         studentId,
-        batchId,
+        lectureId,
         fromDate,
         toDate
       );
@@ -136,14 +136,14 @@ exports.applyLeave = async (req, res) => {
 exports.getMyLeaveRequests = async (req, res) => {
   try {
     const studentId = req.user.id;
-    const { batch, teacher, status, fromDate, toDate, page = 1, limit = 10 } = req.query;
+    const { lecture, teacher, status, fromDate, toDate, page = 1, limit = 10 } = req.query;
 
     const query = { studentId };
 
     // Apply filters
-    if (batch) {
-      const batchIds = Array.isArray(batch) ? batch : [batch];
-      query.batchId = { $in: batchIds };
+    if (lecture) {
+      const lectureIds = Array.isArray(lecture) ? lecture : [lecture];
+      query.lectureId = { $in: lectureIds };
     }
 
     if (teacher) {
@@ -176,7 +176,7 @@ exports.getMyLeaveRequests = async (req, res) => {
 
     const [requests, total] = await Promise.all([
       LeaveRequest.find(query)
-        .populate('batchId', 'name batchId')
+        .populate('lectureId', 'name lectureId')
         .populate('teacherId', 'name teacherCode email')
         .populate('respondedBy', 'name teacherCode')
         .sort({ appliedAt: -1 })
@@ -213,7 +213,7 @@ exports.getLeaveRequestDetails = async (req, res) => {
     const studentId = req.user.id;
 
     const request = await LeaveRequest.findOne({ _id: requestId, studentId })
-      .populate('batchId', 'name batchId')
+      .populate('lectureId', 'name lectureId')
       .populate('teacherId', 'name teacherCode email phone')
       .populate('respondedBy', 'name teacherCode');
 
@@ -317,7 +317,7 @@ exports.resendLeaveRequest = async (req, res) => {
     // Create new request with same details
     const newRequest = await LeaveRequest.create({
       studentId: originalRequest.studentId,
-      batchId: originalRequest.batchId,
+      lectureId: originalRequest.lectureId,
       teacherId: originalRequest.teacherId,
       leaveType: originalRequest.leaveType,
       fromDate: originalRequest.fromDate,
@@ -335,7 +335,7 @@ exports.resendLeaveRequest = async (req, res) => {
     await LeaveSlot.createSlotsForLeave(
       newRequest._id,
       studentId,
-      originalRequest.batchId,
+      originalRequest.lectureId,
       originalRequest.fromDate,
       originalRequest.toDate
     );
@@ -438,13 +438,13 @@ exports.cancelLeaveRequest = async (req, res) => {
 exports.getPendingLeaveRequests = async (req, res) => {
   try {
     const teacherId = req.user.id;
-    const { batch, student, page = 1, limit = 10 } = req.query;
+    const { lecture, student, page = 1, limit = 10 } = req.query;
 
     const query = { teacherId, status: 'pending' };
 
-    if (batch) {
-      const batchIds = Array.isArray(batch) ? batch : [batch];
-      query.batchId = { $in: batchIds };
+    if (lecture) {
+      const lectureIds = Array.isArray(lecture) ? lecture : [lecture];
+      query.lectureId = { $in: lectureIds };
     }
 
     if (student) {
@@ -456,7 +456,7 @@ exports.getPendingLeaveRequests = async (req, res) => {
     const [requests, total] = await Promise.all([
       LeaveRequest.find(query)
         .populate('studentId', 'name studentCode email phone')
-        .populate('batchId', 'name batchId')
+        .populate('lectureId', 'name lectureId')
         .sort({ appliedAt: 1 }) // Oldest first
         .skip(skip)
         .limit(parseInt(limit)),
@@ -488,13 +488,13 @@ exports.getPendingLeaveRequests = async (req, res) => {
 exports.getAllLeaveRequestsForTeacher = async (req, res) => {
   try {
     const teacherId = req.user.id;
-    const { batch, student, status, fromDate, toDate, page = 1, limit = 10 } = req.query;
+    const { lecture, student, status, fromDate, toDate, page = 1, limit = 10 } = req.query;
 
     const query = { teacherId };
 
-    if (batch) {
-      const batchIds = Array.isArray(batch) ? batch : [batch];
-      query.batchId = { $in: batchIds };
+    if (lecture) {
+      const lectureIds = Array.isArray(lecture) ? lecture : [lecture];
+      query.lectureId = { $in: lectureIds };
     }
 
     if (student) {
@@ -526,7 +526,7 @@ exports.getAllLeaveRequestsForTeacher = async (req, res) => {
     const [requests, total] = await Promise.all([
       LeaveRequest.find(query)
         .populate('studentId', 'name studentCode email phone')
-        .populate('batchId', 'name batchId')
+        .populate('lectureId', 'name lectureId')
         .populate('respondedBy', 'name teacherCode')
         .sort({ appliedAt: -1 })
         .skip(skip)
@@ -610,7 +610,7 @@ exports.approveLeaveRequest = async (req, res) => {
           await Attendance.create({
             student: request.studentId,
             slot: slot.attendanceSlotId,
-            batch: request.batchId,
+            lecture: request.lectureId,
             date: slot.date,
             shift: attendanceSlot.shift,
             status: 'on_leave',
@@ -708,13 +708,13 @@ exports.rejectLeaveRequest = async (req, res) => {
 // @access  Private (Admin)
 exports.getAllLeaveRequests = async (req, res) => {
   try {
-    const { batch, teacher, student, status, fromDate, toDate, page = 1, limit = 10 } = req.query;
+    const { lecture, teacher, student, status, fromDate, toDate, page = 1, limit = 10 } = req.query;
 
     const query = {};
 
-    if (batch) {
-      const batchIds = Array.isArray(batch) ? batch : [batch];
-      query.batchId = { $in: batchIds };
+    if (lecture) {
+      const lectureIds = Array.isArray(lecture) ? lecture : [lecture];
+      query.lectureId = { $in: lectureIds };
     }
 
     if (teacher) {
@@ -750,7 +750,7 @@ exports.getAllLeaveRequests = async (req, res) => {
     const [requests, total] = await Promise.all([
       LeaveRequest.find(query)
         .populate('studentId', 'name studentCode email')
-        .populate('batchId', 'name batchId')
+        .populate('lectureId', 'name lectureId')
         .populate('teacherId', 'name teacherCode')
         .populate('respondedBy', 'name teacherCode')
         .sort({ appliedAt: -1 })
@@ -893,7 +893,7 @@ exports.getLeaveDetailsForAttendance = async (req, res) => {
 
     const request = await LeaveRequest.findById(leaveRequestId)
       .populate('studentId', 'name studentCode')
-      .populate('batchId', 'name')
+      .populate('lectureId', 'name')
       .populate('respondedBy', 'name teacherCode');
 
     if (!request) {
@@ -913,7 +913,7 @@ exports.getLeaveDetailsForAttendance = async (req, res) => {
         approvedBy: request.respondedBy,
         approvedAt: request.approvedAt,
         student: request.studentId,
-        batch: request.batchId
+        lecture: request.lectureId
       }
     });
 

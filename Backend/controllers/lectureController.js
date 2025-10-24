@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const Batch = require('../models/Batch');
+const Lecture = require('../models/Lecture');
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
 const AttendanceSlot = require('../models/AttendanceSlot');
@@ -7,10 +7,10 @@ const Attendance = require('../models/Attendance');
 const mongoose = require('mongoose');
 const cloudinary = require('../config/cloudinary');
 
-// @desc    Create a new batch
-// @route   POST /api/admin/batches
+// @desc    Create a new lecture
+// @route   POST /api/admin/lectures
 // @access  Private/Admin
-exports.createBatch = asyncHandler(async (req, res) => {
+exports.createLecture = asyncHandler(async (req, res) => {
   try {
     const { name, description } = req.body;
 
@@ -18,123 +18,123 @@ exports.createBatch = asyncHandler(async (req, res) => {
     if (!name) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a batch name'
+        message: 'Please provide a lecture name'
       });
     }
 
-    // Check if batch name already exists
-    const existingBatch = await Batch.findOne({ name });
-    if (existingBatch) {
+    // Check if lecture name already exists
+    const existingLecture = await Lecture.findOne({ name });
+    if (existingLecture) {
       return res.status(400).json({
         success: false,
-        message: 'A batch with this name already exists'
+        message: 'A lecture with this name already exists'
       });
     }
 
-    // Check if this is the first batch being created
-    const batchCount = await Batch.countDocuments();
-    const isFirstBatch = batchCount === 0;
+    // Check if this is the first lecture being created
+    const lectureCount = await Lecture.countDocuments();
+    const isFirstLecture = lectureCount === 0;
 
-    // Create new batch
-    const batch = await Batch.create({
+    // Create new lecture
+    const lecture = await Lecture.create({
       name,
       description: description || '',
       createdBy: req.user._id,
-      isDefault: isFirstBatch // First batch created is the default batch
+      isDefault: isFirstLecture // First lecture created is the default lecture
     });
 
-    const message = isFirstBatch
-      ? 'Default batch created successfully. This batch cannot be deleted and all students must belong to it.'
-      : 'Batch created successfully';
+    const message = isFirstLecture
+      ? 'Default lecture created successfully. This lecture cannot be deleted and all students must belong to it.'
+      : 'Lecture created successfully';
 
     res.status(201).json({
       success: true,
       message: message,
-      data: batch
+      data: lecture
     });
   } catch (error) {
-    console.error('Error creating batch:', error);
+    console.error('Error creating lecture:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while creating batch',
+      message: 'Server error while creating lecture',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Get all batches (Admin only - returns all batches)
-// @route   GET /api/admin/batches
+// @desc    Get all lectures (Admin only - returns all lectures)
+// @route   GET /api/admin/lectures
 // @access  Private/Admin
-exports.getAllBatches = asyncHandler(async (req, res) => {
+exports.getAllLectures = asyncHandler(async (req, res) => {
   try {
     const query = { isActive: true };
 
-    const batches = await Batch.find(query)
+    const lectures = await Lecture.find(query)
       .populate('createdBy', 'name email')
-      .sort({ isDefault: -1, createdAt: -1 }); // Default batch first
+      .sort({ isDefault: -1, createdAt: -1 }); // Default lecture first
 
     res.status(200).json({
       success: true,
-      count: batches.length,
-      data: batches
+      count: lectures.length,
+      data: lectures
     });
   } catch (error) {
-    console.error('Error fetching batches:', error);
+    console.error('Error fetching lectures:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching batches',
+      message: 'Server error while fetching lectures',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Get single batch by ID
-// @route   GET /api/admin/batches/:id
+// @desc    Get single lecture by ID
+// @route   GET /api/admin/lectures/:id
 // @access  Private/Admin/Teacher
-exports.getBatchById = asyncHandler(async (req, res) => {
+exports.getLectureById = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid batch ID'
+        message: 'Invalid lecture ID'
       });
     }
 
-    const batch = await Batch.findById(id).populate('createdBy', 'name email');
+    const lecture = await Lecture.findById(id).populate('createdBy', 'name email');
 
-    if (!batch) {
+    if (!lecture) {
       return res.status(404).json({
         success: false,
-        message: 'Batch not found'
+        message: 'Lecture not found'
       });
     }
 
-    // Get student count for this batch
-    const studentCount = await Student.countDocuments({ batches: id });
+    // Get student count for this lecture
+    const studentCount = await Student.countDocuments({ lectures: id });
 
     res.status(200).json({
       success: true,
       data: {
-        ...batch.toObject(),
+        ...lecture.toObject(),
         studentCount
       }
     });
   } catch (error) {
-    console.error('Error fetching batch:', error);
+    console.error('Error fetching lecture:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching batch',
+      message: 'Server error while fetching lecture',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Update batch
-// @route   PUT /api/admin/batches/:id
+// @desc    Update lecture
+// @route   PUT /api/admin/lectures/:id
 // @access  Private/Admin
-exports.updateBatch = asyncHandler(async (req, res) => {
+exports.updateLecture = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, isActive } = req.body;
@@ -142,98 +142,98 @@ exports.updateBatch = asyncHandler(async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid batch ID'
+        message: 'Invalid lecture ID'
       });
     }
 
-    const batch = await Batch.findById(id);
+    const lecture = await Lecture.findById(id);
 
-    if (!batch) {
+    if (!lecture) {
       return res.status(404).json({
         success: false,
-        message: 'Batch not found'
+        message: 'Lecture not found'
       });
     }
 
     // Update only allowed fields
-    if (name && name !== batch.name) {
+    if (name && name !== lecture.name) {
       // Check if new name already exists
-      const existingBatch = await Batch.findOne({ name, _id: { $ne: id } });
-      if (existingBatch) {
+      const existingLecture = await Lecture.findOne({ name, _id: { $ne: id } });
+      if (existingLecture) {
         return res.status(400).json({
           success: false,
-          message: 'A batch with this name already exists'
+          message: 'A lecture with this name already exists'
         });
       }
-      batch.name = name;
+      lecture.name = name;
     }
 
     if (description !== undefined) {
-      batch.description = description;
+      lecture.description = description;
     }
 
-    // Allow toggling isActive only for non-default batches
-    if (isActive !== undefined && !batch.isDefault) {
-      batch.isActive = isActive;
+    // Allow toggling isActive only for non-default lectures
+    if (isActive !== undefined && !lecture.isDefault) {
+      lecture.isActive = isActive;
     }
 
-    await batch.save();
+    await lecture.save();
 
     res.status(200).json({
       success: true,
-      message: 'Batch updated successfully',
-      data: batch
+      message: 'Lecture updated successfully',
+      data: lecture
     });
   } catch (error) {
-    console.error('Error updating batch:', error);
+    console.error('Error updating lecture:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while updating batch',
+      message: 'Server error while updating lecture',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Delete batch
-// @route   DELETE /api/admin/batches/:id
+// @desc    Delete lecture
+// @route   DELETE /api/admin/lectures/:id
 // @access  Private/Admin
-exports.deleteBatch = asyncHandler(async (req, res) => {
+exports.deleteLecture = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid batch ID'
+        message: 'Invalid lecture ID'
       });
     }
 
-    const batch = await Batch.findById(id);
+    const lecture = await Lecture.findById(id);
 
-    if (!batch) {
+    if (!lecture) {
       return res.status(404).json({
         success: false,
-        message: 'Batch not found'
+        message: 'Lecture not found'
       });
     }
 
-    // Prevent deletion of default batch
-    if (batch.isDefault) {
+    // Prevent deletion of default lecture
+    if (lecture.isDefault) {
       return res.status(403).json({
         success: false,
-        message: 'Cannot delete the default batch. You can only rename it.'
+        message: 'Cannot delete the default lecture. You can only rename it.'
       });
     }
 
-    // Remove batch from all students
+    // Remove lecture from all students
     await Student.updateMany(
-      { batches: id },
-      { $pull: { batches: id } }
+      { lectures: id },
+      { $pull: { lectures: id } }
     );
 
-    // Find all attendance slots for this batch
-    const slotsInBatch = await AttendanceSlot.find({ batch: id }).select('_id');
-    const slotIds = slotsInBatch.map(slot => slot._id);
+    // Find all attendance slots for this lecture
+    const slotsInLecture = await AttendanceSlot.find({ lecture: id }).select('_id');
+    const slotIds = slotsInLecture.map(slot => slot._id);
 
     // Get all attendance records for these slots
     const attendanceRecords = await Attendance.find({ slot: { $in: slotIds } });
@@ -251,94 +251,94 @@ exports.deleteBatch = asyncHandler(async (req, res) => {
     // Delete all attendance records for these slots
     await Attendance.deleteMany({ slot: { $in: slotIds } });
 
-    // Delete all attendance slots for this batch
-    await AttendanceSlot.deleteMany({ batch: id });
+    // Delete all attendance slots for this lecture
+    await AttendanceSlot.deleteMany({ lecture: id });
 
-    // Delete the batch
-    await Batch.findByIdAndDelete(id);
+    // Delete the lecture
+    await Lecture.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
-      message: 'Batch deleted successfully along with all related attendance data and photos'
+      message: 'Lecture deleted successfully along with all related attendance data and photos'
     });
   } catch (error) {
-    console.error('Error deleting batch:', error);
+    console.error('Error deleting lecture:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while deleting batch',
+      message: 'Server error while deleting lecture',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Get default batch
-// @route   GET /api/admin/batches/default/info
+// @desc    Get default lecture
+// @route   GET /api/admin/lectures/default/info
 // @access  Private/Admin/Teacher
-exports.getDefaultBatch = asyncHandler(async (req, res) => {
+exports.getDefaultLecture = asyncHandler(async (req, res) => {
   try {
-    const defaultBatch = await Batch.findOne({ isDefault: true });
+    const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-    if (!defaultBatch) {
+    if (!defaultLecture) {
       return res.status(404).json({
         success: false,
-        message: 'Default batch not found. Please run the seeder to create it.'
+        message: 'Default lecture not found. Please run the seeder to create it.'
       });
     }
 
     res.status(200).json({
       success: true,
-      data: defaultBatch
+      data: defaultLecture
     });
   } catch (error) {
-    console.error('Error fetching default batch:', error);
+    console.error('Error fetching default lecture:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching default batch',
+      message: 'Server error while fetching default lecture',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Get students in a specific batch
-// @route   GET /api/admin/batches/:id/students
+// @desc    Get students in a specific lecture
+// @route   GET /api/admin/lectures/:id/students
 // @access  Private/Admin/Teacher
-exports.getStudentsByBatch = asyncHandler(async (req, res) => {
+exports.getStudentsByLecture = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid batch ID'
+        message: 'Invalid lecture ID'
       });
     }
 
-    const batch = await Batch.findById(id);
+    const lecture = await Lecture.findById(id);
 
-    if (!batch) {
+    if (!lecture) {
       return res.status(404).json({
         success: false,
-        message: 'Batch not found'
+        message: 'Lecture not found'
       });
     }
 
-    // Find all students in this batch
-    const students = await Student.find({ batches: id })
+    // Find all students in this lecture
+    const students = await Student.find({ lectures: id })
       .select('name email studentCode phone createdAt')
       .sort({ name: 1 });
 
     res.status(200).json({
       success: true,
-      batch: {
-        _id: batch._id,
-        name: batch.name,
-        batchId: batch.batchId
+      lecture: {
+        _id: lecture._id,
+        name: lecture.name,
+        lectureId: lecture.lectureId
       },
       count: students.length,
       data: students
     });
   } catch (error) {
-    console.error('Error fetching students by batch:', error);
+    console.error('Error fetching students by lecture:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching students',
@@ -347,18 +347,18 @@ exports.getStudentsByBatch = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Assign batch(es) to student(s) - Works from both batch and student pages
-// @route   POST /api/batches/assign
+// @desc    Assign lecture(s) to student(s) - Works from both lecture and student pages
+// @route   POST /api/lectures/assign
 // @access  Private/Admin/Teacher
-exports.assignBatchesToStudents = asyncHandler(async (req, res) => {
+exports.assignLecturesToStudents = asyncHandler(async (req, res) => {
   try {
-    const { batchIds, studentIds } = req.body;
+    const { lectureIds, studentIds } = req.body;
 
     // Validate inputs
-    if (!batchIds || !Array.isArray(batchIds) || batchIds.length === 0) {
+    if (!lectureIds || !Array.isArray(lectureIds) || lectureIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide an array of batch IDs'
+        message: 'Please provide an array of lecture IDs'
       });
     }
 
@@ -369,13 +369,13 @@ exports.assignBatchesToStudents = asyncHandler(async (req, res) => {
       });
     }
 
-    // Validate all batch IDs
-    const batches = await Batch.find({ _id: { $in: batchIds }, isActive: true });
+    // Validate all lecture IDs
+    const lectures = await Lecture.find({ _id: { $in: lectureIds }, isActive: true });
 
-    if (batches.length !== batchIds.length) {
+    if (lectures.length !== lectureIds.length) {
       return res.status(400).json({
         success: false,
-        message: 'One or more invalid or inactive batch IDs provided'
+        message: 'One or more invalid or inactive lecture IDs provided'
       });
     }
 
@@ -392,11 +392,11 @@ exports.assignBatchesToStudents = asyncHandler(async (req, res) => {
     let totalAdded = 0;
     let alreadyAssigned = 0;
 
-    // Add batches to each student
+    // Add lectures to each student
     for (const student of students) {
-      for (const batchId of batchIds) {
-        if (!student.batches.some(b => b.toString() === batchId)) {
-          student.batches.push(batchId);
+      for (const lectureId of lectureIds) {
+        if (!student.lectures.some(l => l.toString() === lectureId)) {
+          student.lectures.push(lectureId);
           totalAdded++;
         } else {
           alreadyAssigned++;
@@ -407,36 +407,36 @@ exports.assignBatchesToStudents = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Batches assigned successfully`,
+      message: `Lectures assigned successfully`,
       data: {
         totalAdded,
         alreadyAssigned,
         studentsProcessed: students.length,
-        batchesProcessed: batchIds.length
+        lecturesProcessed: lectureIds.length
       }
     });
   } catch (error) {
-    console.error('Error assigning batches to students:', error);
+    console.error('Error assigning lectures to students:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while assigning batches',
+      message: 'Server error while assigning lectures',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Unassign batch(es) from student(s) - Works from both batch and student pages
-// @route   POST /api/batches/unassign
+// @desc    Unassign lecture(s) from student(s) - Works from both lecture and student pages
+// @route   POST /api/lectures/unassign
 // @access  Private/Admin/Teacher
-exports.unassignBatchesFromStudents = asyncHandler(async (req, res) => {
+exports.unassignLecturesFromStudents = asyncHandler(async (req, res) => {
   try {
-    const { batchIds, studentIds } = req.body;
+    const { lectureIds, studentIds } = req.body;
 
     // Validate inputs
-    if (!batchIds || !Array.isArray(batchIds) || batchIds.length === 0) {
+    if (!lectureIds || !Array.isArray(lectureIds) || lectureIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide an array of batch IDs'
+        message: 'Please provide an array of lecture IDs'
       });
     }
 
@@ -447,31 +447,31 @@ exports.unassignBatchesFromStudents = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get the default batch
-    const defaultBatch = await Batch.findOne({ isDefault: true });
+    // Get the default lecture
+    const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-    if (!defaultBatch) {
+    if (!defaultLecture) {
       return res.status(500).json({
         success: false,
-        message: 'Default batch not found'
+        message: 'Default lecture not found'
       });
     }
 
-    // Check if trying to remove default batch
-    if (batchIds.includes(defaultBatch._id.toString())) {
+    // Check if trying to remove default lecture
+    if (lectureIds.includes(defaultLecture._id.toString())) {
       return res.status(403).json({
         success: false,
-        message: 'Cannot remove students from the default batch. All students must belong to the default batch.'
+        message: 'Cannot remove students from the default lecture. All students must belong to the default lecture.'
       });
     }
 
-    // Validate all batch IDs
-    const batches = await Batch.find({ _id: { $in: batchIds } });
+    // Validate all lecture IDs
+    const lectures = await Lecture.find({ _id: { $in: lectureIds } });
 
-    if (batches.length !== batchIds.length) {
+    if (lectures.length !== lectureIds.length) {
       return res.status(400).json({
         success: false,
-        message: 'One or more invalid batch IDs provided'
+        message: 'One or more invalid lecture IDs provided'
       });
     }
 
@@ -486,25 +486,25 @@ exports.unassignBatchesFromStudents = asyncHandler(async (req, res) => {
     }
 
     let totalRemoved = 0;
-    let notInBatch = 0;
+    let notInLecture = 0;
 
-    // Remove batches from each student and clean up attendance data
+    // Remove lectures from each student and clean up attendance data
     for (const student of students) {
-      const originalLength = student.batches.length;
-      student.batches = student.batches.filter(
-        batchId => !batchIds.includes(batchId.toString())
+      const originalLength = student.lectures.length;
+      student.lectures = student.lectures.filter(
+        lectureId => !lectureIds.includes(lectureId.toString())
       );
-      const removed = originalLength - student.batches.length;
+      const removed = originalLength - student.lectures.length;
       totalRemoved += removed;
-      notInBatch += (batchIds.length - removed);
+      notInLecture += (lectureIds.length - removed);
 
       await student.save();
 
-      // Delete attendance records and photos for this student in the removed batches
-      for (const batchId of batchIds) {
-        // Find all attendance slots for this batch
-        const slotsInBatch = await AttendanceSlot.find({ batch: batchId }).select('_id');
-        const slotIds = slotsInBatch.map(slot => slot._id);
+      // Delete attendance records and photos for this student in the removed lectures
+      for (const lectureId of lectureIds) {
+        // Find all attendance slots for this lecture
+        const slotsInLecture = await AttendanceSlot.find({ lecture: lectureId }).select('_id');
+        const slotIds = slotsInLecture.map(slot => slot._id);
 
         // Get attendance records for this student in these slots
         const attendanceRecords = await Attendance.find({
@@ -532,34 +532,34 @@ exports.unassignBatchesFromStudents = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Batches unassigned successfully and related attendance data cleaned up`,
+      message: `Lectures unassigned successfully and related attendance data cleaned up`,
       data: {
         totalRemoved,
-        notInBatch,
+        notInLecture,
         studentsProcessed: students.length,
-        batchesProcessed: batchIds.length
+        lecturesProcessed: lectureIds.length
       }
     });
   } catch (error) {
-    console.error('Error unassigning batches from students:', error);
+    console.error('Error unassigning lectures from students:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while unassigning batches',
+      message: 'Server error while unassigning lectures',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// @desc    Get student's non-default batches (for leave application)
-// @route   GET /api/batches/non-default
+// @desc    Get student's non-default lectures (for leave application)
+// @route   GET /api/lectures/non-default
 // @access  Private (Student)
-exports.getNonDefaultBatches = asyncHandler(async (req, res) => {
+exports.getNonDefaultLectures = asyncHandler(async (req, res) => {
   try {
     const studentId = req.user.id;
 
-    // Get student with batches
+    // Get student with lectures
     const student = await Student.findById(studentId).populate({
-      path: 'batches',
+      path: 'lectures',
       match: { isDefault: false, isActive: true }
     });
 
@@ -572,40 +572,40 @@ exports.getNonDefaultBatches = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: student.batches
+      data: student.lectures
     });
   } catch (error) {
-    console.error('Error fetching non-default batches:', error);
+    console.error('Error fetching non-default lectures:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching batches'
+      message: 'Server error while fetching lectures'
     });
   }
 });
 
-// @desc    Get teacher for a specific batch
-// @route   GET /api/batches/:batchId/teacher
+// @desc    Get teacher for a specific lecture
+// @route   GET /api/lectures/:lectureId/teacher
 // @access  Private (Student)
-exports.getTeacherForBatch = asyncHandler(async (req, res) => {
+exports.getTeacherForLecture = asyncHandler(async (req, res) => {
   try {
-    const { batchId } = req.params;
+    const { lectureId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(batchId)) {
+    if (!mongoose.Types.ObjectId.isValid(lectureId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid batch ID'
+        message: 'Invalid lecture ID'
       });
     }
 
-    // Find teacher assigned to this batch
+    // Find teacher assigned to this lecture
     const teacher = await Teacher.findOne({
-      batches: batchId
+      lectures: lectureId
     }).select('_id name teacherCode email');
 
     if (!teacher) {
       return res.status(404).json({
         success: false,
-        message: 'No teacher assigned to this batch'
+        message: 'No teacher assigned to this lecture'
       });
     }
 
@@ -614,7 +614,7 @@ exports.getTeacherForBatch = asyncHandler(async (req, res) => {
       data: teacher
     });
   } catch (error) {
-    console.error('Error fetching teacher for batch:', error);
+    console.error('Error fetching teacher for lecture:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching teacher'

@@ -74,8 +74,8 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get student details with all fields and populate batches
-    const student = await User.findById(id).populate('batches').lean();
+    // Get student details with all fields and populate lectures
+    const student = await User.findById(id).populate('lectures').lean();
     if (!student) {
       return res.status(404).json({
         success: false,
@@ -83,8 +83,8 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get student's batch IDs
-    const studentBatchIds = student.batches.map(b => b._id);
+    // Get student's lecture IDs
+    const studentLectureIds = student.lectures.map(l => l._id);
 
     // Build date filter based on query params
     let dateFilter = {};
@@ -164,14 +164,14 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       filterDescription = `All time since ${new Date(student.createdAt).toDateString()}`;
     }
 
-    // Get attendance records for the student within their time period and for their batches only
+    // Get attendance records for the student within their time period and for their lectures only
     const attendanceRecords = await Attendance.find({
       student: id,
-      batch: { $in: studentBatchIds },
+      lecture: { $in: studentLectureIds },
       date: dateFilter
     })
       .populate('slot', 'shift startTime endTime date')
-      .populate('batch', 'name')
+      .populate('lecture', 'name')
       .sort({ date: -1 })
       .lean();
 
@@ -251,8 +251,8 @@ exports.getStudentAttendanceCounts = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get student details with batches
-    const student = await User.findById(studentId).populate('batches').lean();
+    // Get student details with lectures
+    const student = await User.findById(studentId).populate('lectures').lean();
     if (!student) {
       return res.status(404).json({
         success: false,
@@ -260,8 +260,8 @@ exports.getStudentAttendanceCounts = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get student's batch IDs
-    const studentBatchIds = student.batches.map(b => b._id);
+    // Get student's lecture IDs
+    const studentLectureIds = student.lectures.map(l => l._id);
 
     // Build date filter
     let dateFilter = {};
@@ -357,10 +357,10 @@ exports.getStudentAttendanceCounts = asyncHandler(async (req, res) => {
       filterDescription = `All time since ${new Date(student.createdAt).toDateString()}`;
     }
 
-    // Get attendance records for the student within the date range and for their batches
+    // Get attendance records for the student within the date range and for their lectures
     const attendanceRecords = await Attendance.find({
       student: studentId,
-      batch: { $in: studentBatchIds },
+      lecture: { $in: studentLectureIds },
       date: dateFilter
     }).lean();
 
@@ -778,7 +778,7 @@ exports.deleteAttendanceSlot = asyncHandler(async (req, res) => {
 // @access  Private/Admin/Teacher
 exports.updateStudent = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, email, studentCode, phone, batches } = req.body;
+  const { name, email, studentCode, phone, lectures } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -792,7 +792,7 @@ exports.updateStudent = asyncHandler(async (req, res) => {
   const isTeacher = req.user.role === 'teacher';
 
   // Teachers can only update name and phone
-  if (isTeacher && (email || studentCode || batches)) {
+  if (isTeacher && (email || studentCode || lectures)) {
     return res.status(403).json({
       success: false,
       message: 'Teachers can only update student name and phone number'
@@ -800,7 +800,7 @@ exports.updateStudent = asyncHandler(async (req, res) => {
   }
 
   // Validate request body - at least one field must be provided
-  const updateFields = { name, email, studentCode, phone, batches };
+  const updateFields = { name, email, studentCode, phone, lectures };
   const fieldsToUpdate = Object.keys(updateFields).filter(field => updateFields[field] !== undefined);
 
   if (fieldsToUpdate.length === 0) {
@@ -862,52 +862,52 @@ exports.updateStudent = asyncHandler(async (req, res) => {
 
     if (phone) updateObject.phone = phone;
 
-    // Handle batch updates (Admin only)
-    if (isAdmin && batches !== undefined) {
-      const Batch = require('../models/Batch');
+    // Handle lecture updates (Admin only)
+    if (isAdmin && lectures !== undefined) {
+      const Lecture = require('../models/Lecture');
 
-      // Validate batches array
-      if (!Array.isArray(batches) || batches.length === 0) {
+      // Validate lectures array
+      if (!Array.isArray(lectures) || lectures.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'Please provide at least one batch for the student'
+          message: 'Please provide at least one lecture for the student'
         });
       }
 
-      // Get the default batch
-      const defaultBatch = await Batch.findOne({ isDefault: true });
+      // Get the default lecture
+      const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-      if (!defaultBatch) {
+      if (!defaultLecture) {
         return res.status(500).json({
           success: false,
-          message: 'Default batch not found'
+          message: 'Default lecture not found'
         });
       }
 
-      // Ensure default batch is included
-      const batchIds = [...new Set(batches)]; // Remove duplicates
-      if (!batchIds.includes(defaultBatch._id.toString())) {
-        batchIds.unshift(defaultBatch._id.toString());
+      // Ensure default lecture is included
+      const lectureIds = [...new Set(lectures)]; // Remove duplicates
+      if (!lectureIds.includes(defaultLecture._id.toString())) {
+        lectureIds.unshift(defaultLecture._id.toString());
       }
 
-      // Validate minimum 2 batches
-      if (batchIds.length < 2) {
+      // Validate minimum 2 lectures
+      if (lectureIds.length < 2) {
         return res.status(400).json({
           success: false,
-          message: 'Please select at least one batch in addition to the default batch'
+          message: 'Please select at least one lecture in addition to the default lecture'
         });
       }
 
-      // Validate all batch IDs exist
-      const validBatches = await Batch.find({ _id: { $in: batchIds }, isActive: true });
-      if (validBatches.length !== batchIds.length) {
+      // Validate all lecture IDs exist
+      const validLectures = await Lecture.find({ _id: { $in: lectureIds }, isActive: true });
+      if (validLectures.length !== lectureIds.length) {
         return res.status(400).json({
           success: false,
-          message: 'One or more invalid batch IDs provided'
+          message: 'One or more invalid lecture IDs provided'
         });
       }
 
-      updateObject.batches = batchIds;
+      updateObject.lectures = lectureIds;
     }
 
     // Update student details
@@ -915,7 +915,7 @@ exports.updateStudent = asyncHandler(async (req, res) => {
       id,
       updateObject,
       { new: true, runValidators: true }
-    ).populate('batches', 'name batchId isDefault');
+    ).populate('lectures', 'name lectureId isDefault');
 
     res.status(200).json({
       success: true,
@@ -940,12 +940,12 @@ exports.updateStudent = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Add batches to student (Teachers can only add, not remove)
-// @route   POST /api/admin/students/:id/add-batches
+// @desc    Add lectures to student (Teachers can only add, not remove)
+// @route   POST /api/admin/students/:id/add-lectures
 // @access  Private/Admin/Teacher
-exports.addBatchesToStudent = asyncHandler(async (req, res) => {
+exports.addLecturesToStudent = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { batches } = req.body;
+  const { lectures } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -954,17 +954,17 @@ exports.addBatchesToStudent = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validate batches array
-  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+  // Validate lectures array
+  if (!lectures || !Array.isArray(lectures) || lectures.length === 0) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide at least one batch to add'
+      message: 'Please provide at least one lecture to add'
     });
   }
 
   try {
     // Check if student exists
-    const student = await User.findById(id).populate('batches');
+    const student = await User.findById(id).populate('lectures');
 
     if (!student) {
       return res.status(404).json({
@@ -973,77 +973,77 @@ exports.addBatchesToStudent = asyncHandler(async (req, res) => {
       });
     }
 
-    const Batch = require('../models/Batch');
+    const Lecture = require('../models/Lecture');
 
-    // Get default batch
-    const defaultBatch = await Batch.findOne({ isDefault: true });
+    // Get default lecture
+    const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-    // If teacher, validate they can only add batches they're assigned to
+    // If teacher, validate they can only add lectures they're assigned to
     if (req.user.role === 'teacher') {
-      const teacher = await Teacher.findById(req.user._id).select('batches');
+      const teacher = await Teacher.findById(req.user._id).select('lectures');
 
-      if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+      if (!teacher || !teacher.lectures || teacher.lectures.length === 0) {
         return res.status(403).json({
           success: false,
-          message: 'No batches assigned to you. Please contact admin.'
+          message: 'No lectures assigned to you. Please contact admin.'
         });
       }
 
-      // Convert teacher batches to strings
-      const teacherBatchIds = teacher.batches.map(id => id.toString());
+      // Convert teacher lectures to strings
+      const teacherLectureIds = teacher.lectures.map(id => id.toString());
 
-      // Check if teacher is trying to add batches they don't have
-      const unauthorizedBatches = batches.filter(batchId =>
-        batchId !== defaultBatch._id.toString() && !teacherBatchIds.includes(batchId)
+      // Check if teacher is trying to add lectures they don't have
+      const unauthorizedLectures = lectures.filter(lectureId =>
+        lectureId !== defaultLecture._id.toString() && !teacherLectureIds.includes(lectureId)
       );
 
-      if (unauthorizedBatches.length > 0) {
+      if (unauthorizedLectures.length > 0) {
         return res.status(403).json({
           success: false,
-          message: 'You can only add batches that are assigned to you'
+          message: 'You can only add lectures that are assigned to you'
         });
       }
     }
 
-    // Validate all batch IDs exist
-    const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
-    if (validBatches.length !== batches.length) {
+    // Validate all lecture IDs exist
+    const validLectures = await Lecture.find({ _id: { $in: lectures }, isActive: true });
+    if (validLectures.length !== lectures.length) {
       return res.status(400).json({
         success: false,
-        message: 'One or more invalid batch IDs provided'
+        message: 'One or more invalid lecture IDs provided'
       });
     }
 
-    // Get current student batches as strings
-    const currentBatchIds = student.batches.map(b => b._id.toString());
+    // Get current student lectures as strings
+    const currentLectureIds = student.lectures.map(b => b._id.toString());
 
-    // Add new batches (only those not already present)
-    const newBatchIds = batches.filter(batchId => !currentBatchIds.includes(batchId));
+    // Add new lectures (only those not already present)
+    const newLectureIds = lectures.filter(lectureId => !currentLectureIds.includes(lectureId));
 
-    if (newBatchIds.length === 0) {
+    if (newLectureIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'All provided batches are already assigned to this student'
+        message: 'All provided lectures are already assigned to this student'
       });
     }
 
-    // Combine current and new batches
-    const updatedBatchIds = [...currentBatchIds, ...newBatchIds];
+    // Combine current and new lectures
+    const updatedLectureIds = [...currentLectureIds, ...newLectureIds];
 
-    // Update student with new batches
+    // Update student with new lectures
     const updatedStudent = await User.findByIdAndUpdate(
       id,
-      { batches: updatedBatchIds },
+      { lectures: updatedLectureIds },
       { new: true, runValidators: true }
-    ).populate('batches', 'name batchId isDefault');
+    ).populate('lectures', 'name lectureId isDefault');
 
     res.status(200).json({
       success: true,
-      message: `${newBatchIds.length} batch(es) added successfully`,
+      message: `${newLectureIds.length} lecture(s) added successfully`,
       data: updatedStudent,
     });
   } catch (error) {
-    console.error('Error adding batches to student:', error);
+    console.error('Error adding lectures to student:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -1180,7 +1180,7 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
 // @route   POST /api/admin/students
 // @access  Private/Admin
 exports.createStudent = asyncHandler(async (req, res) => {
-  const { name, email, studentCode, password, phone, batches } = req.body;
+  const { name, email, studentCode, password, phone, lectures } = req.body;
 
   // Validation
   if (!name || !email || !studentCode || !password) {
@@ -1190,71 +1190,71 @@ exports.createStudent = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validate batches array
-  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+  // Validate lectures array
+  if (!lectures || !Array.isArray(lectures) || lectures.length === 0) {
     return res.status(400).json({
       success: false,
-      message: 'Please select at least one batch for the student'
+      message: 'Please select at least one lecture for the student'
     });
   }
 
-  // Get the default batch
-  const Batch = require('../models/Batch');
-  const defaultBatch = await Batch.findOne({ isDefault: true });
+  // Get the default lecture
+  const Lecture = require('../models/Lecture');
+  const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-  if (!defaultBatch) {
+  if (!defaultLecture) {
     return res.status(500).json({
       success: false,
-      message: 'Default batch not found. Please create a batch first.'
+      message: 'Default lecture not found. Please create a lecture first.'
     });
   }
 
-  // Ensure default batch is included in the batches array
-  const batchIds = [...new Set(batches)]; // Remove duplicates
-  if (!batchIds.includes(defaultBatch._id.toString())) {
-    batchIds.unshift(defaultBatch._id.toString()); // Add default batch at the beginning
+  // Ensure default lecture is included in the lectures array
+  const lectureIds = [...new Set(lectures)]; // Remove duplicates
+  if (!lectureIds.includes(defaultLecture._id.toString())) {
+    lectureIds.unshift(defaultLecture._id.toString()); // Add default lecture at the beginning
   }
 
-  // Validate that at least one batch other than default is selected
-  if (batchIds.length < 2) {
+  // Validate that at least one lecture other than default is selected
+  if (lectureIds.length < 2) {
     return res.status(400).json({
       success: false,
-      message: 'Please select at least one batch in addition to the default batch'
+      message: 'Please select at least one lecture in addition to the default lecture'
     });
   }
 
-  // Validate all batch IDs exist
-  const validBatches = await Batch.find({ _id: { $in: batchIds }, isActive: true });
-  if (validBatches.length !== batchIds.length) {
+  // Validate all lecture IDs exist
+  const validLectures = await Lecture.find({ _id: { $in: lectureIds }, isActive: true });
+  if (validLectures.length !== lectureIds.length) {
     return res.status(400).json({
       success: false,
-      message: 'One or more invalid batch IDs provided'
+      message: 'One or more invalid lecture IDs provided'
     });
   }
 
-  // If teacher, validate they can only create students in their assigned batches
+  // If teacher, validate they can only create students in their assigned lectures
   if (req.user.role === 'teacher') {
-    const teacher = await Teacher.findById(req.user._id).select('batches');
+    const teacher = await Teacher.findById(req.user._id).select('lectures');
 
-    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+    if (!teacher || !teacher.lectures || teacher.lectures.length === 0) {
       return res.status(403).json({
         success: false,
-        message: 'No batches assigned to you. Please contact admin.'
+        message: 'No lectures assigned to you. Please contact admin.'
       });
     }
 
-    // Convert teacher batches to strings for comparison
-    const teacherBatchIds = teacher.batches.map(id => id.toString());
+    // Convert teacher lectures to strings for comparison
+    const teacherLectureIds = teacher.lectures.map(id => id.toString());
 
-    // Check if all requested batches (excluding default) are in teacher's assigned batches
-    const unauthorizedBatches = batchIds.filter(batchId =>
-      batchId !== defaultBatch._id.toString() && !teacherBatchIds.includes(batchId)
+    // Check if all requested lectures (excluding default) are in teacher's assigned lectures
+    const unauthorizedLectures = lectureIds.filter(lectureId =>
+      lectureId !== defaultLecture._id.toString() && !teacherLectureIds.includes(lectureId)
     );
 
-    if (unauthorizedBatches.length > 0) {
+    if (unauthorizedLectures.length > 0) {
       return res.status(403).json({
         success: false,
-        message: 'You can only assign students to batches assigned to you'
+        message: 'You can only assign students to lectures assigned to you'
       });
     }
   }
@@ -1286,14 +1286,14 @@ exports.createStudent = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Create student with batches
+    // Create student with lectures
     const student = await User.create({
       name,
       email,
       studentCode,
       password,
       phone,
-      batches: batchIds,
+      lectures: lectureIds,
       role: 'student',
     });
 
@@ -1355,14 +1355,14 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
     });
   }
 
-  // Get the default batch
-  const Batch = require('../models/Batch');
-  const defaultBatch = await Batch.findOne({ isDefault: true });
+  // Get the default lecture
+  const Lecture = require('../models/Lecture');
+  const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-  if (!defaultBatch) {
+  if (!defaultLecture) {
     return res.status(500).json({
       success: false,
-      message: 'Default batch not found. Please create a batch first.'
+      message: 'Default lecture not found. Please create a lecture first.'
     });
   }
 
@@ -1374,8 +1374,8 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
     if (student.phone && !/^[\d]{10}$/.test(student.phone)) {
       return `Student ${index + 1}: Invalid phone number`;
     }
-    if (!student.batches || !Array.isArray(student.batches) || student.batches.length === 0) {
-      return `Student ${index + 1}: Please select at least one batch`;
+    if (!student.lectures || !Array.isArray(student.lectures) || student.lectures.length === 0) {
+      return `Student ${index + 1}: Please select at least one lecture`;
     }
     return null;
   }).filter(error => error !== null);
@@ -1405,17 +1405,17 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
     return !existingEmails.has(student.email) && !existingStudentCodes.has(student.studentCode);
   });
 
-  // Process batches for each student
+  // Process lectures for each student
   const processedStudents = studentsToCreate.map(student => {
-    const batchIds = [...new Set(student.batches)]; // Remove duplicates
-    // Ensure default batch is included
-    if (!batchIds.includes(defaultBatch._id.toString())) {
-      batchIds.unshift(defaultBatch._id.toString());
+    const lectureIds = [...new Set(student.lectures)]; // Remove duplicates
+    // Ensure default lecture is included
+    if (!lectureIds.includes(defaultLecture._id.toString())) {
+      lectureIds.unshift(defaultLecture._id.toString());
     }
 
     return {
       ...student,
-      batches: batchIds,
+      lectures: lectureIds,
       role: 'student'
     };
   });
@@ -1495,22 +1495,22 @@ exports.getAllStudents = asyncHandler(async (req, res) => {
   let students;
 
   if (req.user.role === 'teacher') {
-    // Teachers can only see students from their assigned batches
-    const teacher = await Teacher.findById(req.user._id).select('batches');
+    // Teachers can only see students from their assigned lectures
+    const teacher = await Teacher.findById(req.user._id).select('lectures');
 
-    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+    if (!teacher || !teacher.lectures || teacher.lectures.length === 0) {
       return res.status(200).json({
         success: true,
         count: 0,
         data: [],
-        message: 'No batches assigned to this teacher'
+        message: 'No lectures assigned to this teacher'
       });
     }
 
-    // Find students who belong to at least one of the teacher's batches
+    // Find students who belong to at least one of the teacher's lectures
     students = await User.find({
       role: 'student',
-      batches: { $in: teacher.batches }
+      lectures: { $in: teacher.lectures }
     }).select('-password');
   } else {
     // Admins can see all students
@@ -1524,11 +1524,11 @@ exports.getAllStudents = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Create attendance slot(s) for selected batches
+// @desc    Create attendance slot(s) for selected lectures
 // @route   POST /api/admin/attendance-slots
 // @access  Private/Admin/Teacher
 exports.createAttendanceSlot = asyncHandler(async (req, res) => {
-  const { shift, date, startTime, endTime, batches } = req.body;
+  const { shift, date, startTime, endTime, lectures } = req.body;
 
   // Validation
   if (!shift || !date || !startTime || !endTime) {
@@ -1538,11 +1538,11 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validate batches
-  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+  // Validate lectures
+  if (!lectures || !Array.isArray(lectures) || lectures.length === 0) {
     return res.status(400).json({
       success: false,
-      message: 'Please select at least one batch'
+      message: 'Please select at least one lecture'
     });
   }
 
@@ -1559,79 +1559,79 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
-  // Get the Batch model
-  const Batch = require('../models/Batch');
+  // Get the Lecture model
+  const Lecture = require('../models/Lecture');
 
-  // Get the default batch
-  const defaultBatch = await Batch.findOne({ isDefault: true });
+  // Get the default lecture
+  const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-  if (!defaultBatch) {
+  if (!defaultLecture) {
     return res.status(500).json({
       success: false,
-      message: 'Default batch not found'
+      message: 'Default lecture not found'
     });
   }
 
-  // Check if user is teacher and trying to create slot for default batch
-  if (req.user.role === 'teacher' && batches.includes(defaultBatch._id.toString())) {
+  // Check if user is teacher and trying to create slot for default lecture
+  if (req.user.role === 'teacher' && lectures.includes(defaultLecture._id.toString())) {
     return res.status(403).json({
       success: false,
-      message: 'Teachers cannot create attendance slots for the default batch. Only admins can do that.'
+      message: 'Teachers cannot create attendance slots for the default lecture. Only admins can do that.'
     });
   }
 
-  // If teacher, validate they can only create slots for their assigned batches
+  // If teacher, validate they can only create slots for their assigned lectures
   if (req.user.role === 'teacher') {
-    const teacher = await Teacher.findById(req.user._id).select('batches');
+    const teacher = await Teacher.findById(req.user._id).select('lectures');
 
-    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+    if (!teacher || !teacher.lectures || teacher.lectures.length === 0) {
       return res.status(403).json({
         success: false,
-        message: 'No batches assigned to you. Please contact admin.'
+        message: 'No lectures assigned to you. Please contact admin.'
       });
     }
 
-    // Convert teacher batches to strings for comparison
-    const teacherBatchIds = teacher.batches.map(id => id.toString());
+    // Convert teacher lectures to strings for comparison
+    const teacherLectureIds = teacher.lectures.map(id => id.toString());
 
-    // Check if all requested batches are in teacher's assigned batches
-    const unauthorizedBatches = batches.filter(batchId => !teacherBatchIds.includes(batchId));
+    // Check if all requested lectures are in teacher's assigned lectures
+    const unauthorizedLectures = lectures.filter(lectureId => !teacherLectureIds.includes(lectureId));
 
-    if (unauthorizedBatches.length > 0) {
+    if (unauthorizedLectures.length > 0) {
       return res.status(403).json({
         success: false,
-        message: 'You can only create attendance slots for batches assigned to you'
+        message: 'You can only create attendance slots for lectures assigned to you'
       });
     }
   }
 
-  // Validate all batch IDs
-  const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
+  // Validate all lecture IDs
+  const validLectures = await Lecture.find({ _id: { $in: lectures }, isActive: true });
 
-  if (validBatches.length !== batches.length) {
+  if (validLectures.length !== lectures.length) {
     return res.status(400).json({
       success: false,
-      message: 'One or more invalid batch IDs provided'
+      message: 'One or more invalid lecture IDs provided'
     });
   }
 
   const createdSlots = [];
   const errors = [];
 
-  // Create a slot for each batch
-  for (const batchId of batches) {
+  // Create a slot for each lecture
+  for (const lectureId of lectures) {
     try {
-      // Check if slot already exists for this batch, date, and shift
+      // Check if slot already exists for this lecture, date, and shift
       const existingSlot = await AttendanceSlot.findOne({
         date: slotDate,
         shift,
-        batch: batchId
+        lecture: lectureId
       });
 
       if (existingSlot) {
         errors.push({
-          batchId,
-          message: `Attendance slot for ${shift} shift on this date already exists for this batch`
+          lectureId,
+          message: `Attendance slot for ${shift} shift on this date already exists for this lecture`
         });
         continue;
       }
@@ -1642,19 +1642,19 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
         date: slotDate,
         startTime: slotStartTime,
         endTime: slotEndTime,
-        batch: batchId,
+        lecture: lectureId,
         isActive: true,
         createdBy: req.user._id,
       });
 
-      // Get all students in this batch
-      const studentsInBatch = await User.find({ batches: batchId, role: 'student' });
+      // Get all students in this lecture
+      const studentsInLecture = await User.find({ lectures: lectureId, role: 'student' });
 
       // Create pending attendance records for all students
-      const pendingAttendance = studentsInBatch.map(student => ({
+      const pendingAttendance = studentsInLecture.map(student => ({
         student: student._id,
         slot: attendanceSlot._id,
-        batch: batchId,
+        lecture: lectureId,
         date: slotDate,
         shift,
         status: 'pending',
@@ -1670,12 +1670,12 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
 
       createdSlots.push({
         slot: attendanceSlot,
-        studentsCount: studentsInBatch.length
+        studentsCount: studentsInLecture.length
       });
     } catch (error) {
-      console.error(`Error creating slot for batch ${batchId}:`, error);
+      console.error(`Error creating slot for lecture ${lectureId}:`, error);
       errors.push({
-        batchId,
+        lectureId,
         message: error.message
       });
     }
@@ -1720,21 +1720,21 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
     query = {};
   }
 
-  // Filter slots by teacher's assigned batches
+  // Filter slots by teacher's assigned lectures
   if (req.user.role === 'teacher') {
-    const teacher = await Teacher.findById(req.user._id).select('batches');
+    const teacher = await Teacher.findById(req.user._id).select('lectures');
 
-    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+    if (!teacher || !teacher.lectures || teacher.lectures.length === 0) {
       return res.status(200).json({
         success: true,
         count: 0,
         data: [],
-        message: 'No batches assigned to this teacher'
+        message: 'No lectures assigned to this teacher'
       });
     }
 
-    // Add batch filter to query
-    query.batch = { $in: teacher.batches };
+    // Add lecture filter to query
+    query.lecture = { $in: teacher.lectures };
   }
 
   // Find all slots that match the query
@@ -1948,8 +1948,8 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
 
     //console.log('Using date range:', startDate.toISOString(), 'to', endDate.toISOString());
 
-    // Get all students with their batches
-    const allStudents = await User.find({ role: 'student' }).populate('batches').select('_id name email studentCode createdAt batches');
+    // Get all students with their lectures
+    const allStudents = await User.find({ role: 'student' }).populate('lectures').select('_id name email studentCode createdAt lectures');
 
     // Get slots within date range and only 'active' or 'closed'
     const slots = await AttendanceSlot.find({
@@ -1970,7 +1970,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     // Initialize with student info
     allStudents.forEach(student => {
       const studentJoinDate = new Date(student.createdAt);
-      const studentBatchIds = student.batches.map(b => b._id.toString());
+      const studentLectureIds = student.lectures.map(b => b._id.toString());
 
       studentAttendance.set(student._id.toString(), {
         student: {
@@ -1980,7 +1980,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
           studentCode: student.studentCode
         },
         joinDate: studentJoinDate,
-        batchIds: studentBatchIds,
+        lectureIds: studentLectureIds,
         present: 0,
         absent: 0,
         attendanceDates: [],
@@ -2005,13 +2005,13 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     // Now calculate absents per student
     studentAttendance.forEach((data, studentId) => {
       const studentJoinDate = data.joinDate;
-      const studentBatchIds = data.batchIds;
+      const studentLectureIds = data.lectureIds;
 
-      // Only count slots for batches this student is enrolled in
+      // Only count slots for lectures this student is enrolled in
       const totalAvailableSlots = slots.filter(slot => {
         const slotDate = new Date(slot.date);
-        const slotBatchId = slot.batch.toString();
-        return slotDate >= studentJoinDate && studentBatchIds.includes(slotBatchId); // Skip slots before student joined AND slots for batches they're not in
+        const slotLectureId = slot.lecture.toString();
+        return slotDate >= studentJoinDate && studentLectureIds.includes(slotLectureId); // Skip slots before student joined AND slots for lectures they're not in
       });
 
       const totalSlotsCount = totalAvailableSlots.length;
@@ -2074,7 +2074,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
 // @route   POST /api/admin/teachers
 // @access  Private/Admin
 exports.registerTeacher = asyncHandler(async (req, res) => {
-  const { name, email, teacherCode, phone, password, batches } = req.body;
+  const { name, email, teacherCode, phone, password, lectures } = req.body;
 
   // Check if teacher code already exists
   const existingTeacherCode = await Teacher.findOne({ teacherCode });
@@ -2094,33 +2094,33 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
     });
   }
 
-  // Validate batches - minimum 1 batch required
-  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+  // Validate lectures - minimum 1 lecture required
+  if (!lectures || !Array.isArray(lectures) || lectures.length === 0) {
     return res.status(400).json({
       success: false,
-      message: 'Please assign at least one batch to the teacher'
+      message: 'Please assign at least one lecture to the teacher'
     });
   }
 
-  const Batch = require('../models/Batch');
+  const Lecture = require('../models/Lecture');
 
-  // Get default batch
-  const defaultBatch = await Batch.findOne({ isDefault: true });
+  // Get default lecture
+  const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-  // Check if default batch is being assigned (should not be allowed for teachers)
-  if (defaultBatch && batches.includes(defaultBatch._id.toString())) {
+  // Check if default lecture is being assigned (should not be allowed for teachers)
+  if (defaultLecture && lectures.includes(defaultLecture._id.toString())) {
     return res.status(400).json({
       success: false,
-      message: 'Default batch cannot be assigned to teachers'
+      message: 'Default lecture cannot be assigned to teachers'
     });
   }
 
-  // Validate all batch IDs exist
-  const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
-  if (validBatches.length !== batches.length) {
+  // Validate all lecture IDs exist
+  const validLectures = await Lecture.find({ _id: { $in: lectures }, isActive: true });
+  if (validLectures.length !== lectures.length) {
     return res.status(400).json({
       success: false,
-      message: 'One or more invalid batch IDs provided'
+      message: 'One or more invalid lecture IDs provided'
     });
   }
 
@@ -2132,7 +2132,7 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
       teacherCode,
       phone,
       password,
-      batches,
+      lectures,
       role: 'teacher',
     });
 
@@ -2182,7 +2182,7 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/teachers
 // @access  Private/Admin
 exports.getTeachers = asyncHandler(async (req, res) => {
-  const teachers = await Teacher.find().select('-password').populate('batches', 'name batchId isDefault');
+  const teachers = await Teacher.find().select('-password').populate('lectures', 'name lectureId isDefault');
 
   res.status(200).json({
     success: true,
@@ -2195,7 +2195,7 @@ exports.getTeachers = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/teachers/:id
 // @access  Private/Admin
 exports.getTeacher = asyncHandler(async (req, res) => {
-  const teacher = await Teacher.findById(req.params.id).select('-password').populate('batches', 'name batchId isDefault');
+  const teacher = await Teacher.findById(req.params.id).select('-password').populate('lectures', 'name lectureId isDefault');
 
   if (!teacher) {
     return res.status(404).json({
@@ -2214,7 +2214,7 @@ exports.getTeacher = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/teachers/:id
 // @access  Private/Admin
 exports.updateTeacher = asyncHandler(async (req, res) => {
-  const { name, email, teacherCode, phone, batches } = req.body;
+  const { name, email, teacherCode, phone, lectures } = req.body;
 
   let teacher = await Teacher.findById(req.params.id);
 
@@ -2247,39 +2247,39 @@ exports.updateTeacher = asyncHandler(async (req, res) => {
     }
   }
 
-  // Validate batches if provided
-  if (batches !== undefined) {
-    // Minimum 1 batch required
-    if (!Array.isArray(batches) || batches.length === 0) {
+  // Validate lectures if provided
+  if (lectures !== undefined) {
+    // Minimum 1 lecture required
+    if (!Array.isArray(lectures) || lectures.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Please assign at least one batch to the teacher'
+        message: 'Please assign at least one lecture to the teacher'
       });
     }
 
-    const Batch = require('../models/Batch');
+    const Lecture = require('../models/Lecture');
 
-    // Get default batch
-    const defaultBatch = await Batch.findOne({ isDefault: true });
+    // Get default lecture
+    const defaultLecture = await Lecture.findOne({ isDefault: true });
 
-    // Check if default batch is being assigned (should not be allowed for teachers)
-    if (defaultBatch && batches.includes(defaultBatch._id.toString())) {
+    // Check if default lecture is being assigned (should not be allowed for teachers)
+    if (defaultLecture && lectures.includes(defaultLecture._id.toString())) {
       return res.status(400).json({
         success: false,
-        message: 'Default batch cannot be assigned to teachers'
+        message: 'Default lecture cannot be assigned to teachers'
       });
     }
 
-    // Validate all batch IDs exist
-    const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
-    if (validBatches.length !== batches.length) {
+    // Validate all lecture IDs exist
+    const validLectures = await Lecture.find({ _id: { $in: lectures }, isActive: true });
+    if (validLectures.length !== lectures.length) {
       return res.status(400).json({
         success: false,
-        message: 'One or more invalid batch IDs provided'
+        message: 'One or more invalid lecture IDs provided'
       });
     }
 
-    teacher.batches = batches;
+    teacher.lectures = lectures;
   }
 
   // Update fields
@@ -2483,13 +2483,13 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
   }
   
   try {
-    const allStudents = await User.find({ role: 'student' }).populate('batches').select('_id name email studentCode createdAt batches');
+    const allStudents = await User.find({ role: 'student' }).populate('lectures').select('_id name email studentCode createdAt lectures');
 
     const absenteeMap = {};
 
     allStudents.forEach(student => {
       const studentJoinDate = student.createdAt ? new Date(student.createdAt) : null;
-      const studentBatchIds = student.batches.map(b => b._id.toString());
+      const studentLectureIds = student.lectures.map(b => b._id.toString());
 
       absenteeMap[student._id] = {
         student: {
@@ -2499,7 +2499,7 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
           studentCode: student.studentCode
         },
         joinDate: studentJoinDate,
-        batchIds: studentBatchIds,
+        lectureIds: studentLectureIds,
         absentCount: 0,
         absentDates: []
       };
@@ -2518,15 +2518,15 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
       const slotDate = slot.date.toISOString().split('T')[0];
       const slotShift = slot.shift;
       const slotDateObj = new Date(slot.date);
-      const slotBatchId = slot.batch.toString();
+      const slotLectureId = slot.lecture.toString();
 
       allStudents.forEach(student => {
         const studentId = student._id.toString();
         const studentJoinDate = student.createdAt ? new Date(student.createdAt) : new Date(0);
-        const studentBatchIds = absenteeMap[studentId].batchIds;
+        const studentLectureIds = absenteeMap[studentId].lectureIds;
 
-        // ✅ Ignore slots before student joined AND slots for batches they're not enrolled in
-        if (slotDateObj >= studentJoinDate && studentBatchIds.includes(slotBatchId)) {
+        // ✅ Ignore slots before student joined AND slots for lectures they're not enrolled in
+        if (slotDateObj >= studentJoinDate && studentLectureIds.includes(slotLectureId)) {
           const isPresent = attendanceRecords.some(record =>
             record.student.toString() === studentId &&
             record.date.toISOString().split('T')[0] === slotDate &&
@@ -2797,7 +2797,7 @@ exports.markAttendanceAsAbsent = asyncHandler(async (req, res) => {
     const attendance = await Attendance.findById(id)
       .populate('student', 'name email studentCode')
       .populate('slot', 'shift startTime endTime')
-      .populate('batch', 'name');
+      .populate('lecture', 'name');
 
     if (!attendance) {
       return res.status(404).json({
@@ -2836,7 +2836,7 @@ exports.markAttendanceAsAbsent = asyncHandler(async (req, res) => {
     const emailData = {
       studentName: attendance.student.name,
       studentEmail: attendance.student.email,
-      batchName: attendance.batch.name,
+      lectureName: attendance.lecture.name,
       date: attendance.date,
       shift: attendance.shift,
       slotTime: `${attendance.slot.startTime.toLocaleTimeString()} - ${attendance.slot.endTime.toLocaleTimeString()}`,
@@ -2879,7 +2879,7 @@ exports.approveAttendance = asyncHandler(async (req, res) => {
     const attendance = await Attendance.findById(id)
       .populate('student', 'name email studentCode')
       .populate('slot', 'status endTime shift')
-      .populate('batch', 'name');
+      .populate('lecture', 'name');
 
     if (!attendance) {
       return res.status(404).json({
@@ -2952,7 +2952,7 @@ exports.rejectAttendance = asyncHandler(async (req, res) => {
     const attendance = await Attendance.findById(id)
       .populate('student', 'name email studentCode')
       .populate('slot', 'status shift startTime endTime')
-      .populate('batch', 'name');
+      .populate('lecture', 'name');
 
     if (!attendance) {
       return res.status(404).json({
@@ -2990,7 +2990,7 @@ exports.rejectAttendance = asyncHandler(async (req, res) => {
     const emailData = {
       studentName: attendance.student.name,
       studentEmail: attendance.student.email,
-      batchName: attendance.batch.name,
+      lectureName: attendance.lecture.name,
       date: attendance.date,
       shift: attendance.shift,
       slotTime: `${attendance.slot.startTime.toLocaleTimeString()} - ${attendance.slot.endTime.toLocaleTimeString()}`,

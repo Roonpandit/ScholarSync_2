@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 const Teacher = require('../models/Teacher');
-const Batch = require('../models/Batch');
+const Lecture = require('../models/Lecture');
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
@@ -17,26 +17,26 @@ const transporter = nodemailer.createTransport({
 /**
  * Send email to teachers when there are pending attendance reviews
  * @param {Object} params - Email parameters
- * @param {String} params.batchId - Batch ID
+ * @param {String} params.lectureId - Lecture ID
  * @param {String} params.slotId - Slot ID
  * @param {String} params.shift - Shift (morning/evening)
  * @param {Date} params.date - Slot date
  * @param {Number} params.pendingCount - Number of pending reviews
  */
-const sendTeacherReviewEmail = async ({ batchId, slotId, shift, date, pendingCount }) => {
+const sendTeacherReviewEmail = async ({ lectureId, slotId, shift, date, pendingCount }) => {
   try {
-    // Get batch details
-    const batch = await Batch.findById(batchId);
-    if (!batch) {
-      console.error('Batch not found for review email');
+    // Get lecture details
+    const lecture = await Lecture.findById(lectureId);
+    if (!lecture) {
+      console.error('Lecture not found for review email');
       return false;
     }
 
-    // Get all teachers assigned to this batch
-    const teachers = await Teacher.find({ batches: batchId }).select('name email');
+    // Get all teachers assigned to this lecture
+    const teachers = await Teacher.find({ lectures: lectureId }).select('name email');
 
     if (!teachers || teachers.length === 0) {
-      console.log(`No teachers assigned to batch ${batch.name}, skipping review email`);
+      console.log(`No teachers assigned to lecture ${lecture.name}, skipping review email`);
       return false;
     }
 
@@ -54,7 +54,7 @@ const sendTeacherReviewEmail = async ({ batchId, slotId, shift, date, pendingCou
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: teachers.map(t => t.email).join(','),
-      subject: `Attendance Review Pending - ${batch.name} (${shiftFormatted} Shift)`,
+      subject: `Attendance Review Pending - ${lecture.name} (${shiftFormatted} Shift)`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
           <div style="background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -71,8 +71,8 @@ const sendTeacherReviewEmail = async ({ batchId, slotId, shift, date, pendingCou
             <div style="background-color: #f0f5ff; padding: 20px; border-radius: 6px; margin: 20px 0;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #555;">Batch:</td>
-                  <td style="padding: 8px 0; color: #333;">${batch.name}</td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #555;">Lecture:</td>
+                  <td style="padding: 8px 0; color: #333;">${lecture.name}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; font-weight: bold; color: #555;">Date:</td>
@@ -115,7 +115,7 @@ const sendTeacherReviewEmail = async ({ batchId, slotId, shift, date, pendingCou
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Review email sent to ${teachers.length} teacher(s) for batch ${batch.name}, slot ${slotId}`);
+    console.log(`Review email sent to ${teachers.length} teacher(s) for lecture ${lecture.name}, slot ${slotId}`);
     return true;
   } catch (error) {
     console.error('Error sending teacher review email:', error);

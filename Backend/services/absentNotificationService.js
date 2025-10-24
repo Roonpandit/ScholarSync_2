@@ -18,7 +18,7 @@ const sendAbsentNotificationEmail = async (emailData) => {
   const {
     studentName,
     studentEmail,
-    batchName,
+    lectureName,
     date,
     shift,
     slotTime,
@@ -51,7 +51,7 @@ const sendAbsentNotificationEmail = async (emailData) => {
     const capitalizedShift = shift.charAt(0).toUpperCase() + shift.slice(1);
 
     // Email subject
-    const subject = `⚠️ Attendance Marked as Absent - ${batchName} - ${formattedDate} - ${capitalizedShift} Shift`;
+    const subject = `⚠️ Attendance Marked as Absent - ${lectureName} - ${formattedDate} - ${capitalizedShift} Shift`;
 
     // Email HTML body
     const htmlBody = `
@@ -137,7 +137,7 @@ const sendAbsentNotificationEmail = async (emailData) => {
         <div class="content">
           <p>Dear <strong>${studentName}</strong>,</p>
 
-          <p>Your attendance for <strong>${batchName}</strong> has been <strong style="color: #dc3545;">MARKED AS ABSENT</strong> by ${updatedByName} (${updatedByRole}).</p>
+          <p>Your attendance for <strong>${lectureName}</strong> has been <strong style="color: #dc3545;">MARKED AS ABSENT</strong> by ${updatedByName} (${updatedByRole}).</p>
 
           <div class="detail-row">
             <div class="detail-label">📅 Date:</div>
@@ -150,8 +150,8 @@ const sendAbsentNotificationEmail = async (emailData) => {
           </div>
 
           <div class="detail-row">
-            <div class="detail-label">📚 Batch:</div>
-            <div class="detail-value">${batchName}</div>
+            <div class="detail-label">📚 Lecture:</div>
+            <div class="detail-value">${lectureName}</div>
           </div>
 
           <div class="remark-box">
@@ -206,12 +206,12 @@ const sendAbsentNotificationEmail = async (emailData) => {
     const textBody = `
 Dear ${studentName},
 
-Your attendance for ${batchName} has been MARKED AS ABSENT by ${updatedByName} (${updatedByRole}).
+Your attendance for ${lectureName} has been MARKED AS ABSENT by ${updatedByName} (${updatedByRole}).
 
 Attendance Details:
 - Date: ${formattedDate}
 - Shift: ${capitalizedShift} (${slotTime})
-- Batch: ${batchName}
+- Lecture: ${lectureName}
 
 Reason for Marking Absent:
 "${remark}"

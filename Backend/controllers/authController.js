@@ -173,7 +173,7 @@ exports.login = asyncHandler(async (req, res) => {
   // If not a student, check Teacher collection
   if (!user) {
     const Teacher = require('../models/Teacher');
-    user = await Teacher.findOne({ email }).select('+password').populate('batches', 'name batchId isDefault');
+    user = await Teacher.findOne({ email }).select('+password').populate('lectures', 'name lectureId isDefault');
     role = 'teacher';
   }
 
@@ -252,7 +252,7 @@ exports.login = asyncHandler(async (req, res) => {
     userData.studentCode = user.studentCode;
   } else if (role === 'teacher') {
     userData.teacherCode = user.teacherCode;
-    userData.batches = user.batches || [];
+    userData.lectures = user.lectures || [];
   }
 
   res.status(200).json({
@@ -272,7 +272,7 @@ exports.getMe = asyncHandler(async (req, res) => {
   if (req.user.role === 'student') {
     user = await User.findById(req.user._id);
   } else if (req.user.role === 'teacher') {
-    user = await Teacher.findById(req.user._id).populate('batches', 'name batchId isDefault');
+    user = await Teacher.findById(req.user._id).populate('lectures', 'name lectureId isDefault');
   } else {
     user = await Admin.findById(req.user._id);
   }
@@ -298,7 +298,7 @@ exports.getMe = asyncHandler(async (req, res) => {
     userData.studentCode = user.studentCode;
   } else if (user.role === 'teacher') {
     userData.teacherCode = user.teacherCode;
-    userData.batches = user.batches || [];
+    userData.lectures = user.lectures || [];
   }
 
   res.status(200).json({

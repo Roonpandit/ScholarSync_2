@@ -154,14 +154,14 @@ const uploadToCloudinary = async (file) => {
   });
 };
 
-// @desc    Get available attendance slots for student's batches
+// @desc    Get available attendance slots for student's lectures
 // @route   GET /api/students/attendance-slots
 // @access  Private/Student
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
-  // Get student with batches
-  const student = await User.findById(req.user._id).select('batches');
+  // Get student with lectures
+  const student = await User.findById(req.user._id).select('lectures');
 
-  if (!student || !student.batches || student.batches.length === 0) {
+  if (!student || !student.lectures || student.lectures.length === 0) {
     return res.status(200).json({
       success: true,
       count: 0,
@@ -169,13 +169,13 @@ exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
     });
   }
 
-  // Get all slots that are active or upcoming AND match student's batches
+  // Get all slots that are active or upcoming AND match student's lectures
   const activeSlots = await AttendanceSlot.find({
     isActive: true,
     status: { $in: ['active', 'upcoming'] },
-    batch: { $in: student.batches }
+    lecture: { $in: student.lectures }
   })
-  .populate('batch', 'name batchId')
+  .populate('lecture', 'name lectureId')
   .sort({ startTime: 1 }); // Sort by start time ascending
 
   // Get student's attendance records (including pending status)
@@ -323,7 +323,7 @@ exports.markAttendance = asyncHandler(async (req, res) => {
   const attendance = new Attendance({
     student: req.user._id,
     slot: slotId,
-    batch: slot.batch,
+    lecture: slot.lecture,
     date: slot.date,
     shift: slot.shift,
     status: 'awaiting_approval',
@@ -426,10 +426,10 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     const joinDate = new Date(req.user.createdAt);
     const effectiveStartDate = startOfMonth < joinDate ? joinDate : startOfMonth;
 
-    // Get student with batches
-    const student = await User.findById(req.user._id).select('batches');
+    // Get student with lectures
+    const student = await User.findById(req.user._id).select('lectures');
 
-    if (!student || !student.batches || student.batches.length === 0) {
+    if (!student || !student.lectures || student.lectures.length === 0) {
       return res.status(200).json({
         success: true,
         absences: [],
@@ -441,13 +441,13 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get all attendance slots within the date range, after join date, AND from student's batches
+    // Get all attendance slots within the date range, after join date, AND from student's lectures
     const slots = await AttendanceSlot.find({
       date: {
         $gte: effectiveStartDate,
         $lte: endOfMonth
       },
-      batch: { $in: student.batches }
+      lecture: { $in: student.lectures }
     });
 
     // Get the student's attendance records for the same range
