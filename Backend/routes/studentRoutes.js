@@ -8,6 +8,7 @@ const {
   getStudentsByClass,
   checkEmailExists
 } = require('../controllers/studentController');
+const { getStudentAttendanceCounts } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -32,6 +33,9 @@ router.get('/attendance-slots', getActiveAttendanceSlots);
 router.post('/attendance', uploadAttendancePhoto, markAttendance);
 router.get('/attendance', getAttendanceHistory);
 router.get('/absences', getAbsenceHistory);
+
+// Get attendance counts with filters (universal API for all roles)
+router.get('/attendance-counts', getStudentAttendanceCounts);
 
 // Get students by class ID (accessible to both admin and students)
 router.get('/class', getStudentsByClass);

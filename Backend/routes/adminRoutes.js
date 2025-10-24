@@ -8,6 +8,7 @@ const {
   updateStudent,
   deleteStudent,
   getStudentDetailsWithAttendance,
+  getStudentAttendanceCounts,
   addBatchesToStudent,
 
   // Attendance Management
@@ -81,6 +82,9 @@ router.post('/students/:id/add-batches', addBatchesToStudent);
 
 // Get student details with attendance history
 router.get('/students/:id/details', getStudentDetailsWithAttendance);
+
+// Get student attendance counts with optional filters
+router.get('/students/:id/attendance-counts', getStudentAttendanceCounts);
 
 // Attendance slot management routes
 router.route('/attendance-slots')

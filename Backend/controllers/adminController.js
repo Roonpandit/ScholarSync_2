@@ -59,10 +59,12 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
 
 // @desc    Get student details with attendance history
 // @route   GET /api/admin/students/:id/details
-// @access  Private/Admin
+// @route   GET /api/teacher/students/:id/details
+// @access  Private/Admin/Teacher
 exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
+    const { year, month, date, startDate, endDate } = req.query;
 
     // Validate student ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -81,24 +83,92 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get all attendance slots for the student's time period (from their join date)
-    const attendanceSlots = await AttendanceSlot.find({
-      date: {
+    // Get student's batch IDs
+    const studentBatchIds = student.batches.map(b => b._id);
+
+    // Build date filter based on query params
+    let dateFilter = {};
+    let filterDescription = 'All time';
+
+    if (date) {
+      const specificDate = new Date(date);
+      if (isNaN(specificDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid date format. Please provide valid date in YYYY-MM-DD format'
+        });
+      }
+      const startOfDay = new Date(specificDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(specificDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      dateFilter = {
+        $gte: new Date(Math.max(startOfDay, new Date(student.createdAt))),
+        $lte: endOfDay
+      };
+      filterDescription = `Date: ${specificDate.toDateString()}`;
+    } else if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid date format. Please provide valid dates in YYYY-MM-DD format'
+        });
+      }
+      dateFilter = {
+        $gte: new Date(Math.max(start, new Date(student.createdAt))),
+        $lte: end
+      };
+      filterDescription = `${start.toDateString()} to ${end.toDateString()}`;
+    } else if (year && month) {
+      const parsedMonth = parseInt(month);
+      const parsedYear = parseInt(year);
+      if (isNaN(parsedMonth) || isNaN(parsedYear) ||
+          parsedMonth < 1 || parsedMonth > 12 ||
+          parsedYear < 2000 || parsedYear > 2100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid month or year values'
+        });
+      }
+      const startOfMonth = new Date(parsedYear, parsedMonth - 1, 1);
+      const endOfMonth = new Date(parsedYear, parsedMonth, 0, 23, 59, 59, 999);
+      dateFilter = {
+        $gte: new Date(Math.max(startOfMonth, new Date(student.createdAt))),
+        $lte: endOfMonth
+      };
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+      filterDescription = `${monthNames[parsedMonth - 1]} ${parsedYear}`;
+    } else if (year) {
+      const parsedYear = parseInt(year);
+      if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid year value'
+        });
+      }
+      const startOfYear = new Date(parsedYear, 0, 1);
+      const endOfYear = new Date(parsedYear, 11, 31, 23, 59, 59, 999);
+      dateFilter = {
+        $gte: new Date(Math.max(startOfYear, new Date(student.createdAt))),
+        $lte: endOfYear
+      };
+      filterDescription = `Year ${parsedYear}`;
+    } else {
+      dateFilter = {
         $gte: new Date(student.createdAt),
         $lte: new Date()
-      }
-    }).lean();
+      };
+      filterDescription = `All time since ${new Date(student.createdAt).toDateString()}`;
+    }
 
-    // Calculate total possible attendance slots
-    const totalSlots = attendanceSlots.length;
-
-    // Get attendance records for the student within their time period
+    // Get attendance records for the student within their time period and for their batches only
     const attendanceRecords = await Attendance.find({
       student: id,
-      date: {
-        $gte: new Date(student.createdAt),
-        $lte: new Date()
-      }
+      batch: { $in: studentBatchIds },
+      date: dateFilter
     })
       .populate('slot', 'shift startTime endTime date')
       .populate('batch', 'name')
@@ -106,12 +176,21 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       .lean();
 
     // Calculate attendance statistics by counting each status
+    const pendingSlots = attendanceRecords.filter(r => r.status === 'pending').length;
+    const awaitingSlots = attendanceRecords.filter(r => r.status === 'awaiting_approval').length;
+    const presentCount = attendanceRecords.filter(r => r.status === 'present').length;
+    const absentCount = attendanceRecords.filter(r => r.status === 'absent').length;
+
+    // totalSlots is the total attendance records for this specific student
+    const totalSlots = attendanceRecords.length;
+
     const attendanceStats = {
-      total: totalSlots,
-      pending: attendanceRecords.filter(r => r.status === 'pending').length,
-      awaiting_approval: attendanceRecords.filter(r => r.status === 'awaiting_approval').length,
-      present: attendanceRecords.filter(r => r.status === 'present').length,
-      absent: attendanceRecords.filter(r => r.status === 'absent').length
+      totalSlots: totalSlots,
+      pendingSlots: pendingSlots,
+      awaitingSlots: awaitingSlots,
+      present: presentCount,
+      absent: absentCount,
+      attendancePercentage: totalSlots > 0 ? Math.round((presentCount / totalSlots) * 100) : 0
     };
 
     // Format attendance records to include full date information
@@ -128,6 +207,14 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       success: true,
       data: {
         student,
+        filter: {
+          year: year || null,
+          month: month || null,
+          date: date || null,
+          startDate: startDate || null,
+          endDate: endDate || null,
+          description: filterDescription
+        },
         attendance: {
           records: formattedAttendance,
           stats: attendanceStats,
@@ -140,6 +227,184 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching student details',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// @desc    Get student attendance counts with optional filters (year, month, date) - Universal for all roles
+// @route   GET /api/admin/students/:id/attendance-counts
+// @route   GET /api/teacher/students/:id/attendance-counts
+// @route   GET /api/students/attendance-counts (for logged-in student)
+// @access  Private/Admin/Teacher/Student
+exports.getStudentAttendanceCounts = asyncHandler(async (req, res) => {
+  try {
+    // For student role, use req.user._id, for admin/teacher use params.id
+    const studentId = req.user.role === 'student' ? req.user._id : req.params.id;
+    const { year, month, date, startDate, endDate } = req.query;
+
+    // Validate student ID
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid student ID',
+      });
+    }
+
+    // Get student details with batches
+    const student = await User.findById(studentId).populate('batches').lean();
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
+
+    // Get student's batch IDs
+    const studentBatchIds = student.batches.map(b => b._id);
+
+    // Build date filter
+    let dateFilter = {};
+    let filterDescription = 'All time';
+
+    if (date) {
+      // Specific date
+      const specificDate = new Date(date);
+      if (isNaN(specificDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid date format. Please provide valid date in YYYY-MM-DD format'
+        });
+      }
+
+      const startOfDay = new Date(specificDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(specificDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      dateFilter = {
+        $gte: new Date(Math.max(startOfDay, new Date(student.createdAt))),
+        $lte: endOfDay
+      };
+      filterDescription = `Date: ${specificDate.toDateString()}`;
+    } else if (startDate && endDate) {
+      // Custom date range
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid date format. Please provide valid dates in YYYY-MM-DD format'
+        });
+      }
+
+      dateFilter = {
+        $gte: new Date(Math.max(start, new Date(student.createdAt))),
+        $lte: end
+      };
+      filterDescription = `${start.toDateString()} to ${end.toDateString()}`;
+    } else if (year && month) {
+      // Specific month and year
+      const parsedMonth = parseInt(month);
+      const parsedYear = parseInt(year);
+
+      if (isNaN(parsedMonth) || isNaN(parsedYear) ||
+          parsedMonth < 1 || parsedMonth > 12 ||
+          parsedYear < 2000 || parsedYear > 2100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid month or year values'
+        });
+      }
+
+      const startOfMonth = new Date(parsedYear, parsedMonth - 1, 1);
+      const endOfMonth = new Date(parsedYear, parsedMonth, 0, 23, 59, 59, 999);
+
+      dateFilter = {
+        $gte: new Date(Math.max(startOfMonth, new Date(student.createdAt))),
+        $lte: endOfMonth
+      };
+
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+      filterDescription = `${monthNames[parsedMonth - 1]} ${parsedYear}`;
+    } else if (year) {
+      // Entire year
+      const parsedYear = parseInt(year);
+
+      if (isNaN(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid year value'
+        });
+      }
+
+      const startOfYear = new Date(parsedYear, 0, 1);
+      const endOfYear = new Date(parsedYear, 11, 31, 23, 59, 59, 999);
+
+      dateFilter = {
+        $gte: new Date(Math.max(startOfYear, new Date(student.createdAt))),
+        $lte: endOfYear
+      };
+      filterDescription = `Year ${parsedYear}`;
+    } else {
+      // No filter - all time since student joined
+      dateFilter = {
+        $gte: new Date(student.createdAt),
+        $lte: new Date()
+      };
+      filterDescription = `All time since ${new Date(student.createdAt).toDateString()}`;
+    }
+
+    // Get attendance records for the student within the date range and for their batches
+    const attendanceRecords = await Attendance.find({
+      student: studentId,
+      batch: { $in: studentBatchIds },
+      date: dateFilter
+    }).lean();
+
+    // Calculate counts by status
+    const pendingSlots = attendanceRecords.filter(r => r.status === 'pending').length;
+    const awaitingSlots = attendanceRecords.filter(r => r.status === 'awaiting_approval').length;
+    const presentCount = attendanceRecords.filter(r => r.status === 'present').length;
+    const absentCount = attendanceRecords.filter(r => r.status === 'absent').length;
+
+    // totalSlots is the total attendance records for this specific student
+    const totalSlots = attendanceRecords.length;
+
+    const counts = {
+      totalSlots: totalSlots,
+      pendingSlots: pendingSlots,
+      awaitingSlots: awaitingSlots,
+      present: presentCount,
+      absent: absentCount,
+      totalRecords: attendanceRecords.length,
+      attendancePercentage: totalSlots > 0 ? Math.round((presentCount / totalSlots) * 100) : 0
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        studentId: studentId,
+        studentName: student.name,
+        studentCode: student.studentCode,
+        filter: {
+          year: year || null,
+          month: month || null,
+          date: date || null,
+          startDate: startDate || null,
+          endDate: endDate || null,
+          description: filterDescription
+        },
+        counts
+      }
+    });
+  } catch (error) {
+    console.error('Error in getStudentAttendanceCounts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching attendance counts',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
@@ -1649,8 +1914,8 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
 
     //console.log('Using date range:', startDate.toISOString(), 'to', endDate.toISOString());
 
-    // Get all students
-    const allStudents = await User.find({ role: 'student' }).select('_id name email studentCode createdAt');
+    // Get all students with their batches
+    const allStudents = await User.find({ role: 'student' }).populate('batches').select('_id name email studentCode createdAt batches');
 
     // Get slots within date range and only 'active' or 'closed'
     const slots = await AttendanceSlot.find({
@@ -1671,6 +1936,8 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     // Initialize with student info
     allStudents.forEach(student => {
       const studentJoinDate = new Date(student.createdAt);
+      const studentBatchIds = student.batches.map(b => b._id.toString());
+
       studentAttendance.set(student._id.toString(), {
         student: {
           _id: student._id,
@@ -1679,6 +1946,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
           studentCode: student.studentCode
         },
         joinDate: studentJoinDate,
+        batchIds: studentBatchIds,
         present: 0,
         absent: 0,
         attendanceDates: [],
@@ -1703,10 +1971,13 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
     // Now calculate absents per student
     studentAttendance.forEach((data, studentId) => {
       const studentJoinDate = data.joinDate;
+      const studentBatchIds = data.batchIds;
 
+      // Only count slots for batches this student is enrolled in
       const totalAvailableSlots = slots.filter(slot => {
         const slotDate = new Date(slot.date);
-        return slotDate >= studentJoinDate; // Skip slots before student joined
+        const slotBatchId = slot.batch.toString();
+        return slotDate >= studentJoinDate && studentBatchIds.includes(slotBatchId); // Skip slots before student joined AND slots for batches they're not in
       });
 
       const totalSlotsCount = totalAvailableSlots.length;
@@ -2140,12 +2411,14 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
   }
   
   try {
-    const allStudents = await User.find({ role: 'student' }).select('_id name email studentCode createdAt');
+    const allStudents = await User.find({ role: 'student' }).populate('batches').select('_id name email studentCode createdAt batches');
 
     const absenteeMap = {};
 
     allStudents.forEach(student => {
       const studentJoinDate = student.createdAt ? new Date(student.createdAt) : null;
+      const studentBatchIds = student.batches.map(b => b._id.toString());
+
       absenteeMap[student._id] = {
         student: {
           _id: student._id,
@@ -2154,6 +2427,7 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
           studentCode: student.studentCode
         },
         joinDate: studentJoinDate,
+        batchIds: studentBatchIds,
         absentCount: 0,
         absentDates: []
       };
@@ -2172,13 +2446,15 @@ exports.getAbsentStudents = asyncHandler(async (req, res) => {
       const slotDate = slot.date.toISOString().split('T')[0];
       const slotShift = slot.shift;
       const slotDateObj = new Date(slot.date);
+      const slotBatchId = slot.batch.toString();
 
       allStudents.forEach(student => {
         const studentId = student._id.toString();
         const studentJoinDate = student.createdAt ? new Date(student.createdAt) : new Date(0);
+        const studentBatchIds = absenteeMap[studentId].batchIds;
 
-        // ✅ Ignore slots before student joined
-        if (slotDateObj >= studentJoinDate) {
+        // ✅ Ignore slots before student joined AND slots for batches they're not enrolled in
+        if (slotDateObj >= studentJoinDate && studentBatchIds.includes(slotBatchId)) {
           const isPresent = attendanceRecords.some(record =>
             record.student.toString() === studentId &&
             record.date.toISOString().split('T')[0] === slotDate &&
