@@ -923,9 +923,19 @@ exports.updateStudent = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating student:', error);
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: errors.join(', ')
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: error.message || 'Server error',
     });
   }
 });
@@ -1275,36 +1285,60 @@ exports.createStudent = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create student with batches
-  const student = await User.create({
-    name,
-    email,
-    studentCode,
-    password,
-    phone,
-    batches: batchIds,
-    role: 'student',
-  });
+  try {
+    // Create student with batches
+    const student = await User.create({
+      name,
+      email,
+      studentCode,
+      password,
+      phone,
+      batches: batchIds,
+      role: 'student',
+    });
 
-  // Send welcome email
-  await sendWelcomeEmail({
-    name: student.name,
-    email: student.email,
-    studentCode: student.studentCode,
-    phone: student.phone,
-    role: 'student'
-  });
+    // Send welcome email
+    try {
+      await sendWelcomeEmail({
+        name: student.name,
+        email: student.email,
+        studentCode: student.studentCode,
+        phone: student.phone,
+        role: 'student'
+      });
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      // Don't fail the request if email fails
+    }
 
-  res.status(201).json({
-    success: true,
-    data: {
-      _id: student._id,
-      name: student.name,
-      email: student.email,
-      studentCode: student.studentCode,
-      role: student.role,
-    },
-  });
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: student._id,
+        name: student.name,
+        email: student.email,
+        studentCode: student.studentCode,
+        role: student.role,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating student:', error);
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: errors.join(', ')
+      });
+    }
+
+    // Handle other errors
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error creating student'
+    });
+  }
 });
 
 // @desc    Create multiple students at once
@@ -2090,39 +2124,58 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create teacher
-  const teacher = await Teacher.create({
-    name,
-    email,
-    teacherCode,
-    phone,
-    password,
-    batches,
-    role: 'teacher',
-  });
-
-  // Send welcome email
   try {
-    await sendWelcomeEmail({
-      name: teacher.name,
-      email: teacher.email,
-      teacherCode: teacher.teacherCode,
-      phone: teacher.phone,
+    // Create teacher
+    const teacher = await Teacher.create({
+      name,
+      email,
+      teacherCode,
+      phone,
+      password,
+      batches,
       role: 'teacher',
-    }, 'teacher');
+    });
+
+    // Send welcome email
+    try {
+      await sendWelcomeEmail({
+        name: teacher.name,
+        email: teacher.email,
+        teacherCode: teacher.teacherCode,
+        phone: teacher.phone,
+        role: 'teacher',
+      }, 'teacher');
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      // Don't fail the request if email fails
+    }
+
+    // Remove password from output
+    teacher.password = undefined;
+
+    res.status(201).json({
+      success: true,
+      data: teacher,
+      message: 'Teacher registered successfully',
+    });
   } catch (error) {
-    console.error('Error sending welcome email:', error);
-    // Don't fail the request if email fails
+    console.error('Error creating teacher:', error);
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: errors.join(', ')
+      });
+    }
+
+    // Handle other errors
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error creating teacher'
+    });
   }
-
-  // Remove password from output
-  teacher.password = undefined;
-
-  res.status(201).json({
-    success: true,
-    data: teacher,
-    message: 'Teacher registered successfully',
-  });
 });
 
 // @desc    Get all teachers
@@ -2235,16 +2288,35 @@ exports.updateTeacher = asyncHandler(async (req, res) => {
   teacher.teacherCode = teacherCode || teacher.teacherCode;
   teacher.phone = phone || teacher.phone;
 
-  await teacher.save();
+  try {
+    await teacher.save();
 
-  // Remove password from output
-  teacher.password = undefined;
+    // Remove password from output
+    teacher.password = undefined;
 
-  res.status(200).json({
-    success: true,
-    data: teacher,
-    message: 'Teacher updated successfully',
-  });
+    res.status(200).json({
+      success: true,
+      data: teacher,
+      message: 'Teacher updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating teacher:', error);
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: errors.join(', ')
+      });
+    }
+
+    // Handle other errors
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Error updating teacher'
+    });
+  }
 });
 
 // @desc    Delete teacher
