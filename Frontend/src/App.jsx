@@ -16,8 +16,8 @@ import StudentDetails from './pages/admin/StudentDetails.jsx'
 import Reviews from './pages/admin/Reviews.jsx';
 import AttendanceSlots from './pages/admin/AttendanceSlots.jsx'
 import AttendanceStats from './pages/admin/AttendanceStats.jsx'
-import AbsentStudents from './pages/admin/AbsentStudents.jsx'
 import IPAddress from './pages/admin/IPAddress.jsx'
+import BatchManagement from './pages/admin/BatchManagement.jsx'
 
 import TeacherDashboard from './pages/teacher/TeacherDashboard.jsx'
 import StudentManagement from './pages/teacher/StudentManagement.jsx'
@@ -25,7 +25,6 @@ import StudentDetail from './pages/teacher/StudentDetail.jsx'
 import Review from './pages/teacher/Review.jsx'
 import AttendanceSlot from './pages/teacher/AttendanceSlot.jsx'
 import AttendanceStat from './pages/teacher/AttendanceStat.jsx'
-import AbsentStudent from './pages/teacher/AbsentStudent.jsx'
 
 import StudentDashboard from './pages/student/Dashboard.jsx'
 import MarkAttendance from './pages/student/MarkAttendance.jsx'
@@ -132,18 +131,18 @@ function App() {
         } 
       />
       <Route
-        path="/admin/attendance/absent"
-        element={
-          user && user.role === 'admin' ?
-          <Layout><AbsentStudents /></Layout> :
-          <Navigate to="/home" />
-        }
-      />
-      <Route
         path="/admin/ip-management"
         element={
           user && user.role === 'admin' ?
           <Layout><IPAddress /></Layout> :
+          <Navigate to="/home" />
+        }
+      />
+      <Route
+        path="/admin/batch-management"
+        element={
+          user && user.role === 'admin' ?
+          <Layout><BatchManagement /></Layout> :
           <Navigate to="/home" />
         }
       />
@@ -223,21 +222,13 @@ function App() {
           <Navigate to="/home" />
         } 
       />
-      <Route 
-        path="/teacher/attendance/stats" 
+      <Route
+        path="/teacher/attendance/stats"
         element={
-          user && user.role === 'teacher' ? 
-          <Layout><AttendanceStat /></Layout> : 
+          user && user.role === 'teacher' ?
+          <Layout><AttendanceStat /></Layout> :
           <Navigate to="/home" />
-        } 
-      />
-      <Route 
-        path="/teacher/attendance/absent" 
-        element={
-          user && user.role === 'teacher' ? 
-          <Layout><AbsentStudent /></Layout> : 
-          <Navigate to="/home" />
-        } 
+        }
       />
       <Route 
         path="/teacher/students/:studentId" 

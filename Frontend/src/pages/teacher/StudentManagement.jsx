@@ -7,10 +7,15 @@ import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Tr
 import BulkUpload from './BulkUpload';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../../components/Loader';
+import { useAuth } from '../../contexts/AuthContext';
+import StudentDetail from './StudentDetail';
 
 const StudentManagement = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [students, setStudents] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [defaultBatch, setDefaultBatch] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -18,85 +23,121 @@ const StudentManagement = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewingStudentId, setViewingStudentId] = useState(null);
+  // Function to generate password based on student's name
+  const generatePassword = (name) => {
+    // Extract first name and capitalize first letter
+    const firstName = name.split(' ')[0];
+    return `${firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()}@123`;
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     studentCode: '',
-    password: '',
-    confirmPassword: '',
-    phone: ''
+    phone: '',
+    batches: []
   });
-  const [showPassword, setShowPassword] = useState(false);
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.name.trim()) {
       errors.name = 'Name is required';
     }
-    
+
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
       errors.email = 'Invalid email address';
     }
-    
+
     if (!formData.studentCode.trim()) {
       errors.studentCode = 'Student code is required';
     }
-    
+
     if (!formData.phone.trim()) {
       errors.phone = 'Phone number is required';
     } else if (!/^[0-9]{10}$/.test(formData.phone)) {
       errors.phone = 'Please enter a valid 10-digit phone number';
     }
-    
-    if (!formData.password.trim()) {
-      errors.password = 'Password is required';
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.password = 'Passwords do not match';
-      errors.confirmPassword = 'Passwords do not match';
-    } else {
-      const password = formData.password;
-      const hasUpperCase = /[A-Z]/.test(password);
-      const hasLowerCase = /[a-z]/.test(password);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      const hasNumber = /[0-9]/.test(password);
-      const isLongEnough = password.length >= 8;
 
-      if (!isLongEnough) {
-        errors.password = 'Password must be at least 8 characters long';
-      } else if (!hasUpperCase) {
-        errors.password = 'Password must contain at least one uppercase letter (A-Z)';
-      } else if (!hasLowerCase) {
-        errors.password = 'Password must contain at least one lowercase letter (a-z)';
-      } else if (!hasNumber) {
-        errors.password = 'Password must contain at least one number (0-9)';
-      } else if (!hasSpecialChar) {
-        errors.password = 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)';
-      }
-    }
-    
+    // Batch validation is handled by backend
+
     return errors;
   };
 
+  const [errors, setErrors] = useState({});
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-  
     setFormData({
       ...formData,
       [name]: name === "email" ? value.toLowerCase() : value
     });
   };
-  
-  const [errors, setErrors] = useState({});
+
+  const handleShowAddForm = () => {
+    setShowAddForm(!showAddForm);
+    if (!showAddForm && defaultBatch) {
+      // Auto-select default batch when opening form
+      setFormData({
+        name: '',
+        email: '',
+        studentCode: '',
+        phone: '',
+        batches: [defaultBatch._id]
+      });
+    }
+  };
 
   const viewStudentDetails = (studentId) => {
-    navigate(`/teacher/students/${studentId}`);
+    setViewingStudentId(studentId);
   };
 
   useEffect(() => {
     fetchStudents();
+    fetchBatches();
   }, []);
+
+  const fetchBatches = async () => {
+    try {
+      // Teachers use their assigned batches from user context
+      if (user && user.batches && Array.isArray(user.batches)) {
+        setBatches(user.batches);
+
+        // Get default batch
+        const defBatch = user.batches.find(b => b.isDefault);
+        setDefaultBatch(defBatch);
+
+        // Auto-select default batch when form opens
+        if (defBatch && showAddForm && formData.batches.length === 0) {
+          setFormData(prev => ({
+            ...prev,
+            batches: [defBatch._id]
+          }));
+        }
+      } else {
+        // Fallback: fetch from API if user context doesn't have batches
+        const res = await axios.get('/auth/me');
+        const batchesData = res.data?.data?.batches || [];
+        setBatches(batchesData);
+
+        const defBatch = batchesData.find(b => b.isDefault);
+        setDefaultBatch(defBatch);
+
+        if (defBatch && showAddForm && formData.batches.length === 0) {
+          setFormData(prev => ({
+            ...prev,
+            batches: [defBatch._id]
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      toast.error('Failed to load batches');
+      setBatches([]);
+    }
+  };
 
   const fetchStudents = async () => {
     try {
@@ -152,9 +193,12 @@ const StudentManagement = () => {
     
     try {
       setIsSubmitting(true);
-      // Create a copy of formData without confirmPassword
-      const { confirmPassword, ...postData } = formData;
-      const res = await axios.post('/teacher/students', postData);
+      // Generate password and create student
+      const password = generatePassword(formData.name);
+      const res = await axios.post('/teacher/students', {
+        ...formData,
+        password
+      });
       
       if (res.data.success) {
         toast.success('Student created successfully and Welcome email sent');
@@ -163,8 +207,8 @@ const StudentManagement = () => {
           name: '',
           email: '',
           studentCode: '',
-          password: '',
-          phone: ''
+          phone: '',
+          batches: defaultBatch ? [defaultBatch._id] : []
         });
         setShowAddForm(false);
       }
@@ -201,11 +245,11 @@ const StudentManagement = () => {
         </div>
         
         <div className="flex gap-2">
-          <button 
-            onClick={() => setShowAddForm(!showAddForm)}
+          <button
+            onClick={handleShowAddForm}
             className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              showAddForm 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+              showAddForm
+                ? 'bg-red-100 text-red-700 hover:bg-red-200'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
           >
@@ -298,87 +342,99 @@ const StudentManagement = () => {
                   onChange={handleInputChange}
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   placeholder="Enter 10-digit phone number"
-                  pattern="[0-9]{10}"
                 />
                 {errors.phone && (
                   <p className="text-red-500 text-xs italic mt-1">{errors.phone}</p>
                 )}
               </div>
-              
-              <div className="mb-4">
-                <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
-                  Password
-                </label>
-                <div className="mt-1">
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
-                      placeholder="Enter password"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <Eye size={20} className={`cursor-pointer ${showPassword ? 'opacity-50' : ''}`} />
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-500 text-xs italic mt-1">{errors.password}</p>
-                  )}
-                </div>
+            </div>
+
+            {/* Batch Selection */}
+            <div className="mb-4">
+              <label htmlFor="batches" className="block text-gray-700 text-sm font-bold mb-2">
+                Select Batches <span className="text-red-500">*</span>
+              </label>
+
+              {/* Selected Batches Display */}
+              <div className="mb-3 flex flex-wrap gap-2">
+                {formData.batches.length > 0 ? (
+                  formData.batches.map(batchId => {
+                    const batch = batches.find(b => b._id === batchId);
+                    if (!batch) return null;
+                    const isDefault = batch.isDefault;
+                    return (
+                      <span
+                        key={batch._id}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          isDefault
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                            : 'bg-blue-100 text-blue-800 border border-blue-300'
+                        }`}
+                      >
+                        {batch.name}
+                        {isDefault && (
+                          <span className="ml-1 text-xs">(Default)</span>
+                        )}
+                        {!isDefault && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                batches: prev.batches.filter(id => id !== batch._id)
+                              }));
+                            }}
+                            className="ml-2 text-blue-600 hover:text-blue-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="text-sm text-gray-500 italic">No batches selected</span>
+                )}
               </div>
 
-              <div className="mb-4">
-                <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-bold mb-2">
-                  Confirm Password
-                </label>
-                <div className="mt-1">
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline pr-10"
-                      placeholder="Confirm password"
-                    />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <Eye size={20} className={`cursor-pointer ${showPassword ? 'opacity-50' : ''}`} />
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-red-500 text-xs italic mt-1">{errors.confirmPassword}</p>
-                  )}
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least one lowercase letter (a-z)</span>
-                    </div>
-                    <div className={`flex items-center ${/[0-9]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least one number (0-9)</span>
-                    </div>
-                    <div className={`flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least one special character</span>
-                    </div>
-                    <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-500' : 'text-gray-500'}`}>
-                      <CheckCircle size={16} className="mr-2 flex-shrink-0" />
-                      <span>At least 8 characters long</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Dropdown to add batches */}
+              <select
+                id="batches"
+                value=""
+                onChange={(e) => {
+                  const batchId = e.target.value;
+                  if (batchId && !formData.batches.includes(batchId)) {
+                    setFormData(prev => ({
+                      ...prev,
+                      batches: [...prev.batches, batchId]
+                    }));
+                  }
+                  e.target.value = ''; // Reset dropdown
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Click to add more batches...</option>
+                {(batches || []).filter(batch => !formData.batches.includes(batch._id)).map((batch) => (
+                  <option key={batch._id} value={batch._id}>
+                    {batch.name}
+                  </option>
+                ))}
+              </select>
+
+              {errors.batches && (
+                <p className="text-red-500 text-xs italic mt-1">{errors.batches}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Default batch is mandatory and pre-selected. Select additional batches from the dropdown.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Password Information */}
+              <div className="p-3 bg-blue-50 rounded-md">
+                <p className="text-sm text-blue-700">
+                  Password will be automatically generated and sent to the student's email address.
+                </p>
               </div>
             </div>
             
@@ -623,6 +679,15 @@ const StudentManagement = () => {
         </div>
       )}
     </div>
+
+      {/* Student Detail Modal */}
+      {viewingStudentId && (
+        <StudentDetail
+          isModal={true}
+          studentIdProp={viewingStudentId}
+          onClose={() => setViewingStudentId(null)}
+        />
+      )}
     </div>
   );
 };

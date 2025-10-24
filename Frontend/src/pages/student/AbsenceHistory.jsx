@@ -14,8 +14,10 @@ const AbsenceHistory = () => {
   const [attendanceData, setAttendanceData] = useState({
     absences: [],
     pending: [],
+    awaitingApproval: [],
     totalAbsences: 0,
-    totalPending: 0
+    totalPending: 0,
+    totalAwaitingApproval: 0
   });
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -79,7 +81,7 @@ const AbsenceHistory = () => {
             Absence History
           </h1>
           <p className="text-gray-600 mt-1">
-            Track your missed attendance and pending slots for the current month.
+            Track your absences, pending slots, and attendance awaiting approval.
           </p>
         </div>
       </div>
@@ -145,9 +147,9 @@ const AbsenceHistory = () => {
               </div>
             ) : (
               <>
-                {attendanceData.totalAbsences === 0 && attendanceData.totalPending === 0 ? (
+                {attendanceData.totalAbsences === 0 && attendanceData.totalPending === 0 && attendanceData.totalAwaitingApproval === 0 ? (
                   <div className="text-gray-600 text-lg mb-2">
-                    No absences or pending slots in this month
+                    No absences, pending slots, or awaiting approval records in this month
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -190,6 +192,10 @@ const AbsenceHistory = () => {
                             ...attendanceData.pending.map(pending => ({
                               ...pending,
                               type: 'pending'
+                            })),
+                            ...(attendanceData.awaitingApproval || []).map(awaiting => ({
+                              ...awaiting,
+                              type: 'awaiting_approval'
                             }))
                           ].sort((a, b) => new Date(a.date) - new Date(b.date)).map((item, index) => (
                             <tr key={index} className="hover:bg-gray-50">
@@ -207,9 +213,13 @@ const AbsenceHistory = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  item.type === 'absence' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                                  item.type === 'absence'
+                                    ? 'bg-red-100 text-red-800'
+                                    : item.type === 'pending'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-orange-100 text-orange-800'
                                 }`}>
-                                  {item.type === 'absence' ? 'Absent' : 'Pending'}
+                                  {item.type === 'absence' ? 'Absent' : item.type === 'pending' ? 'Pending' : 'Awaiting Approval'}
                                 </span>
                               </td>
                             </tr>
@@ -231,11 +241,15 @@ const AbsenceHistory = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Absences:</span>
-                <span className="font-semibold">{attendanceData.totalAbsences}</span>
+                <span className="font-semibold text-red-600">{attendanceData.totalAbsences}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Pending Slots:</span>
-                <span className="font-semibold">{attendanceData.totalPending}</span>
+                <span className="font-semibold text-yellow-600">{attendanceData.totalPending}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Awaiting Approval:</span>
+                <span className="font-semibold text-orange-600">{attendanceData.totalAwaitingApproval || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Status:</span>

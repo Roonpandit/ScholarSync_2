@@ -5,12 +5,13 @@ import {
   Calendar,
   ChevronRight,
   BarChart,
-  ArrowRight,
-  AlertCircle,
+  AlertTriangle,
   Search,
+  Filter,
+  Clock,
 } from "lucide-react";
 import PropTypes from "prop-types";
-import { formatDateDisplay, formatTime24h, convertToIST, isSameDate } from '../../utils/timeUtils';
+import { formatDateDisplay, convertToIST } from '../../utils/timeUtils';
 import Loader from '../../components/Loader';
 
 class ErrorBoundary extends Component {
@@ -26,14 +27,13 @@ class ErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     console.error("Error caught by boundary:", error, errorInfo);
     this.setState({ errorInfo });
-    // You can log to an error tracking service here
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center p-8 bg-red-50 rounded-lg">
-          <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+          <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
           <h2 className="text-xl font-semibold text-red-700 mb-2">
             Something went wrong
           </h2>
@@ -68,16 +68,16 @@ const AttendanceStats = () => {
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
-    month: new Date().getMonth() + 1, // Current month
-    year: new Date().getFullYear(), // Current year
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
     minAbsences: 5,
+    search: ""
   });
   const [expandedStudent, setExpandedStudent] = useState(null);
+  const [filteredStats, setFilteredStats] = useState([]);
 
   useEffect(() => {
-    // Initial fetch when component mounts
     fetchAttendanceStats();
-    // Remove the dependency on filters since we now use a search button
   }, []);
 
   const fetchAttendanceStats = async () => {
@@ -92,32 +92,49 @@ const AttendanceStats = () => {
         return;
       }
 
-      // Get start and end dates in IST
       const startDateIST = convertToIST(new Date(year, month - 1, 1));
       const endDateIST = convertToIST(new Date(year, month, 0));
       const startDate = startDateIST.toISOString().split('T')[0];
       const endDate = endDateIST.toISOString().split('T')[0];
 
-      const res = await axios.get(
-        `/admin/attendance/stats?startDate=${startDate}&endDate=${endDate}&minAbsences=${
-          minAbsences || 0
-        }`
-      );
+      // Fetch both attendance stats and absent students data
+      const [statsRes, absentRes] = await Promise.all([
+        axios.get(
+          `/admin/attendance/stats?startDate=${startDate}&endDate=${endDate}&minAbsences=${
+            minAbsences || 0
+          }`
+        ),
+        axios.get(`/admin/attendance/absent?threshold=${minAbsences || 1}&month=${month}&year=${year}`)
+      ]);
 
-      if (res.data?.success && res.data?.data?.stats) {
-        const statsData = res.data.data.stats;
-        // Convert the stats data to match our expected format
+      if (statsRes.data?.success && statsRes.data?.data?.stats) {
+        const statsData = statsRes.data.data.stats;
+        const absentData = absentRes.data?.data || [];
+
+        // Create a map of student IDs to their absent dates
+        const absentDatesMap = {};
+        absentData.forEach(record => {
+          if (record.student && record.student._id) {
+            absentDatesMap[record.student._id] = record.absentDates || [];
+          }
+        });
+
+        // Merge the data
         const formattedStats = statsData.studentsWithAbsences.map(student => ({
           ...student,
           present: student.present,
           absent: student.absent,
-          totalDays: statsData.totalSlots
+          totalDays: statsData.totalSlots,
+          absentDates: absentDatesMap[student.student._id] || []
         }));
+
         setStats(formattedStats);
+        applySearchFilter(formattedStats);
       } else {
-        console.error("Invalid response format:", res.data);
+        console.error("Invalid response format:", statsRes.data);
         toast.error("Received invalid data from server");
         setStats([]);
+        setFilteredStats([]);
       }
     } catch (error) {
       console.error("Error fetching attendance stats:", error);
@@ -125,9 +142,25 @@ const AttendanceStats = () => {
         error.response?.data?.message || "Failed to load attendance statistics"
       );
       setStats([]);
+      setFilteredStats([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const applySearchFilter = (students) => {
+    const searchTerm = filters.search.toLowerCase();
+    if (!searchTerm) {
+      setFilteredStats(students);
+      return;
+    }
+
+    const filtered = students.filter(student =>
+      student.student?.name?.toLowerCase().includes(searchTerm) ||
+      student.student?.studentCode?.toLowerCase().includes(searchTerm)
+    );
+
+    setFilteredStats(filtered);
   };
 
   const handleFilterChange = (e) => {
@@ -136,6 +169,14 @@ const AttendanceStats = () => {
       ...filters,
       [name]: name === "minAbsences" ? parseInt(value) || 0 : value,
     });
+  };
+
+  const handleSearchChange = (e) => {
+    setFilters({
+      ...filters,
+      search: e.target.value
+    });
+    applySearchFilter(stats);
   };
 
   const handleSearch = () => {
@@ -150,13 +191,9 @@ const AttendanceStats = () => {
     }
   };
 
-  if (loading) {
-    return <Loader message="Loading attendance statistics..." />;
-  }
-
-  const safeStats = Array.isArray(stats)
-    ? stats.filter((stat) => stat && stat.student)
-    : [];
+  const formatDate = (dateString) => {
+    return formatDateDisplay(dateString);
+  };
 
   const renderStudentRow = (stat) => {
     const student = stat?.student || {};
@@ -214,6 +251,59 @@ const AttendanceStats = () => {
             {attendanceRate}%
           </span>
         </td>
+        <td className="px-6 py-4">
+          <button
+            onClick={() => toggleExpandStudent(student._id)}
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+          >
+            View Details
+            <ChevronRight
+              size={16}
+              className={`ml-1 transition-transform ${
+                expandedStudent === student._id ? "rotate-90" : ""
+              }`}
+            />
+          </button>
+        </td>
+      </tr>
+    );
+  };
+
+  const renderExpandedRow = (stat) => {
+    const student = stat?.student || {};
+    if (expandedStudent !== student._id) return null;
+
+    // Get absent dates from the stat
+    const absentDates = stat?.absentDates || [];
+
+    return (
+      <tr key={`${student._id}-details`} className="bg-gray-50">
+        <td colSpan="6" className="px-6 py-4">
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+              <AlertTriangle size={16} className="mr-2 text-orange-500" />
+              Absent Dates & Shifts
+            </h4>
+            {absentDates.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {absentDates.map((dateInfo, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-red-50 text-red-800 border border-red-200"
+                  >
+                    <Calendar size={12} className="mr-1.5" />
+                    {formatDate(dateInfo.date)}
+                    <span className="mx-1.5">•</span>
+                    <Clock size={12} className="mr-1.5" />
+                    {dateInfo.shift?.charAt(0).toUpperCase() + dateInfo.shift?.slice(1)}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No absence records found for this period.</p>
+            )}
+          </div>
+        </td>
       </tr>
     );
   };
@@ -225,6 +315,7 @@ const AttendanceStats = () => {
     const totalDays = present + absent;
     const attendanceRate =
       totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
+    const absentDates = stat?.absentDates || [];
 
     return (
       <div
@@ -291,14 +382,46 @@ const AttendanceStats = () => {
                 {attendanceRate}%
               </div>
             </div>
+
+            {absentDates.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                  <AlertTriangle size={14} className="mr-1.5 text-orange-500" />
+                  Absent Dates
+                </h4>
+                <div className="flex flex-col gap-2">
+                  {absentDates.map((dateInfo, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1.5 rounded-md text-xs font-medium bg-red-50 text-red-800 border border-red-200"
+                    >
+                      <Calendar size={12} className="mr-1 flex-shrink-0" />
+                      {formatDate(dateInfo.date)}
+                      <span className="mx-1">•</span>
+                      <Clock size={12} className="mr-1 flex-shrink-0" />
+                      {dateInfo.shift}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
     );
   };
 
+  if (loading) {
+    return <Loader message="Loading attendance statistics..." />;
+  }
+
+  const safeStats = Array.isArray(filteredStats)
+    ? filteredStats.filter((stat) => stat && stat.student)
+    : [];
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-semibold text-gray-800 flex items-center">
@@ -306,7 +429,7 @@ const AttendanceStats = () => {
             Attendance Statistics
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Student attendance summary
+            Student attendance summary and absent records
           </p>
         </div>
 
@@ -320,7 +443,12 @@ const AttendanceStats = () => {
 
       {/* Filters */}
       <div className="bg-gray-50 rounded-lg p-3 md:p-4 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+        <div className="flex items-center mb-3">
+          <Filter size={16} className="text-gray-500 mr-2" />
+          <h2 className="text-sm font-medium text-gray-700">Filter Options</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div className="flex flex-col">
             <label htmlFor="month" className="text-xs text-gray-500 mb-1">
               Month
@@ -332,12 +460,11 @@ const AttendanceStats = () => {
               onChange={handleFilterChange}
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-{Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-  <option key={month} value={month}>
-    {new Date(2000, month - 1, 1).toLocaleString("default", { month: "long" })}
-  </option>
-))}
-
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                <option key={month} value={month}>
+                  {new Date(2000, month - 1, 1).toLocaleString("default", { month: "long" })}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -377,9 +504,24 @@ const AttendanceStats = () => {
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+
+          <div className="flex flex-col">
+            <label htmlFor="search" className="text-xs text-gray-500 mb-1">Search Student</label>
+            <div className="relative">
+              <input
+                type="text"
+                id="search"
+                name="search"
+                value={filters.search}
+                onChange={handleSearchChange}
+                placeholder="Name or ID"
+                className="border border-gray-300 rounded-md pl-9 pr-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
+            </div>
+          </div>
         </div>
-        
-        {/* Search Button */}
+
         <div className="mt-4">
           <button
             onClick={handleSearch}
@@ -440,10 +582,21 @@ const AttendanceStats = () => {
                       >
                         Attendance Rate
                       </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {safeStats.map(renderStudentRow)}
+                    {safeStats.map((stat) => (
+                      <React.Fragment key={stat.student._id}>
+                        {renderStudentRow(stat)}
+                        {renderExpandedRow(stat)}
+                      </React.Fragment>
+                    ))}
                   </tbody>
                 </table>
               </div>

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Users, Plus, X, Mail, UserCheck, Search, Edit, Trash2, CheckCircle, Eye } from 'lucide-react';
+import { Users, Plus, X, Mail, UserCheck, Search, Edit, Trash2, Eye } from 'lucide-react';
 import Loader from '../../components/Loader';
 
 const TeacherManagements = () => {
   const [teachers, setTeachers] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -13,6 +14,8 @@ const TeacherManagements = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
   // Function to generate password based on teacher's name
   const generatePassword = (name) => {
     // Extract first name and capitalize first letter
@@ -24,7 +27,8 @@ const TeacherManagements = () => {
     name: '',
     email: '',
     teacherCode: '',
-    phone: ''
+    phone: '',
+    batches: []
   });
   const [editingId, setEditingId] = useState(null);
   const [errors, setErrors] = useState({});
@@ -51,7 +55,12 @@ const TeacherManagements = () => {
     } else if (!/^[0-9]{10}$/.test(formData.phone)) {
       errors.phone = 'Please enter a valid 10-digit phone number';
     }
-    
+
+    // Batch validation - minimum 1 batch required
+    if (!formData.batches || formData.batches.length === 0) {
+      errors.batches = 'Please assign at least one batch to the teacher';
+    }
+
     return errors;
   };
 
@@ -66,6 +75,7 @@ const TeacherManagements = () => {
 
   useEffect(() => {
     fetchTeachers();
+    fetchBatches();
   }, []);
 
   const fetchTeachers = async () => {
@@ -79,6 +89,24 @@ const TeacherManagements = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchBatches = async () => {
+    try {
+      const res = await axios.get('/batches');
+      const batchesData = res.data?.data || res.data?.batches || [];
+      // Filter out default batch - teachers don't get assigned to default batch
+      const nonDefaultBatches = batchesData.filter(batch => !batch.isDefault);
+      setBatches(nonDefaultBatches);
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      toast.error('Failed to load batches');
+    }
+  };
+
+  const handleView = (teacher) => {
+    setSelectedTeacher(teacher);
+    setShowViewModal(true);
   };
 
   const handleDelete = (teacherId, teacherName) => {
@@ -112,10 +140,27 @@ const TeacherManagements = () => {
       name: teacher.name,
       email: teacher.email,
       teacherCode: teacher.teacherCode,
-      phone: teacher.phone || ''
+      phone: teacher.phone || '',
+      batches: teacher.batches ? teacher.batches.map(b => b._id || b) : []
     });
     setEditingId(teacher._id);
     setShowAddForm(true);
+  };
+
+  const addBatch = (batchId) => {
+    if (batchId && !formData.batches.includes(batchId)) {
+      setFormData({
+        ...formData,
+        batches: [...formData.batches, batchId]
+      });
+    }
+  };
+
+  const removeBatch = (batchId) => {
+    setFormData({
+      ...formData,
+      batches: formData.batches.filter(id => id !== batchId)
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -140,37 +185,39 @@ const TeacherManagements = () => {
           name: formData.name,
           email: formData.email,
           teacherCode: formData.teacherCode,
-          phone: formData.phone
+          phone: formData.phone,
+          batches: formData.batches
         });
-        
+
         if (res.data.success) {
           toast.success('Teacher updated successfully');
           // Update the teacher in the list
-          setTeachers(teachers.map(teacher => 
+          setTeachers(teachers.map(teacher =>
             teacher._id === editingId ? res.data.data : teacher
           ));
         }
       } else {
         // Generate password for new teacher
         const password = generatePassword(formData.name);
-        
+
         // Create teacher with auto-generated password
         const res = await axios.post('/admin/teachers', {
           ...formData,
           password
         });
-        
+
         if (res.data.success) {
           toast.success('Teacher created successfully and Welcome email sent with login credentials');
           setTeachers([...teachers, res.data.data]);
         }
       }
-      
+
       setFormData({
         name: '',
         email: '',
         teacherCode: '',
-        phone: ''
+        phone: '',
+        batches: []
       });
       setEditingId(null);
       setShowAddForm(false);
@@ -206,16 +253,15 @@ const TeacherManagements = () => {
         </div>
         
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => {
               if (showAddForm) {
                 setFormData({
                   name: '',
                   email: '',
                   teacherCode: '',
-                  password: '',
-                  confirmPassword: '',
-                  phone: ''
+                  phone: '',
+                  batches: []
                 });
                 setEditingId(null);
                 setErrors({});
@@ -322,12 +368,65 @@ const TeacherManagements = () => {
                   <p className="text-red-500 text-xs italic mt-1">{errors.phone}</p>
                 )}
               </div>
-              {/* Password Information */}
-              <div className="mb-4 p-3 bg-blue-50 rounded-md">
-                <p className="text-sm text-blue-700">
-                  Password will be automatically generated and sent to the teacher's email address.
-                </p>
-              </div>
+            </div>
+
+            {/* Batch Selection */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Assign Batches <span className="text-red-500">*</span>
+              </label>
+
+              {/* Selected Batches Display */}
+              {formData.batches.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {formData.batches.map(batchId => {
+                    const batch = batches.find(b => b._id === batchId);
+                    if (!batch) return null;
+                    return (
+                      <span
+                        key={batch._id}
+                        className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                      >
+                        {batch.name}
+                        <button
+                          type="button"
+                          onClick={() => removeBatch(batch._id)}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Dropdown to add batches */}
+              <select
+                value=""
+                onChange={(e) => addBatch(e.target.value)}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              >
+                <option value="">Click to assign batches...</option>
+                {batches.filter(batch => !formData.batches.includes(batch._id)).map((batch) => (
+                  <option key={batch._id} value={batch._id}>
+                    {batch.name}
+                  </option>
+                ))}
+              </select>
+              {errors.batches && (
+                <p className="text-red-500 text-xs italic mt-1">{errors.batches}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Teachers must be assigned to at least one batch. They can only create students and slots for their assigned batches.
+              </p>
+            </div>
+
+            {/* Password Information */}
+            <div className="mb-4 p-3 bg-blue-50 rounded-md">
+              <p className="text-sm text-blue-700">
+                Password will be automatically generated and sent to the teacher's email address.
+              </p>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -424,22 +523,13 @@ const TeacherManagements = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEdit(teacher)}
-                              className="text-blue-600 hover:text-blue-900 flex items-center"
-                            >
-                              <Edit className="w-5 h-5 mr-1" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(teacher._id, teacher.name)}
-                              className="text-red-600 hover:text-red-900 flex items-center"
-                            >
-                              <Trash2 className="w-5 h-5 mr-1" />
-                              Delete
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleView(teacher)}
+                            className="text-indigo-600 hover:text-indigo-900 flex items-center"
+                          >
+                            <Eye className="w-5 h-5 mr-1" />
+                            View
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -463,33 +553,14 @@ const TeacherManagements = () => {
                             <div className="text-sm font-medium text-gray-900">{teacher.name}</div>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEdit(teacher)}
-                            className="text-blue-600 hover:text-blue-900 text-sm flex items-center"
-                            title="Edit Teacher"
-                          >
-                            <Edit size={18} className="inline-block mr-1" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(teacher._id, teacher.name)}
-                            className="text-red-600 hover:text-red-900 text-sm flex items-center"
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1" />
-                                Deleting...
-                              </>
-                            ) : (
-                              <>
-                                <Trash2 size={18} className="inline-block mr-1" />
-                                Delete
-                              </>
-                            )}
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleView(teacher)}
+                          className="text-indigo-600 hover:text-indigo-900 text-sm flex items-center"
+                          title="View Teacher"
+                        >
+                          <Eye size={18} className="inline-block mr-1" />
+                          View
+                        </button>
                       </div>
                       <div className="text-sm text-gray-500 flex items-center mb-2">
                         <Mail size={14} className="mr-1 text-gray-400" />
@@ -519,6 +590,126 @@ const TeacherManagements = () => {
       
       <div>
         {/* Delete Modal */}
+        {/* View Teacher Details Modal */}
+        {showViewModal && selectedTeacher && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowViewModal(false)}></div>
+            <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Teacher Details
+                </h3>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Teacher Information */}
+              <div className="space-y-6">
+                {/* Profile Section */}
+                <div className="flex items-center space-x-4 pb-4 border-b">
+                  <div className="flex-shrink-0 h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl font-medium text-blue-800">
+                      {selectedTeacher.name.charAt(0)}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900">{selectedTeacher.name}</h4>
+                    <p className="text-sm text-gray-500">{selectedTeacher.teacherCode}</p>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                    <div className="flex items-center text-gray-900">
+                      <Mail size={16} className="mr-2 text-gray-400" />
+                      {selectedTeacher.email}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                    <div className="text-gray-900">
+                      {selectedTeacher.phone || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Batches Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">Assigned Batches</label>
+                  {selectedTeacher.batches && selectedTeacher.batches.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTeacher.batches.map((batch) => (
+                        <span
+                          key={batch._id || batch}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                        >
+                          {batch.name || batch}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No batches assigned</p>
+                  )}
+                </div>
+
+                {/* Additional Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Created At</label>
+                    <div className="text-gray-900 text-sm">
+                      {selectedTeacher.createdAt ? new Date(selectedTeacher.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      }) : 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Last Updated</label>
+                    <div className="text-gray-900 text-sm">
+                      {selectedTeacher.updatedAt ? new Date(selectedTeacher.updatedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      }) : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 mt-6 pt-6 border-t">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    handleEdit(selectedTeacher);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    handleDelete(selectedTeacher._id, selectedTeacher.name);
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {deleteModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>

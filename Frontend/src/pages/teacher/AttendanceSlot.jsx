@@ -67,6 +67,41 @@ const AttendanceSlot = () => {
     );
   };
 
+  // Function to get review status for a slot
+  const getReviewStatus = async (slotId) => {
+    try {
+      const response = await axios.get(`/teacher/attendance?slotId=${slotId}`);
+      const attendanceRecords = response.data.data || [];
+      const awaitingApproval = attendanceRecords.filter(r => r.status === 'awaiting_approval').length;
+      return {
+        hasPendingReviews: awaitingApproval > 0,
+        pendingCount: awaitingApproval
+      };
+    } catch (error) {
+      console.error('Error getting review status:', error);
+      return { hasPendingReviews: false, pendingCount: 0 };
+    }
+  };
+
+  // Function to get review badge for a slot
+  const getReviewBadge = (slot, pendingCount) => {
+    // Only show review badges for closed slots
+    if (slot.status !== 'closed') return null;
+
+    if (pendingCount > 0) {
+      return (
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 ml-2">
+          Review Pending ({pendingCount})
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 ml-2">
+        Review Done
+      </span>
+    );
+  };
+
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   // Function to export slot attendance to Excel
@@ -197,15 +232,20 @@ const AttendanceSlot = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [slotToDelete, setSlotToDelete] = useState(null);
   const [deletingSlot, setDeletingSlot] = useState(false);
+  const [batches, setBatches] = useState([]);
 
   const [formData, setFormData] = useState({
     shift: "morning",
     date: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
     startTime: "09:00",
     endTime: "10:00",
+    batches: [], // Array of selected batch IDs
   });
 
   const [filterDate, setFilterDate] = useState("");
+  const [reviewFilter, setReviewFilter] = useState('all'); // 'all', 'pending', 'done'
+  const [slotReviewStatus, setSlotReviewStatus] = useState({}); // Maps slotId to { hasPendingReviews, pendingCount }
+  const [attendanceFilter, setAttendanceFilter] = useState('all'); // 'all', 'needs_review', 'reviewed'
 
   const isSlotExpired = useCallback((slot) => {
     return isDateBefore(slot.endTime, new Date());
@@ -270,6 +310,19 @@ const AttendanceSlot = () => {
         (a, b) => convertToIST(new Date(b.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
       );
       setSlots(processedSlots);
+
+      // Fetch review status for closed slots
+      const reviewStatusMap = {};
+      const closedSlots = processedSlots.filter(slot => slot.status === 'closed');
+
+      await Promise.all(
+        closedSlots.map(async (slot) => {
+          const status = await getReviewStatus(slot._id);
+          reviewStatusMap[slot._id] = status;
+        })
+      );
+
+      setSlotReviewStatus(reviewStatusMap);
     } catch (error) {
       console.error("Error fetching attendance slots:", error);
       toast.error(
@@ -277,6 +330,19 @@ const AttendanceSlot = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBatches = async () => {
+    try {
+      // Teachers get batches from /auth/me endpoint (includes teacher's assigned batches)
+      const response = await axios.get('/auth/me');
+      const batchesData = response.data?.data?.batches || [];
+      setBatches(batchesData);
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      toast.error('Failed to load batches');
+      setBatches([]);
     }
   };
 
@@ -373,6 +439,12 @@ const AttendanceSlot = () => {
         return;
       }
 
+      // Validate batches
+      if (!formData.batches || formData.batches.length === 0) {
+        toast.error('Please select at least one batch');
+        return;
+      }
+
       // Debug logging
       //console.log('Form data:', formData);
 
@@ -392,7 +464,8 @@ const AttendanceSlot = () => {
         date: formData.date,
         startTime,
         endTime,
-        shift: formData.shift
+        shift: formData.shift,
+        batches: formData.batches
       };
 
       const token = localStorage.getItem("token");
@@ -414,12 +487,21 @@ const AttendanceSlot = () => {
         ...slotData,
         date: preparedTimes.date,
         startTime: preparedTimes.startTime,
-        endTime: preparedTimes.endTime
+        endTime: preparedTimes.endTime,
+        batches: formData.batches
       }, config);
 
       if (res.data.success) {
-        toast.success("Attendance slot created successfully");
+        toast.success("Attendance slot(s) created successfully");
         setShowAddForm(false);
+        // Reset form data
+        setFormData({
+          shift: "morning",
+          date: new Date().toISOString().split("T")[0],
+          startTime: "09:00",
+          endTime: "10:00",
+          batches: []
+        });
         fetchSlots();
       }
     } catch (error) {
@@ -465,6 +547,7 @@ const AttendanceSlot = () => {
       setCurrentSlot(slot);
       setShowAttendanceModal(true);
       setLoadingAttendance(true);
+      setAttendanceFilter('all'); // Reset filter when opening modal
 
       const token = localStorage.getItem("token");
       if (!token) {
@@ -500,13 +583,14 @@ const AttendanceSlot = () => {
         const presentStudentIds = new Set();
         const attendanceMap = {};
 
-        // Process present students 
+        // Process present students
         attendanceData.forEach((record) => {
           if (record.student) {
             const studentId = record.student._id || record.student;
             presentStudentIds.add(studentId);
             attendanceMap[studentId] = {
-              isPresent: true,
+              isPresent: record.isPresent !== undefined ? record.isPresent : true,
+              status: record.status || (record.isPresent ? 'present' : 'absent'),
               markedAt: record.markedAt,
               location: record.location,
               photo: record.photo,
@@ -516,15 +600,16 @@ const AttendanceSlot = () => {
           }
         });
 
-        //console.log("Present student IDs:", presentStudentIds); 
+        //console.log("Present student IDs:", presentStudentIds);
 
-        // Process all students to include absent ones 
+        // Process all students to include absent ones
         const processedStudents = allStudents.map((student) => {
           const isPresent = presentStudentIds.has(student._id);
           if (!isPresent) {
-            // Add absent students to the attendance map 
+            // Add absent students to the attendance map
             attendanceMap[student._id] = {
               isPresent: false,
+              status: 'pending',
               markedAt: null,
               location: null,
               photo: null,
@@ -574,6 +659,7 @@ const AttendanceSlot = () => {
 
   useEffect(() => {
     fetchSlots();
+    fetchBatches();
   }, []);
 
   if (loading) {
@@ -651,10 +737,47 @@ const AttendanceSlot = () => {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle border-b border-gray-200 sm:rounded-lg shadow ring-1 ring-black ring-opacity-5">
-              {/* Added fixed height container with vertical scrolling */}
-              <div className="max-h-96 overflow-y-auto">
+          <>
+            {/* Review Status Tabs */}
+            <div className="mb-6 border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setReviewFilter('all')}
+                  className={`${
+                    reviewFilter === 'all'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  All Slots ({slots.length})
+                </button>
+                <button
+                  onClick={() => setReviewFilter('pending')}
+                  className={`${
+                    reviewFilter === 'pending'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  Review Pending ({slots.filter(s => s.status === 'closed' && slotReviewStatus[s._id]?.hasPendingReviews).length})
+                </button>
+                <button
+                  onClick={() => setReviewFilter('done')}
+                  className={`${
+                    reviewFilter === 'done'
+                      ? 'border-green-500 text-green-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  Review Done ({slots.filter(s => s.status === 'closed' && !slotReviewStatus[s._id]?.hasPendingReviews).length})
+                </button>
+              </nav>
+            </div>
+
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle border-b border-gray-200 sm:rounded-lg shadow ring-1 ring-black ring-opacity-5">
+                {/* Added fixed height container with vertical scrolling */}
+                <div className="max-h-96 overflow-y-auto">
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
@@ -687,12 +810,20 @@ const AttendanceSlot = () => {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {(() => {
                       const filteredSlots = slots.filter((slot) => {
-                        if (!filterDate) return true;
-                        // Convert both dates to Date objects before comparison
-                        return isSameDate(
-                          new Date(slot.date),
-                          new Date(filterDate)
-                        );
+                        // Apply date filter
+                        if (filterDate && !isSameDate(new Date(slot.date), new Date(filterDate))) {
+                          return false;
+                        }
+
+                        // Apply review filter
+                        if (reviewFilter === 'all') return true;
+                        if (reviewFilter === 'pending') {
+                          return slot.status === 'closed' && slotReviewStatus[slot._id]?.hasPendingReviews;
+                        }
+                        if (reviewFilter === 'done') {
+                          return slot.status === 'closed' && !slotReviewStatus[slot._id]?.hasPendingReviews;
+                        }
+                        return true;
                       });
 
                       if (filterDate && filteredSlots.length === 0) {
@@ -761,7 +892,10 @@ const AttendanceSlot = () => {
                             </span>
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm">
-                            {getStatusBadge(slot)}
+                            <div className="flex items-center">
+                              {getStatusBadge(slot)}
+                              {getReviewBadge(slot, slotReviewStatus[slot._id]?.pendingCount || 0)}
+                            </div>
                           </td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-xs sm:text-sm font-medium sm:pr-6">
                             <div className="flex justify-end space-x-3">
@@ -794,6 +928,7 @@ const AttendanceSlot = () => {
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
       {/* Attendance Modal */}
@@ -843,9 +978,65 @@ const AttendanceSlot = () => {
                   </div>
                 </div>
 
+                {/* Attendance Filter Toggle */}
+                <div className="mb-4 flex space-x-2 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setAttendanceFilter('all')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      attendanceFilter === 'all'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    All ({students.length})
+                  </button>
+                  <button
+                    onClick={() => setAttendanceFilter('needs_review')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      attendanceFilter === 'needs_review'
+                        ? 'bg-white text-orange-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Needs Review ({students.filter(s => attendance[s._id]?.status === 'awaiting_approval').length})
+                  </button>
+                  <button
+                    onClick={() => setAttendanceFilter('reviewed')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      attendanceFilter === 'reviewed'
+                        ? 'bg-white text-green-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Reviewed ({students.filter(s => {
+                      const status = attendance[s._id]?.status;
+                      return status === 'present' || status === 'absent';
+                    }).length})
+                  </button>
+                </div>
+
                 <div className="overflow-y-auto flex-grow border border-gray-200 rounded-lg custom-scrollbar pr-1">
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    {(() => {
+                      // Filter students based on attendanceFilter
+                      const filteredStudents = students.filter(student => {
+                        if (attendanceFilter === 'all') return true;
+
+                        const studentStatus = attendance[student._id]?.status;
+
+                        if (attendanceFilter === 'needs_review') {
+                          return studentStatus === 'awaiting_approval';
+                        }
+
+                        if (attendanceFilter === 'reviewed') {
+                          return studentStatus === 'present' || studentStatus === 'absent';
+                        }
+
+                        return true;
+                      });
+
+                      return (
+                        <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
                           <th
@@ -887,7 +1078,7 @@ const AttendanceSlot = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {students.length === 0 ? (
+                        {filteredStudents.length === 0 ? (
                           <tr>
                             <td
                               colSpan="6"
@@ -897,9 +1088,8 @@ const AttendanceSlot = () => {
                             </td>
                           </tr>
                         ) : (
-                          students.map((student) => {
+                          filteredStudents.map((student) => {
                             const studentAttendance = attendance[student._id];
-                            const isPresent = studentAttendance?.isPresent;
                             const markedAt = studentAttendance?.markedAt;
                             const location = studentAttendance?.location;
                             const photo = studentAttendance?.photo;
@@ -918,14 +1108,28 @@ const AttendanceSlot = () => {
                                   </div>
                                 </td>
                                 <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                                  <span
-                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isPresent
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-200 text-gray-800"
-                                      }`}
-                                  >
-                                    {isPresent ? "Present" : "Absent"}
-                                  </span>
+                                  {(() => {
+                                    const status = studentAttendance?.status || 'pending';
+                                    let bgColor = 'bg-yellow-100 text-yellow-800'; // pending
+                                    let statusText = 'Pending';
+
+                                    if (status === 'awaiting_approval') {
+                                      bgColor = 'bg-orange-100 text-orange-800';
+                                      statusText = 'Awaiting Approval';
+                                    } else if (status === 'present') {
+                                      bgColor = 'bg-green-100 text-green-800';
+                                      statusText = 'Present';
+                                    } else if (status === 'absent') {
+                                      bgColor = 'bg-red-100 text-red-800';
+                                      statusText = 'Absent';
+                                    }
+
+                                    return (
+                                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor}`}>
+                                        {statusText}
+                                      </span>
+                                    );
+                                  })()}
                                 </td>
                                 <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                   {markedAt ? new Date(markedAt).toLocaleTimeString() : "N/A"}
@@ -955,6 +1159,8 @@ const AttendanceSlot = () => {
                         )}
                       </tbody>
                     </table>
+                      );
+                    })()}
                   </div>
                 </div>
               </>
@@ -1083,6 +1289,65 @@ const AttendanceSlot = () => {
                 />
               </div>
             </div>
+
+            {/* Batch Selection */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Batches *
+              </label>
+              <div className="mb-3 flex flex-wrap gap-2">
+                {formData.batches.map(batchId => {
+                  const batch = batches.find(b => b._id === batchId);
+                  if (!batch) return null;
+                  return (
+                    <span
+                      key={batch._id}
+                      className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+                    >
+                      {batch.name}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            batches: prev.batches.filter(id => id !== batch._id)
+                          }));
+                        }}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                        disabled={creatingSlot}
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+              <select
+                value=""
+                onChange={(e) => {
+                  const batchId = e.target.value;
+                  if (batchId && !formData.batches.includes(batchId)) {
+                    setFormData(prev => ({
+                      ...prev,
+                      batches: [...prev.batches, batchId]
+                    }));
+                  }
+                }}
+                disabled={creatingSlot}
+                className={`w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${creatingSlot ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              >
+                <option value="">Click to select batches...</option>
+                {batches.filter(batch => !formData.batches.includes(batch._id)).map((batch) => (
+                  <option key={batch._id} value={batch._id}>
+                    {batch.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Select one or more batches to create attendance slots. One slot will be created per batch.
+              </p>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
               <button
                 type="button"

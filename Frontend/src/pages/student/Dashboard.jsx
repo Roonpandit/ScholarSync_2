@@ -13,6 +13,8 @@ const StudentDashboard = () => {
   const [attendanceStats, setAttendanceStats] = useState({
     present: 0,
     absent: 0,
+    pending: 0,
+    awaitingApproval: 0,
     total: 0,
   });
   const [recentAttendance, setRecentAttendance] = useState([]);
@@ -55,12 +57,14 @@ const StudentDashboard = () => {
         const totalClosedSlots = absenceRes.data.totalClosedSlots || 0;
         const totalAbsences = absenceRes.data.totalAbsences || 0;
         const totalPending = absenceRes.data.totalPending || 0;
+        const totalAwaitingApproval = absenceRes.data.totalAwaitingApproval || 0;
 
         setAttendanceStats({
           present,
           absent: totalAbsences,
           pending: totalPending,
-          total: present + totalAbsences + totalPending,
+          awaitingApproval: totalAwaitingApproval,
+          total: present + totalAbsences + totalPending + totalAwaitingApproval,
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -78,7 +82,7 @@ const StudentDashboard = () => {
   }
 
   const calculateAttendancePercentage = (stats) => {
-    const totalCountedSlots = stats.total - stats.pending;
+    const totalCountedSlots = stats.total - stats.pending - stats.awaitingApproval;
     return totalCountedSlots > 0
       ? Math.round((stats.present / totalCountedSlots) * 100)
       : 0;
@@ -179,7 +183,7 @@ const StudentDashboard = () => {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-gray-600 text-sm font-medium mb-2">
-                Presents
+                Present
               </h3>
               <p className="text-3xl font-bold text-gray-800">
                 {attendanceStats.present}
@@ -218,101 +222,197 @@ const StudentDashboard = () => {
                   clipRule="evenodd"
                 />
               </svg>
-              </Link>
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-orange-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-gray-600 text-sm font-medium mb-2">
+                Awaiting Approval
+              </h3>
+              <p className="text-3xl font-bold text-gray-800">
+                {attendanceStats.awaitingApproval}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-orange-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                  clipRule="evenodd"
+                />
+              </svg>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-purple-500">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-gray-600 text-sm font-medium mb-2">
-                  Active Slots
-                </h3>
-                <p className="text-3xl font-bold text-gray-800">
-                  {activeSlotCount}
-                </p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-purple-500"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Link
-                to="/student/mark-attendance"
-                className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center"
+          <div className="mt-4">
+            <Link
+              to="/student/absence-history"
+              className="text-orange-600 hover:text-orange-700 text-sm font-medium flex items-center"
+            >
+              View Details
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-purple-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-gray-600 text-sm font-medium mb-2">
+                Active Slots
+              </h3>
+              <p className="text-3xl font-bold text-gray-800">
+                {activeSlotCount}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-purple-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link
+              to="/student/mark-attendance"
+              className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center"
+            >
               View Slots
-                <svg  
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 ml-1"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </Link>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-red-500">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-gray-600 text-sm font-medium mb-2">
-                  Absents
-                </h3>
-                <p className="text-3xl font-bold text-gray-800">
-                  {attendanceStats.absent}
-                </p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-red-500"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Link
-                to="/student/absence-history"
-                className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
-                View List
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 ml-1"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </Link>
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-yellow-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-gray-600 text-sm font-medium mb-2">
+                Pending Slots
+              </h3>
+              <p className="text-3xl font-bold text-gray-800">
+                {attendanceStats.pending}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-yellow-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                  clipRule="evenodd"
+                />
+              </svg>
             </div>
           </div>
+          <div className="mt-4">
+            <Link
+              to="/student/absence-history"
+              className="text-yellow-600 hover:text-yellow-700 text-sm font-medium flex items-center"
+            >
+              View List
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-red-500">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-gray-600 text-sm font-medium mb-2">
+                Absent
+              </h3>
+              <p className="text-3xl font-bold text-gray-800">
+                {attendanceStats.absent}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-red-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link
+              to="/student/absence-history"
+              className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center"
+            >
+              View List
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 ml-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Link>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -347,8 +347,8 @@ const MarkAttendance = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
-      toast.success('Attendance marked successfully!');
+
+      toast.success('Attendance marked successfully. Waiting for teacher approval.');
       navigate('/student');
     } catch (error) {
       console.error('Error marking attendance:', error);
@@ -421,10 +421,11 @@ const MarkAttendance = () => {
                     .filter(slot => slot.status === 'active')
                     .map((slot) => (
                       <option key={slot._id} value={slot._id} className="text-gray-500">
-                        {formatDate(slot.date)} - 
-                        {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)} Shift - 
-                        {formatTime(slot.startTime)} to 
+                        {slot.batch?.name || 'N/A'} - {formatDate(slot.date)} -
+                        {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)} Shift -
+                        {formatTime(slot.startTime)} to
                         {formatTime(slot.endTime)}
+                        {slot.attendanceStatus ? ` (${slot.attendanceStatus})` : ''}
                       </option>
                     ))
                   }

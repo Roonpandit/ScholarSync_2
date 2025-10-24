@@ -7,10 +7,13 @@ import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Tr
 import BulkUpload from './BulkUploads';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../../components/Loader';
+import StudentDetails from './StudentDetails';
 
 const StudentManagements = () => {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [defaultBatch, setDefaultBatch] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -18,6 +21,7 @@ const StudentManagements = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewingStudentId, setViewingStudentId] = useState(null);
   // Function to generate password based on student's name
   const generatePassword = (name) => {
     // Extract first name and capitalize first letter
@@ -29,31 +33,37 @@ const StudentManagements = () => {
     name: '',
     email: '',
     studentCode: '',
-    phone: ''
+    phone: '',
+    batches: []
   });
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.name.trim()) {
       errors.name = 'Name is required';
     }
-    
+
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
       errors.email = 'Invalid email address';
     }
-    
+
     if (!formData.studentCode.trim()) {
       errors.studentCode = 'Student code is required';
     }
-    
+
     if (!formData.phone.trim()) {
       errors.phone = 'Phone number is required';
     } else if (!/^[0-9]{10}$/.test(formData.phone)) {
       errors.phone = 'Please enter a valid 10-digit phone number';
     }
-    
+
+    // Batch validation - minimum 2 batches (including default)
+    if (!formData.batches || formData.batches.length < 2) {
+      errors.batches = 'Please select at least one batch in addition to the default batch';
+    }
+
     return errors;
   };
 
@@ -67,13 +77,50 @@ const StudentManagements = () => {
     });
   };
 
+  const handleShowAddForm = () => {
+    setShowAddForm(!showAddForm);
+    if (!showAddForm && defaultBatch) {
+      // Auto-select default batch when opening form
+      setFormData({
+        name: '',
+        email: '',
+        studentCode: '',
+        phone: '',
+        batches: [defaultBatch._id]
+      });
+    }
+  };
+
   const viewStudentDetails = (studentId) => {
-    navigate(`/admin/students/${studentId}`);
+    setViewingStudentId(studentId);
   };
 
   useEffect(() => {
     fetchStudents();
+    fetchBatches();
   }, []);
+
+  const fetchBatches = async () => {
+    try {
+      const res = await axios.get('/batches');
+      // Backend returns data in res.data.data
+      const batchesData = res.data?.data || res.data?.batches || [];
+      setBatches(batchesData);
+      const defBatch = batchesData.find(b => b.isDefault);
+      setDefaultBatch(defBatch);
+      // Auto-select default batch when form opens
+      if (defBatch && showAddForm && formData.batches.length === 0) {
+        setFormData(prev => ({
+          ...prev,
+          batches: [defBatch._id]
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      toast.error('Failed to load batches');
+      setBatches([]); // Set empty array on error
+    }
+  };
 
   const fetchStudents = async () => {
     try {
@@ -143,7 +190,8 @@ const StudentManagements = () => {
           name: '',
           email: '',
           studentCode: '',
-          phone: ''
+          phone: '',
+          batches: defaultBatch ? [defaultBatch._id] : []
         });
         setShowAddForm(false);
       }
@@ -180,11 +228,11 @@ const StudentManagements = () => {
         </div>
         
         <div className="flex gap-2">
-          <button 
-            onClick={() => setShowAddForm(!showAddForm)}
+          <button
+            onClick={handleShowAddForm}
             className={`inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              showAddForm 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+              showAddForm
+                ? 'bg-red-100 text-red-700 hover:bg-red-200'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
           >
@@ -282,9 +330,91 @@ const StudentManagements = () => {
                   <p className="text-red-500 text-xs italic mt-1">{errors.phone}</p>
                 )}
               </div>
-              
+            </div>
+
+            {/* Batch Selection */}
+            <div className="mb-4">
+              <label htmlFor="batches" className="block text-gray-700 text-sm font-bold mb-2">
+                Select Batches <span className="text-red-500">*</span>
+              </label>
+
+              {/* Selected Batches Display */}
+              <div className="mb-3 flex flex-wrap gap-2">
+                {formData.batches.length > 0 ? (
+                  formData.batches.map(batchId => {
+                    const batch = batches.find(b => b._id === batchId);
+                    if (!batch) return null;
+                    const isDefault = batch.isDefault;
+                    return (
+                      <span
+                        key={batch._id}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          isDefault
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                            : 'bg-blue-100 text-blue-800 border border-blue-300'
+                        }`}
+                      >
+                        {batch.name}
+                        {isDefault && (
+                          <span className="ml-1 text-xs">(Default)</span>
+                        )}
+                        {!isDefault && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                batches: prev.batches.filter(id => id !== batch._id)
+                              }));
+                            }}
+                            className="ml-2 text-blue-600 hover:text-blue-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="text-sm text-gray-500 italic">No batches selected</span>
+                )}
+              </div>
+
+              {/* Dropdown to add batches */}
+              <select
+                id="batches"
+                value=""
+                onChange={(e) => {
+                  const batchId = e.target.value;
+                  if (batchId && !formData.batches.includes(batchId)) {
+                    setFormData(prev => ({
+                      ...prev,
+                      batches: [...prev.batches, batchId]
+                    }));
+                  }
+                  e.target.value = ''; // Reset dropdown
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Click to add more batches...</option>
+                {(batches || []).filter(batch => !formData.batches.includes(batch._id)).map((batch) => (
+                  <option key={batch._id} value={batch._id}>
+                    {batch.name}
+                  </option>
+                ))}
+              </select>
+
+              {errors.batches && (
+                <p className="text-red-500 text-xs italic mt-1">{errors.batches}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Default batch is mandatory and pre-selected. Select additional batches from the dropdown.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Password Information */}
-              <div className="mb-4 p-3 bg-blue-50 rounded-md">
+              <div className="p-3 bg-blue-50 rounded-md">
                 <p className="text-sm text-blue-700">
                   Password will be automatically generated and sent to the student's email address.
                 </p>
@@ -532,6 +662,15 @@ const StudentManagements = () => {
         </div>
       )}
     </div>
+
+      {/* Student Detail Modal */}
+      {viewingStudentId && (
+        <StudentDetails
+          isModal={true}
+          studentIdProp={viewingStudentId}
+          onClose={() => setViewingStudentId(null)}
+        />
+      )}
     </div>
   );
 };

@@ -67,6 +67,41 @@ const AttendanceSlots = () => {
     );
   };
 
+  // Function to get review status for a slot
+  const getReviewStatus = async (slotId) => {
+    try {
+      const response = await axios.get(`/admin/attendance?slotId=${slotId}`);
+      const attendanceRecords = response.data.data || [];
+      const awaitingApproval = attendanceRecords.filter(r => r.status === 'awaiting_approval').length;
+      return {
+        hasPendingReviews: awaitingApproval > 0,
+        pendingCount: awaitingApproval
+      };
+    } catch (error) {
+      console.error('Error getting review status:', error);
+      return { hasPendingReviews: false, pendingCount: 0 };
+    }
+  };
+
+  // Function to get review badge for a slot
+  const getReviewBadge = (slot, pendingCount) => {
+    // Only show review badges for closed slots
+    if (slot.status !== 'closed') return null;
+
+    if (pendingCount > 0) {
+      return (
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 ml-2">
+          Review Pending ({pendingCount})
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 ml-2">
+        Review Done
+      </span>
+    );
+  };
+
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   // Function to export slot attendance to Excel
@@ -186,6 +221,8 @@ const AttendanceSlots = () => {
 
   // Rest of the component code... 
   const [slots, setSlots] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [defaultBatch, setDefaultBatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -203,9 +240,13 @@ const AttendanceSlots = () => {
     date: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
     startTime: "09:00",
     endTime: "10:00",
+    batches: []
   });
 
   const [filterDate, setFilterDate] = useState("");
+  const [reviewFilter, setReviewFilter] = useState('all'); // 'all', 'pending', 'done'
+  const [slotReviewStatus, setSlotReviewStatus] = useState({}); // Maps slotId to { hasPendingReviews, pendingCount }
+  const [attendanceFilter, setAttendanceFilter] = useState('all'); // 'all', 'needs_review', 'reviewed'
 
   const isSlotExpired = useCallback((slot) => {
     return isDateBefore(slot.endTime, new Date());
@@ -222,7 +263,7 @@ const AttendanceSlots = () => {
       }
 
       const url = "/admin/attendance-slots";
-      //console.log("Making request to:", url); 
+      //console.log("Making request to:", url);
 
       const config = {
         headers: {
@@ -234,7 +275,7 @@ const AttendanceSlots = () => {
       };
 
       const res = await axios.get(url, config);
-      //console.log("Response:", res); 
+      //console.log("Response:", res);
 
       if (!res.data || !res.data.success) {
         throw new Error(res.data?.message || "Invalid response format");
@@ -249,17 +290,18 @@ const AttendanceSlots = () => {
         // Compare times in IST
         const isExpired = endTimeIST < nowIST;
 
-        // If slot is expired and still marked as active, it will be automatically closed by the backend 
-        // but we'll handle it on the frontend as well for consistency 
+        // If slot is expired and still marked as active, it will be automatically closed by the backend
+        // but we'll handle it on the frontend as well for consistency
         const isActive = slot.isActive && !isExpired;
 
         return {
           ...slot,
-          date: slot.date, // Already in YYYY-MM-DD format 
-          startTime: slot.startTime, // Keep as ISO string 
-          endTime: slot.endTime, // Keep as ISO string 
+          date: slot.date, // Already in YYYY-MM-DD format
+          startTime: slot.startTime, // Keep as ISO string
+          endTime: slot.endTime, // Keep as ISO string
+          batch: slot.batch, // Keep batch info
           isExpired,
-          isActive, // This will be false if expired, regardless of the backend value 
+          isActive, // This will be false if expired, regardless of the backend value
           displayActive: isActive,
           formattedDate: formatDateDisplay(startTimeIST),
           formattedTime: `${formatTime24h(startTimeIST)} - ${formatTime24h(endTimeIST)}`,
@@ -270,6 +312,19 @@ const AttendanceSlots = () => {
         (a, b) => convertToIST(new Date(b.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
       );
       setSlots(processedSlots);
+
+      // Fetch review status for closed slots
+      const reviewStatusMap = {};
+      const closedSlots = processedSlots.filter(slot => slot.status === 'closed');
+
+      await Promise.all(
+        closedSlots.map(async (slot) => {
+          const status = await getReviewStatus(slot._id);
+          reviewStatusMap[slot._id] = status;
+        })
+      );
+
+      setSlotReviewStatus(reviewStatusMap);
     } catch (error) {
       console.error("Error fetching attendance slots:", error);
       toast.error(
@@ -362,6 +417,15 @@ const AttendanceSlots = () => {
     }));
   }, []);
 
+  const handleBatchToggle = (batchId) => {
+    setFormData(prev => ({
+      ...prev,
+      batches: prev.batches.includes(batchId)
+        ? prev.batches.filter(id => id !== batchId)
+        : [...prev.batches, batchId]
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -370,6 +434,12 @@ const AttendanceSlots = () => {
       // Validate form data
       if (!formData.shift || !formData.date || !formData.startTime || !formData.endTime) {
         toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Validate batch selection
+      if (!formData.batches || formData.batches.length === 0) {
+        toast.error('Please select at least one batch');
         return;
       }
 
@@ -392,7 +462,8 @@ const AttendanceSlots = () => {
         date: formData.date,
         startTime,
         endTime,
-        shift: formData.shift
+        shift: formData.shift,
+        batches: formData.batches
       };
 
       const token = localStorage.getItem("token");
@@ -418,8 +489,16 @@ const AttendanceSlots = () => {
       }, config);
 
       if (res.data.success) {
-        toast.success("Attendance slot created successfully");
+        const slotsCount = formData.batches.length;
+        toast.success(`${slotsCount} attendance slot${slotsCount > 1 ? 's' : ''} created successfully`);
         setShowAddForm(false);
+        setFormData({
+          shift: "morning",
+          date: new Date().toISOString().split("T")[0],
+          startTime: "09:00",
+          endTime: "10:00",
+          batches: []
+        });
         fetchSlots();
       }
     } catch (error) {
@@ -465,6 +544,7 @@ const AttendanceSlots = () => {
       setCurrentSlot(slot);
       setShowAttendanceModal(true);
       setLoadingAttendance(true);
+      setAttendanceFilter('all'); // Reset filter when opening modal
 
       const token = localStorage.getItem("token");
       if (!token) {
@@ -500,13 +580,14 @@ const AttendanceSlots = () => {
         const presentStudentIds = new Set();
         const attendanceMap = {};
 
-        // Process present students 
+        // Process present students
         attendanceData.forEach((record) => {
           if (record.student) {
             const studentId = record.student._id || record.student;
             presentStudentIds.add(studentId);
             attendanceMap[studentId] = {
-              isPresent: true,
+              isPresent: record.isPresent !== undefined ? record.isPresent : true,
+              status: record.status || (record.isPresent ? 'present' : 'absent'),
               markedAt: record.markedAt,
               location: record.location,
               photo: record.photo,
@@ -518,13 +599,14 @@ const AttendanceSlots = () => {
 
         //console.log("Present student IDs:", presentStudentIds); 
 
-        // Process all students to include absent ones 
+        // Process all students to include absent ones
         const processedStudents = allStudents.map((student) => {
           const isPresent = presentStudentIds.has(student._id);
           if (!isPresent) {
-            // Add absent students to the attendance map 
+            // Add absent students to the attendance map
             attendanceMap[student._id] = {
               isPresent: false,
+              status: 'pending',
               markedAt: null,
               location: null,
               photo: null,
@@ -574,7 +656,26 @@ const AttendanceSlots = () => {
 
   useEffect(() => {
     fetchSlots();
+    fetchBatches();
   }, []);
+
+  const fetchBatches = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/batches', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Backend returns data in res.data.data
+      const batchesData = res.data?.data || res.data?.batches || [];
+      setBatches(batchesData);
+      const defBatch = batchesData.find(b => b.isDefault);
+      setDefaultBatch(defBatch);
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      toast.error('Failed to load batches');
+      setBatches([]); // Set empty array on error
+    }
+  };
 
   if (loading) {
     return <Loader message="Loading attendance slots..." />;
@@ -651,10 +752,47 @@ const AttendanceSlots = () => {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle border-b border-gray-200 sm:rounded-lg shadow ring-1 ring-black ring-opacity-5">
-              {/* Added fixed height container with vertical scrolling */}
-              <div className="max-h-96 overflow-y-auto">
+          <>
+            {/* Review Status Tabs */}
+            <div className="mb-6 border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setReviewFilter('all')}
+                  className={`${
+                    reviewFilter === 'all'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  All Slots ({slots.length})
+                </button>
+                <button
+                  onClick={() => setReviewFilter('pending')}
+                  className={`${
+                    reviewFilter === 'pending'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  Review Pending ({slots.filter(s => s.status === 'closed' && slotReviewStatus[s._id]?.hasPendingReviews).length})
+                </button>
+                <button
+                  onClick={() => setReviewFilter('done')}
+                  className={`${
+                    reviewFilter === 'done'
+                      ? 'border-green-500 text-green-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+                >
+                  Review Done ({slots.filter(s => s.status === 'closed' && !slotReviewStatus[s._id]?.hasPendingReviews).length})
+                </button>
+              </nav>
+            </div>
+
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle border-b border-gray-200 sm:rounded-lg shadow ring-1 ring-black ring-opacity-5">
+                {/* Added fixed height container with vertical scrolling */}
+                <div className="max-h-96 overflow-y-auto">
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
@@ -669,6 +807,12 @@ const AttendanceSlots = () => {
                         className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900"
                       >
                         Shift
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell"
+                      >
+                        Batch
                       </th>
                       <th
                         scope="col"
@@ -687,18 +831,26 @@ const AttendanceSlots = () => {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {(() => {
                       const filteredSlots = slots.filter((slot) => {
-                        if (!filterDate) return true;
-                        // Convert both dates to Date objects before comparison
-                        return isSameDate(
-                          new Date(slot.date),
-                          new Date(filterDate)
-                        );
+                        // Apply date filter
+                        if (filterDate && !isSameDate(new Date(slot.date), new Date(filterDate))) {
+                          return false;
+                        }
+
+                        // Apply review filter
+                        if (reviewFilter === 'all') return true;
+                        if (reviewFilter === 'pending') {
+                          return slot.status === 'closed' && slotReviewStatus[slot._id]?.hasPendingReviews;
+                        }
+                        if (reviewFilter === 'done') {
+                          return slot.status === 'closed' && !slotReviewStatus[slot._id]?.hasPendingReviews;
+                        }
+                        return true;
                       });
 
                       if (filterDate && filteredSlots.length === 0) {
                         return (
                           <tr>
-                            <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
                               No slots found for the selected date
                             </td>
                           </tr>
@@ -760,8 +912,21 @@ const AttendanceSlots = () => {
                                 slot.shift.slice(1)}
                             </span>
                           </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-700 hidden md:table-cell">
+                            <div className="flex items-center">
+                              <span className="font-medium">{slot.batch?.name || 'N/A'}</span>
+                              {slot.batch?.isDefault && (
+                                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm">
-                            {getStatusBadge(slot)}
+                            <div className="flex items-center">
+                              {getStatusBadge(slot)}
+                              {getReviewBadge(slot, slotReviewStatus[slot._id]?.pendingCount || 0)}
+                            </div>
                           </td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-xs sm:text-sm font-medium sm:pr-6">
                             <div className="flex justify-end space-x-3">
@@ -794,6 +959,7 @@ const AttendanceSlots = () => {
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
       {/* Attendance Modal */}
@@ -843,63 +1009,118 @@ const AttendanceSlots = () => {
                   </div>
                 </div>
 
+                {/* Attendance Filter Toggle */}
+                <div className="mb-4 flex space-x-2 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setAttendanceFilter('all')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      attendanceFilter === 'all'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    All ({students.length})
+                  </button>
+                  <button
+                    onClick={() => setAttendanceFilter('needs_review')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      attendanceFilter === 'needs_review'
+                        ? 'bg-white text-orange-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Needs Review ({students.filter(s => attendance[s._id]?.status === 'awaiting_approval').length})
+                  </button>
+                  <button
+                    onClick={() => setAttendanceFilter('reviewed')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      attendanceFilter === 'reviewed'
+                        ? 'bg-white text-green-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Reviewed ({students.filter(s => {
+                      const status = attendance[s._id]?.status;
+                      return status === 'present' || status === 'absent';
+                    }).length})
+                  </button>
+                </div>
+
                 <div className="overflow-y-auto flex-grow border border-gray-200 rounded-lg custom-scrollbar pr-1">
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50 sticky top-0 z-10">
-                        <tr>
-                          <th
-                            scope="col"
-                            className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Student Code
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Student Name
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Status
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Marked At
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Photo
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            Location (Lng, Lat)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {students.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan="6"
-                              className="px-2 sm:px-6 py-4 text-center text-sm text-gray-500"
-                            >
-                              No attendance records found
-                            </td>
-                          </tr>
-                        ) : (
-                          students.map((student) => {
+                    {(() => {
+                      // Filter students based on attendanceFilter
+                      const filteredStudents = students.filter(student => {
+                        if (attendanceFilter === 'all') return true;
+
+                        const studentStatus = attendance[student._id]?.status;
+
+                        if (attendanceFilter === 'needs_review') {
+                          return studentStatus === 'awaiting_approval';
+                        }
+
+                        if (attendanceFilter === 'reviewed') {
+                          return studentStatus === 'present' || studentStatus === 'absent';
+                        }
+
+                        return true;
+                      });
+
+                      return (
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                              <th
+                                scope="col"
+                                className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Student Code
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Student Name
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Status
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Marked At
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Photo
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Location (Lng, Lat)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredStudents.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan="6"
+                                  className="px-2 sm:px-6 py-4 text-center text-sm text-gray-500"
+                                >
+                                  No attendance records found
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredStudents.map((student) => {
                             const studentAttendance = attendance[student._id];
-                            const isPresent = studentAttendance?.isPresent;
                             const markedAt = studentAttendance?.markedAt;
                             const location = studentAttendance?.location;
                             const photo = studentAttendance?.photo;
@@ -918,14 +1139,28 @@ const AttendanceSlots = () => {
                                   </div>
                                 </td>
                                 <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                                  <span
-                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isPresent
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-200 text-gray-800"
-                                      }`}
-                                  >
-                                    {isPresent ? "Present" : "Absent"}
-                                  </span>
+                                  {(() => {
+                                    const status = studentAttendance?.status || 'pending';
+                                    let bgColor = 'bg-yellow-100 text-yellow-800'; // pending
+                                    let statusText = 'Pending';
+
+                                    if (status === 'awaiting_approval') {
+                                      bgColor = 'bg-orange-100 text-orange-800';
+                                      statusText = 'Awaiting Approval';
+                                    } else if (status === 'present') {
+                                      bgColor = 'bg-green-100 text-green-800';
+                                      statusText = 'Present';
+                                    } else if (status === 'absent') {
+                                      bgColor = 'bg-red-100 text-red-800';
+                                      statusText = 'Absent';
+                                    }
+
+                                    return (
+                                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor}`}>
+                                        {statusText}
+                                      </span>
+                                    );
+                                  })()}
                                 </td>
                                 <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                   {markedAt ? new Date(markedAt).toLocaleTimeString() : "N/A"}
@@ -955,6 +1190,8 @@ const AttendanceSlots = () => {
                         )}
                       </tbody>
                     </table>
+                      );
+                    })()}
                   </div>
                 </div>
               </>
@@ -1083,6 +1320,55 @@ const AttendanceSlots = () => {
                 />
               </div>
             </div>
+
+            {/* Batch Selection */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Batches <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {(batches || []).map((batch) => {
+                  const isDefault = batch.isDefault;
+                  const isChecked = formData.batches.includes(batch._id);
+
+                  return (
+                    <label
+                      key={batch._id}
+                      className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${
+                        isChecked
+                          ? 'bg-blue-50 border-blue-500'
+                          : 'bg-white border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleBatchToggle(batch._id)}
+                        disabled={creatingSlot}
+                        className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50"
+                      />
+                      <span className="ml-2 flex-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          {batch.name}
+                          {isDefault && (
+                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Default
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {formData.batches.length > 0 && (
+                <p className="text-xs text-blue-600 mt-2">
+                  {formData.batches.length} batch{formData.batches.length > 1 ? 'es' : ''} selected.
+                  {formData.batches.length} separate slot{formData.batches.length > 1 ? 's' : ''} will be created.
+                </p>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
               <button
                 type="button"
