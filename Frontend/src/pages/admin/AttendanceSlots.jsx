@@ -306,11 +306,10 @@ const AttendanceSlots = () => {
           formattedDate: formatDateDisplay(startTimeIST),
           formattedTime: `${formatTime24h(startTimeIST)} - ${formatTime24h(endTimeIST)}`,
         };
-      });
-
-      processedSlots.sort(
+      }).sort(
         (a, b) => convertToIST(new Date(b.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
       );
+
       setSlots(processedSlots);
 
       // Fetch review status for closed slots
