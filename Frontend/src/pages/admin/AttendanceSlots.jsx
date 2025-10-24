@@ -309,7 +309,7 @@ const AttendanceSlots = () => {
       });
 
       processedSlots.sort(
-        (a, b) => convertToIST(new Date(l.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
+        (a, b) => convertToIST(new Date(b.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
       );
       setSlots(processedSlots);
 
