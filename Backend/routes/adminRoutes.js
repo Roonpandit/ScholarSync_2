@@ -8,6 +8,7 @@ const {
   updateStudent,
   deleteStudent,
   getStudentDetailsWithAttendance,
+  addBatchesToStudent,
 
   // Attendance Management
   createAttendanceSlot,
@@ -34,6 +35,13 @@ const {
   getAllowedIPs,
   toggleIPRestriction,
   getIPRestrictionStatus,
+
+  // Mark as Absent
+  markAttendanceAsAbsent,
+
+  // Approve/Reject Attendance
+  approveAttendance,
+  rejectAttendance,
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -68,6 +76,9 @@ router.get('/students/class', getStudentsByClass);
 router.put('/students/:id', updateStudent);
 router.delete('/students/:id', deleteStudent);
 
+// Add batches to student (both admin and teacher can access)
+router.post('/students/:id/add-batches', addBatchesToStudent);
+
 // Get student details with attendance history
 router.get('/students/:id/details', getStudentDetailsWithAttendance);
 
@@ -101,6 +112,9 @@ router.get('/attendance', (req, res) => {
 router.post('/attendance/mark', markAttendance);
 router.get('/attendance/absent', getAbsentStudents);
 router.get('/attendance/details', getAttendanceDetails);
+router.post('/attendance/:id/mark-absent', markAttendanceAsAbsent);
+router.post('/attendance/:id/approve', approveAttendance);
+router.post('/attendance/:id/reject', rejectAttendance);
 
 // ========== IP MANAGEMENT ==========
 router.post('/add-ip', addIP);

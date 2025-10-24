@@ -72,8 +72,8 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       });
     }
 
-    // Get student details with all fields
-    const student = await User.findById(id).lean();
+    // Get student details with all fields and populate batches
+    const student = await User.findById(id).populate('batches').lean();
     if (!student) {
       return res.status(404).json({
         success: false,
@@ -93,7 +93,7 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
     const totalSlots = attendanceSlots.length;
 
     // Get attendance records for the student within their time period
-    const attendanceRecords = await Attendance.find({ 
+    const attendanceRecords = await Attendance.find({
       student: id,
       date: {
         $gte: new Date(student.createdAt),
@@ -101,14 +101,17 @@ exports.getStudentDetailsWithAttendance = asyncHandler(async (req, res) => {
       }
     })
       .populate('slot', 'shift startTime endTime date')
+      .populate('batch', 'name')
       .sort({ date: -1 })
       .lean();
 
-    // Calculate attendance statistics
+    // Calculate attendance statistics by counting each status
     const attendanceStats = {
       total: totalSlots,
-      present: attendanceRecords.length, // All records are present since we're filtering by date
-      absent: totalSlots - attendanceRecords.length
+      pending: attendanceRecords.filter(r => r.status === 'pending').length,
+      awaiting_approval: attendanceRecords.filter(r => r.status === 'awaiting_approval').length,
+      present: attendanceRecords.filter(r => r.status === 'present').length,
+      absent: attendanceRecords.filter(r => r.status === 'absent').length
     };
 
     // Format attendance records to include full date information
@@ -507,10 +510,10 @@ exports.deleteAttendanceSlot = asyncHandler(async (req, res) => {
 
 // @desc    Update student details
 // @route   PUT /api/admin/students/:id
-// @access  Private/Admin
+// @access  Private/Admin/Teacher
 exports.updateStudent = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, email, studentCode, phone } = req.body;
+  const { name, email, studentCode, phone, batches } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -519,10 +522,22 @@ exports.updateStudent = asyncHandler(async (req, res) => {
     });
   }
 
+  // Role-based field restrictions
+  const isAdmin = req.user.role === 'admin';
+  const isTeacher = req.user.role === 'teacher';
+
+  // Teachers can only update name and phone
+  if (isTeacher && (email || studentCode || batches)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Teachers can only update student name and phone number'
+    });
+  }
+
   // Validate request body - at least one field must be provided
-  const updateFields = { name, email, studentCode, phone };
+  const updateFields = { name, email, studentCode, phone, batches };
   const fieldsToUpdate = Object.keys(updateFields).filter(field => updateFields[field] !== undefined);
-  
+
   if (fieldsToUpdate.length === 0) {
     return res.status(400).json({
       success: false,
@@ -551,11 +566,11 @@ exports.updateStudent = asyncHandler(async (req, res) => {
 
     // Prepare update object with only the fields that need to be updated
     const updateObject = {};
-    
+
     if (name) updateObject.name = name;
-    
-    // Check if email is being updated
-    if (email && email !== student.email) {
+
+    // Check if email is being updated (Admin only)
+    if (isAdmin && email && email !== student.email) {
       // Check if email exists in any user collection (student, teacher, or admin)
       const { exists: emailExists, userType } = await checkEmailExists(email);
       if (emailExists) {
@@ -566,8 +581,9 @@ exports.updateStudent = asyncHandler(async (req, res) => {
       }
       updateObject.email = email;
     }
-    
-    if (studentCode) {
+
+    // Check if studentCode is being updated (Admin only)
+    if (isAdmin && studentCode && studentCode !== student.studentCode) {
       // Check if studentCode is already used by another student
       const existingStudent = await User.findOne({ studentCode });
       if (existingStudent && existingStudent._id.toString() !== id) {
@@ -578,28 +594,181 @@ exports.updateStudent = asyncHandler(async (req, res) => {
       }
       updateObject.studentCode = studentCode;
     }
-    
+
     if (phone) updateObject.phone = phone;
+
+    // Handle batch updates (Admin only)
+    if (isAdmin && batches !== undefined) {
+      const Batch = require('../models/Batch');
+
+      // Validate batches array
+      if (!Array.isArray(batches) || batches.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide at least one batch for the student'
+        });
+      }
+
+      // Get the default batch
+      const defaultBatch = await Batch.findOne({ isDefault: true });
+
+      if (!defaultBatch) {
+        return res.status(500).json({
+          success: false,
+          message: 'Default batch not found'
+        });
+      }
+
+      // Ensure default batch is included
+      const batchIds = [...new Set(batches)]; // Remove duplicates
+      if (!batchIds.includes(defaultBatch._id.toString())) {
+        batchIds.unshift(defaultBatch._id.toString());
+      }
+
+      // Validate minimum 2 batches
+      if (batchIds.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please select at least one batch in addition to the default batch'
+        });
+      }
+
+      // Validate all batch IDs exist
+      const validBatches = await Batch.find({ _id: { $in: batchIds }, isActive: true });
+      if (validBatches.length !== batchIds.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'One or more invalid batch IDs provided'
+        });
+      }
+
+      updateObject.batches = batchIds;
+    }
 
     // Update student details
     const updatedStudent = await User.findByIdAndUpdate(
       id,
       updateObject,
       { new: true, runValidators: true }
-    );
+    ).populate('batches', 'name batchId isDefault');
 
     res.status(200).json({
       success: true,
-      data: {
-        _id: updatedStudent._id,
-        name: updatedStudent.name,
-        email: updatedStudent.email,
-        studentCode: updatedStudent.studentCode,
-        phone: updatedStudent.phone,
-      },
+      data: updatedStudent,
     });
   } catch (error) {
     console.error('Error updating student:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+});
+
+// @desc    Add batches to student (Teachers can only add, not remove)
+// @route   POST /api/admin/students/:id/add-batches
+// @access  Private/Admin/Teacher
+exports.addBatchesToStudent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { batches } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid student ID',
+    });
+  }
+
+  // Validate batches array
+  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide at least one batch to add'
+    });
+  }
+
+  try {
+    // Check if student exists
+    const student = await User.findById(id).populate('batches');
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
+
+    const Batch = require('../models/Batch');
+
+    // Get default batch
+    const defaultBatch = await Batch.findOne({ isDefault: true });
+
+    // If teacher, validate they can only add batches they're assigned to
+    if (req.user.role === 'teacher') {
+      const teacher = await Teacher.findById(req.user._id).select('batches');
+
+      if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: 'No batches assigned to you. Please contact admin.'
+        });
+      }
+
+      // Convert teacher batches to strings
+      const teacherBatchIds = teacher.batches.map(id => id.toString());
+
+      // Check if teacher is trying to add batches they don't have
+      const unauthorizedBatches = batches.filter(batchId =>
+        batchId !== defaultBatch._id.toString() && !teacherBatchIds.includes(batchId)
+      );
+
+      if (unauthorizedBatches.length > 0) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only add batches that are assigned to you'
+        });
+      }
+    }
+
+    // Validate all batch IDs exist
+    const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
+    if (validBatches.length !== batches.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'One or more invalid batch IDs provided'
+      });
+    }
+
+    // Get current student batches as strings
+    const currentBatchIds = student.batches.map(b => b._id.toString());
+
+    // Add new batches (only those not already present)
+    const newBatchIds = batches.filter(batchId => !currentBatchIds.includes(batchId));
+
+    if (newBatchIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'All provided batches are already assigned to this student'
+      });
+    }
+
+    // Combine current and new batches
+    const updatedBatchIds = [...currentBatchIds, ...newBatchIds];
+
+    // Update student with new batches
+    const updatedStudent = await User.findByIdAndUpdate(
+      id,
+      { batches: updatedBatchIds },
+      { new: true, runValidators: true }
+    ).populate('batches', 'name batchId isDefault');
+
+    res.status(200).json({
+      success: true,
+      message: `${newBatchIds.length} batch(es) added successfully`,
+      data: updatedStudent,
+    });
+  } catch (error) {
+    console.error('Error adding batches to student:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -736,7 +905,7 @@ exports.getAttendanceDetails = asyncHandler(async (req, res) => {
 // @route   POST /api/admin/students
 // @access  Private/Admin
 exports.createStudent = asyncHandler(async (req, res) => {
-  const { name, email, studentCode, password, phone } = req.body;
+  const { name, email, studentCode, password, phone, batches } = req.body;
 
   // Validation
   if (!name || !email || !studentCode || !password) {
@@ -744,6 +913,75 @@ exports.createStudent = asyncHandler(async (req, res) => {
       success: false,
       message: 'Please provide all required fields',
     });
+  }
+
+  // Validate batches array
+  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please select at least one batch for the student'
+    });
+  }
+
+  // Get the default batch
+  const Batch = require('../models/Batch');
+  const defaultBatch = await Batch.findOne({ isDefault: true });
+
+  if (!defaultBatch) {
+    return res.status(500).json({
+      success: false,
+      message: 'Default batch not found. Please create a batch first.'
+    });
+  }
+
+  // Ensure default batch is included in the batches array
+  const batchIds = [...new Set(batches)]; // Remove duplicates
+  if (!batchIds.includes(defaultBatch._id.toString())) {
+    batchIds.unshift(defaultBatch._id.toString()); // Add default batch at the beginning
+  }
+
+  // Validate that at least one batch other than default is selected
+  if (batchIds.length < 2) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please select at least one batch in addition to the default batch'
+    });
+  }
+
+  // Validate all batch IDs exist
+  const validBatches = await Batch.find({ _id: { $in: batchIds }, isActive: true });
+  if (validBatches.length !== batchIds.length) {
+    return res.status(400).json({
+      success: false,
+      message: 'One or more invalid batch IDs provided'
+    });
+  }
+
+  // If teacher, validate they can only create students in their assigned batches
+  if (req.user.role === 'teacher') {
+    const teacher = await Teacher.findById(req.user._id).select('batches');
+
+    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'No batches assigned to you. Please contact admin.'
+      });
+    }
+
+    // Convert teacher batches to strings for comparison
+    const teacherBatchIds = teacher.batches.map(id => id.toString());
+
+    // Check if all requested batches (excluding default) are in teacher's assigned batches
+    const unauthorizedBatches = batchIds.filter(batchId =>
+      batchId !== defaultBatch._id.toString() && !teacherBatchIds.includes(batchId)
+    );
+
+    if (unauthorizedBatches.length > 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only assign students to batches assigned to you'
+      });
+    }
   }
 
   // Validate phone number if provided
@@ -772,13 +1010,14 @@ exports.createStudent = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create student
+  // Create student with batches
   const student = await User.create({
     name,
     email,
     studentCode,
     password,
     phone,
+    batches: batchIds,
     role: 'student',
   });
 
@@ -817,6 +1056,17 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
     });
   }
 
+  // Get the default batch
+  const Batch = require('../models/Batch');
+  const defaultBatch = await Batch.findOne({ isDefault: true });
+
+  if (!defaultBatch) {
+    return res.status(500).json({
+      success: false,
+      message: 'Default batch not found. Please create a batch first.'
+    });
+  }
+
   // Validate each student's data
   const validationErrors = studentsData.map((student, index) => {
     if (!student.name || !student.email || !student.studentCode || !student.password) {
@@ -824,6 +1074,9 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
     }
     if (student.phone && !/^[\d]{10}$/.test(student.phone)) {
       return `Student ${index + 1}: Invalid phone number`;
+    }
+    if (!student.batches || !Array.isArray(student.batches) || student.batches.length === 0) {
+      return `Student ${index + 1}: Please select at least one batch`;
     }
     return null;
   }).filter(error => error !== null);
@@ -853,12 +1106,24 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
     return !existingEmails.has(student.email) && !existingStudentCodes.has(student.studentCode);
   });
 
+  // Process batches for each student
+  const processedStudents = studentsToCreate.map(student => {
+    const batchIds = [...new Set(student.batches)]; // Remove duplicates
+    // Ensure default batch is included
+    if (!batchIds.includes(defaultBatch._id.toString())) {
+      batchIds.unshift(defaultBatch._id.toString());
+    }
+
+    return {
+      ...student,
+      batches: batchIds,
+      role: 'student'
+    };
+  });
+
   // Create students in bulk
   const createdStudents = await User.insertMany(
-    studentsToCreate.map(student => ({
-      ...student,
-      role: 'student'
-    })),
+    processedStudents,
     { ordered: false } // Continue on error
   ).catch(err => {
     console.error('Error creating students:', err);
@@ -928,7 +1193,30 @@ exports.createStudentsBulk = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/students
 // @access  Private/Admin
 exports.getAllStudents = asyncHandler(async (req, res) => {
-  const students = await User.find({ role: 'student' }).select('-password');
+  let students;
+
+  if (req.user.role === 'teacher') {
+    // Teachers can only see students from their assigned batches
+    const teacher = await Teacher.findById(req.user._id).select('batches');
+
+    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        message: 'No batches assigned to this teacher'
+      });
+    }
+
+    // Find students who belong to at least one of the teacher's batches
+    students = await User.find({
+      role: 'student',
+      batches: { $in: teacher.batches }
+    }).select('-password');
+  } else {
+    // Admins can see all students
+    students = await User.find({ role: 'student' }).select('-password');
+  }
 
   res.status(200).json({
     success: true,
@@ -937,17 +1225,25 @@ exports.getAllStudents = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Create attendance slot
+// @desc    Create attendance slot(s) for selected batches
 // @route   POST /api/admin/attendance-slots
-// @access  Private/Admin
+// @access  Private/Admin/Teacher
 exports.createAttendanceSlot = asyncHandler(async (req, res) => {
-  const { shift, date, startTime, endTime } = req.body;
+  const { shift, date, startTime, endTime, batches } = req.body;
 
   // Validation
   if (!shift || !date || !startTime || !endTime) {
     return res.status(400).json({
       success: false,
       message: 'Please provide all required fields',
+    });
+  }
+
+  // Validate batches
+  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please select at least one batch'
     });
   }
 
@@ -964,33 +1260,133 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if slot already exists for this date and shift
-  const existingSlot = await AttendanceSlot.findOne({
-    date: slotDate,
-    shift,
-  });
+  // Get the Batch model
+  const Batch = require('../models/Batch');
 
-  if (existingSlot) {
-    return res.status(400).json({
+  // Get the default batch
+  const defaultBatch = await Batch.findOne({ isDefault: true });
+
+  if (!defaultBatch) {
+    return res.status(500).json({
       success: false,
-      message: `Attendance slot for ${shift} shift on this date already exists`,
+      message: 'Default batch not found'
     });
   }
 
-  // Create attendance slot with UTC timestamps
-  const attendanceSlot = await AttendanceSlot.create({
-    shift,
-    date: slotDate,
-    startTime: slotStartTime,
-    endTime: slotEndTime,
-    timezone: 'Asia/Kolkata',
-    isActive: true,
-    createdBy: req.user._id,
-  });
+  // Check if user is teacher and trying to create slot for default batch
+  if (req.user.role === 'teacher' && batches.includes(defaultBatch._id.toString())) {
+    return res.status(403).json({
+      success: false,
+      message: 'Teachers cannot create attendance slots for the default batch. Only admins can do that.'
+    });
+  }
+
+  // If teacher, validate they can only create slots for their assigned batches
+  if (req.user.role === 'teacher') {
+    const teacher = await Teacher.findById(req.user._id).select('batches');
+
+    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'No batches assigned to you. Please contact admin.'
+      });
+    }
+
+    // Convert teacher batches to strings for comparison
+    const teacherBatchIds = teacher.batches.map(id => id.toString());
+
+    // Check if all requested batches are in teacher's assigned batches
+    const unauthorizedBatches = batches.filter(batchId => !teacherBatchIds.includes(batchId));
+
+    if (unauthorizedBatches.length > 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only create attendance slots for batches assigned to you'
+      });
+    }
+  }
+
+  // Validate all batch IDs
+  const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
+
+  if (validBatches.length !== batches.length) {
+    return res.status(400).json({
+      success: false,
+      message: 'One or more invalid batch IDs provided'
+    });
+  }
+
+  const createdSlots = [];
+  const errors = [];
+
+  // Create a slot for each batch
+  for (const batchId of batches) {
+    try {
+      // Check if slot already exists for this batch, date, and shift
+      const existingSlot = await AttendanceSlot.findOne({
+        date: slotDate,
+        shift,
+        batch: batchId
+      });
+
+      if (existingSlot) {
+        errors.push({
+          batchId,
+          message: `Attendance slot for ${shift} shift on this date already exists for this batch`
+        });
+        continue;
+      }
+
+      // Create attendance slot
+      const attendanceSlot = await AttendanceSlot.create({
+        shift,
+        date: slotDate,
+        startTime: slotStartTime,
+        endTime: slotEndTime,
+        batch: batchId,
+        isActive: true,
+        createdBy: req.user._id,
+      });
+
+      // Get all students in this batch
+      const studentsInBatch = await User.find({ batches: batchId, role: 'student' });
+
+      // Create pending attendance records for all students
+      const pendingAttendance = studentsInBatch.map(student => ({
+        student: student._id,
+        slot: attendanceSlot._id,
+        batch: batchId,
+        date: slotDate,
+        shift,
+        status: 'pending',
+        studentCode: student.studentCode,
+        studentName: student.name,
+        studentEmail: student.email
+      }));
+
+      // Insert all pending attendance records
+      if (pendingAttendance.length > 0) {
+        await Attendance.insertMany(pendingAttendance, { ordered: false });
+      }
+
+      createdSlots.push({
+        slot: attendanceSlot,
+        studentsCount: studentsInBatch.length
+      });
+    } catch (error) {
+      console.error(`Error creating slot for batch ${batchId}:`, error);
+      errors.push({
+        batchId,
+        message: error.message
+      });
+    }
+  }
 
   res.status(201).json({
     success: true,
-    data: attendanceSlot,
+    message: `${createdSlots.length} attendance slot(s) created successfully`,
+    data: createdSlots,
+    errors: errors.length > 0 ? errors : undefined
   });
 });
 
@@ -1000,9 +1396,9 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
 exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
   const { date } = req.query;
   const now = new Date();
-  
+
   let query = {};
-  
+
   if (date) {
     try {
       const queryDate = new Date(date);
@@ -1023,6 +1419,23 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
   } else {
     // If no date provided, get all slots
     query = {};
+  }
+
+  // Filter slots by teacher's assigned batches
+  if (req.user.role === 'teacher') {
+    const teacher = await Teacher.findById(req.user._id).select('batches');
+
+    if (!teacher || !teacher.batches || teacher.batches.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        message: 'No batches assigned to this teacher'
+      });
+    }
+
+    // Add batch filter to query
+    query.batch = { $in: teacher.batches };
   }
 
   // Find all slots that match the query
@@ -1356,7 +1769,7 @@ exports.getAttendanceStats = asyncHandler(async (req, res) => {
 // @route   POST /api/admin/teachers
 // @access  Private/Admin
 exports.registerTeacher = asyncHandler(async (req, res) => {
-  const { name, email, teacherCode, phone, password } = req.body;
+  const { name, email, teacherCode, phone, password, batches } = req.body;
 
   // Check if teacher code already exists
   const existingTeacherCode = await Teacher.findOne({ teacherCode });
@@ -1376,6 +1789,36 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
     });
   }
 
+  // Validate batches - minimum 1 batch required
+  if (!batches || !Array.isArray(batches) || batches.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please assign at least one batch to the teacher'
+    });
+  }
+
+  const Batch = require('../models/Batch');
+
+  // Get default batch
+  const defaultBatch = await Batch.findOne({ isDefault: true });
+
+  // Check if default batch is being assigned (should not be allowed for teachers)
+  if (defaultBatch && batches.includes(defaultBatch._id.toString())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Default batch cannot be assigned to teachers'
+    });
+  }
+
+  // Validate all batch IDs exist
+  const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
+  if (validBatches.length !== batches.length) {
+    return res.status(400).json({
+      success: false,
+      message: 'One or more invalid batch IDs provided'
+    });
+  }
+
   // Create teacher
   const teacher = await Teacher.create({
     name,
@@ -1383,6 +1826,7 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
     teacherCode,
     phone,
     password,
+    batches,
     role: 'teacher',
   });
 
@@ -1414,8 +1858,8 @@ exports.registerTeacher = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/teachers
 // @access  Private/Admin
 exports.getTeachers = asyncHandler(async (req, res) => {
-  const teachers = await Teacher.find().select('-password');
-  
+  const teachers = await Teacher.find().select('-password').populate('batches', 'name batchId isDefault');
+
   res.status(200).json({
     success: true,
     count: teachers.length,
@@ -1427,7 +1871,7 @@ exports.getTeachers = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/teachers/:id
 // @access  Private/Admin
 exports.getTeacher = asyncHandler(async (req, res) => {
-  const teacher = await Teacher.findById(req.params.id).select('-password');
+  const teacher = await Teacher.findById(req.params.id).select('-password').populate('batches', 'name batchId isDefault');
 
   if (!teacher) {
     return res.status(404).json({
@@ -1446,7 +1890,7 @@ exports.getTeacher = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/teachers/:id
 // @access  Private/Admin
 exports.updateTeacher = asyncHandler(async (req, res) => {
-  const { name, email, teacherCode, phone } = req.body;
+  const { name, email, teacherCode, phone, batches } = req.body;
 
   let teacher = await Teacher.findById(req.params.id);
 
@@ -1477,6 +1921,41 @@ exports.updateTeacher = asyncHandler(async (req, res) => {
         message: 'Teacher code already in use',
       });
     }
+  }
+
+  // Validate batches if provided
+  if (batches !== undefined) {
+    // Minimum 1 batch required
+    if (!Array.isArray(batches) || batches.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please assign at least one batch to the teacher'
+      });
+    }
+
+    const Batch = require('../models/Batch');
+
+    // Get default batch
+    const defaultBatch = await Batch.findOne({ isDefault: true });
+
+    // Check if default batch is being assigned (should not be allowed for teachers)
+    if (defaultBatch && batches.includes(defaultBatch._id.toString())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Default batch cannot be assigned to teachers'
+      });
+    }
+
+    // Validate all batch IDs exist
+    const validBatches = await Batch.find({ _id: { $in: batches }, isActive: true });
+    if (validBatches.length !== batches.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'One or more invalid batch IDs provided'
+      });
+    }
+
+    teacher.batches = batches;
   }
 
   // Update fields
@@ -1512,8 +1991,25 @@ exports.deleteTeacher = asyncHandler(async (req, res) => {
       });
     }
 
+    // Check if teacher exists
+    const teacher = await Teacher.findById(id);
+    if (!teacher) {
+      return res.status(404).json({
+        success: false,
+        message: 'Teacher not found',
+      });
+    }
+
+    // Set createdBy to null for all attendance slots created by this teacher
+    // This preserves the slots while removing the orphaned reference
+    await AttendanceSlot.updateMany(
+      { createdBy: id },
+      { $set: { createdBy: null } }
+    );
+
+    // Delete the teacher
     const result = await Teacher.deleteOne({ _id: id });
-    
+
     if (result.deletedCount === 0) {
       return res.status(404).json({
         success: false,
@@ -1523,7 +2019,7 @@ exports.deleteTeacher = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Teacher deleted successfully.'
+      message: 'Teacher deleted successfully. Attendance slots created by this teacher have been preserved.'
     });
   } catch (error) {
     console.error('Error in deleteTeacher:', error);
@@ -1922,6 +2418,257 @@ exports.getIPRestrictionStatus = asyncHandler(async (req, res) => {
       success: false,
       message: 'Server error while fetching IP restriction status',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// @desc    Mark student as absent (Admin/Teacher can override present to absent)
+// @route   POST /api/admin/attendance/:id/mark-absent
+// @access  Private/Admin
+exports.markAttendanceAsAbsent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { remark } = req.body;
+
+  // Validate remark
+  if (!remark || remark.trim().length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Remark is required to mark attendance as absent'
+    });
+  }
+
+  if (remark.length > 1000) {
+    return res.status(400).json({
+      success: false,
+      message: 'Remark must not exceed 1000 characters'
+    });
+  }
+
+  try {
+    // Find the attendance record
+    const attendance = await Attendance.findById(id)
+      .populate('student', 'name email studentCode')
+      .populate('slot', 'shift startTime endTime')
+      .populate('batch', 'name');
+
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance record not found'
+      });
+    }
+
+    // Check if already absent
+    if (attendance.status === 'absent') {
+      return res.status(400).json({
+        success: false,
+        message: 'Attendance is already marked as absent'
+      });
+    }
+
+    // Check if status is present (we can only mark present as absent)
+    if (attendance.status !== 'present') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only present attendance can be marked as absent'
+      });
+    }
+
+    // Update attendance to absent with remark
+    attendance.status = 'absent';
+    attendance.statusUpdatedBy = req.user._id;
+    attendance.remark = remark.trim();
+    attendance.statusUpdatedAt = new Date();
+
+    await attendance.save();
+
+    // Send email notification to student
+    const { sendAbsentNotificationEmail } = require('../services/absentNotificationService');
+
+    const emailData = {
+      studentName: attendance.student.name,
+      studentEmail: attendance.student.email,
+      batchName: attendance.batch.name,
+      date: attendance.date,
+      shift: attendance.shift,
+      slotTime: `${attendance.slot.startTime.toLocaleTimeString()} - ${attendance.slot.endTime.toLocaleTimeString()}`,
+      markedAt: attendance.markedAt,
+      location: attendance.location?.address || 'N/A',
+      photoUrl: attendance.photo?.url || null,
+      remark: remark.trim(),
+      updatedByName: req.user.name,
+      updatedByRole: req.user.role
+    };
+
+    // Send email asynchronously (don't wait for it)
+    sendAbsentNotificationEmail(emailData).catch(err => {
+      console.error('Error sending absent notification email:', err);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance marked as absent successfully. Notification email sent to student.',
+      data: attendance
+    });
+  } catch (error) {
+    console.error('Error marking attendance as absent:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while marking attendance as absent',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @desc    Approve attendance (awaiting_approval -> present)
+// @route   POST /api/admin/attendance/:id/approve
+// @access  Private/Admin/Teacher
+exports.approveAttendance = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find attendance and populate related data
+    const attendance = await Attendance.findById(id)
+      .populate('student', 'name email studentCode')
+      .populate('slot', 'status endTime shift')
+      .populate('batch', 'name');
+
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance record not found'
+      });
+    }
+
+    // Validation: slot must be closed
+    if (attendance.slot.status !== 'closed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot approve attendance. Slot must be closed first.'
+      });
+    }
+
+    // Validation: status must be awaiting_approval
+    if (attendance.status !== 'awaiting_approval') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot approve. Current status is '${attendance.status}'.`
+      });
+    }
+
+    // Approve
+    attendance.status = 'present';
+    attendance.statusUpdatedBy = req.user._id;
+    attendance.statusUpdatedAt = new Date();
+    await attendance.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance approved successfully',
+      data: attendance
+    });
+  } catch (error) {
+    console.error('Error approving attendance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while approving attendance',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @desc    Reject attendance (awaiting_approval -> absent with remark)
+// @route   POST /api/admin/attendance/:id/reject
+// @access  Private/Admin/Teacher
+exports.rejectAttendance = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { remark } = req.body;
+
+  // Validate remark
+  if (!remark || remark.trim().length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Remark is required to reject attendance'
+    });
+  }
+
+  if (remark.length > 1000) {
+    return res.status(400).json({
+      success: false,
+      message: 'Remark must not exceed 1000 characters'
+    });
+  }
+
+  try {
+    // Find and validate
+    const attendance = await Attendance.findById(id)
+      .populate('student', 'name email studentCode')
+      .populate('slot', 'status shift startTime endTime')
+      .populate('batch', 'name');
+
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance record not found'
+      });
+    }
+
+    // Check slot is closed
+    if (attendance.slot.status !== 'closed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot reject attendance. Slot must be closed first.'
+      });
+    }
+
+    // Check status is awaiting_approval
+    if (attendance.status !== 'awaiting_approval') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot reject. Current status is '${attendance.status}'.`
+      });
+    }
+
+    // Reject
+    attendance.status = 'absent';
+    attendance.statusUpdatedBy = req.user._id;
+    attendance.remark = remark.trim();
+    attendance.statusUpdatedAt = new Date();
+    await attendance.save();
+
+    // Send email to student
+    const { sendAbsentNotificationEmail } = require('../services/absentNotificationService');
+
+    const emailData = {
+      studentName: attendance.student.name,
+      studentEmail: attendance.student.email,
+      batchName: attendance.batch.name,
+      date: attendance.date,
+      shift: attendance.shift,
+      slotTime: `${attendance.slot.startTime.toLocaleTimeString()} - ${attendance.slot.endTime.toLocaleTimeString()}`,
+      markedAt: attendance.markedAt,
+      location: attendance.location?.address || 'N/A',
+      photoUrl: attendance.photo?.url || null,
+      remark: remark.trim(),
+      updatedByName: req.user.name,
+      updatedByRole: req.user.role
+    };
+
+    sendAbsentNotificationEmail(emailData).catch(err =>
+      console.error('Error sending rejection email:', err)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Attendance rejected successfully. Notification email sent to student.',
+      data: attendance
+    });
+  } catch (error) {
+    console.error('Error rejecting attendance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while rejecting attendance',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

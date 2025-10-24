@@ -70,6 +70,11 @@ const userSchema = new mongoose.Schema(
       enum: ['student'],
       default: 'student',
     },
+    batches: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Batch',
+      required: true
+    }],
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
@@ -77,6 +82,11 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Validate that student has at least one batch (the default batch)
+userSchema.path('batches').validate(function(batches) {
+  return batches && batches.length >= 1;
+}, 'Student must belong to at least one batch (default batch is mandatory)');
 
 // Encrypt password using bcrypt
 userSchema.pre('save', async function (next) {

@@ -12,6 +12,11 @@ const attendanceSchema = new mongoose.Schema(
       ref: 'AttendanceSlot',
       required: true,
     },
+    batch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Batch',
+      required: true,
+    },
     date: {
       type: Date,
       required: true,
@@ -21,14 +26,24 @@ const attendanceSchema = new mongoose.Schema(
       required: true,
       enum: ['morning', 'afternoon', 'evening'],
     },
+    status: {
+      type: String,
+      enum: ['pending', 'awaiting_approval', 'present', 'absent'],
+      default: 'pending',
+      required: true
+    },
     photo: {
       url: {
         type: String,
-        required: [true, 'Photo URL is required'],
+        required: function() {
+          return this.status === 'present';
+        }
       },
       public_id: {
         type: String,
-        required: [true, 'Photo public ID is required'],
+        required: function() {
+          return this.status === 'present';
+        }
       },
       format: String,
       width: Number,
@@ -42,7 +57,9 @@ const attendanceSchema = new mongoose.Schema(
       },
       coordinates: {
         type: [Number],
-        required: [true, 'Please provide location coordinates'],
+        required: function() {
+          return this.status === 'present';
+        }
       },
       address: String,
     },
@@ -61,6 +78,20 @@ const attendanceSchema = new mongoose.Schema(
     studentEmail: {
       type: String,
       required: true,
+    },
+    statusUpdatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    remark: {
+      type: String,
+      required: false,
+      maxlength: 1000,
+    },
+    statusUpdatedAt: {
+      type: Date,
+      required: false,
     }
   },
   {
@@ -69,10 +100,14 @@ const attendanceSchema = new mongoose.Schema(
 );
 
 // Create indexes for better query performance
-attendanceSchema.index({ student: 1, date: 1, shift: 1 }, { unique: true });
+attendanceSchema.index({ student: 1, slot: 1 }, { unique: true });
 attendanceSchema.index({ date: 1 });
 attendanceSchema.index({ slot: 1 });
+attendanceSchema.index({ batch: 1 });
 attendanceSchema.index({ studentCode: 1 });
+attendanceSchema.index({ status: 1 });
+attendanceSchema.index({ slot: 1, status: 1 });
+attendanceSchema.index({ statusUpdatedBy: 1 });
 
 // Add a 2dsphere index for geospatial queries
 attendanceSchema.index({ 'location': '2dsphere' });

@@ -7,7 +7,8 @@ const {
   getStudentsByClass,
   updateStudent,
   getStudentDetailsWithAttendance,
-  
+  addBatchesToStudent,
+
   // Attendance Management
   createAttendanceSlot,
   getAllAttendanceSlots,
@@ -18,6 +19,11 @@ const {
   getAttendanceStats,
   getAbsentStudents,
   getAttendanceDetails,
+  markAttendanceAsAbsent,
+
+  // Approve/Reject Attendance
+  approveAttendance,
+  rejectAttendance,
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -40,6 +46,9 @@ router.get('/students/class', getStudentsByClass);
 
 // Update student details
 router.put('/students/:id', updateStudent);
+
+// Add batches to student
+router.post('/students/:id/add-batches', addBatchesToStudent);
 
 // Get student details with attendance history
 router.get('/students/:id/details', getStudentDetailsWithAttendance);
@@ -73,5 +82,8 @@ router.get('/attendance', (req, res) => {
 router.post('/attendance/mark', markAttendance);
 router.get('/attendance/absent', getAbsentStudents);
 router.get('/attendance/details', getAttendanceDetails);
+router.post('/attendance/:id/mark-absent', markAttendanceAsAbsent);
+router.post('/attendance/:id/approve', approveAttendance);
+router.post('/attendance/:id/reject', rejectAttendance);
 
 module.exports = router;

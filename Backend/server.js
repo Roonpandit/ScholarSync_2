@@ -8,8 +8,10 @@ const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/studentRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
+const batchRoutes = require('./routes/batchRoutes');
 const cron = require('./config/cron');
 const attendanceReminder = require('./config/attendanceReminderCron');
+const markAbsentCron = require('./config/markAbsentCron');
 
 // Load env vars
 dotenv.config();
@@ -21,6 +23,7 @@ connectDB().then(() => {
   // Initialize cron jobs
   cron.updateSlotStatuses();
   attendanceReminder.scheduleAttendanceReminder();
+  markAbsentCron.scheduleMarkAbsent();
   
   // Initialize app
   const app = express();
@@ -69,6 +72,7 @@ connectDB().then(() => {
   app.use('/api/teacher', teacherRoutes);
   app.use('/api/students', userRoutes);
   app.use('/api/reviews', reviewRoutes);
+  app.use('/api/batches', batchRoutes);
 
   // Error handling middleware (should be after all other middleware and routes)
   app.use((err, req, res, next) => {

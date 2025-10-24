@@ -28,6 +28,11 @@ const attendanceSlotSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    batch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Batch',
+      required: [true, 'Please specify a batch for this slot']
+    },
     emailSent: {
       type: Boolean,
       default: false
@@ -60,6 +65,8 @@ const attendanceSlotSchema = new mongoose.Schema(
 // Create indexes for better query performance
 attendanceSlotSchema.index({ date: 1, shift: 1 });
 attendanceSlotSchema.index({ isActive: 1 });
+attendanceSlotSchema.index({ batch: 1 });
+attendanceSlotSchema.index({ batch: 1, status: 1 });
 
 attendanceSlotSchema.methods.calculateStatus = function() {
   const now = new Date();

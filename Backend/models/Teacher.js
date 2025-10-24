@@ -70,6 +70,10 @@ const teacherSchema = new mongoose.Schema(
       enum: ['teacher'],
       default: 'teacher',
     },
+    batches: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Batch'
+    }],
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },

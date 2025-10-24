@@ -154,38 +154,57 @@ const uploadToCloudinary = async (file) => {
   });
 };
 
-// @desc    Get available attendance slots for today
+// @desc    Get available attendance slots for student's batches
 // @route   GET /api/students/attendance-slots
 // @access  Private/Student
 exports.getActiveAttendanceSlots = asyncHandler(async (req, res) => {
-  // Get all slots that are either active or upcoming
+  // Get student with batches
+  const student = await User.findById(req.user._id).select('batches');
+
+  if (!student || !student.batches || student.batches.length === 0) {
+    return res.status(200).json({
+      success: true,
+      count: 0,
+      data: []
+    });
+  }
+
+  // Get all slots that are active or upcoming AND match student's batches
   const activeSlots = await AttendanceSlot.find({
     isActive: true,
-    status: { $in: ['active', 'upcoming'] }
-  }).sort({ startTime: 1 }); // Sort by start time ascending
+    status: { $in: ['active', 'upcoming'] },
+    batch: { $in: student.batches }
+  })
+  .populate('batch', 'name batchId')
+  .sort({ startTime: 1 }); // Sort by start time ascending
 
-  // Filter out slots where student has already marked attendance
-  const filteredSlots = await Promise.all(
-    activeSlots.map(async (slot) => {
-      const hasMarked = await Attendance.findOne({
-        student: req.user._id,
-        slot: slot._id,
-        date: slot.date,
-        shift: slot.shift
-      });
-      
-      return hasMarked ? null : slot;
-    })
-  );
+  // Get student's attendance records (including pending status)
+  const attendanceRecords = await Attendance.find({
+    student: req.user._id,
+    slot: { $in: activeSlots.map(s => s._id) }
+  });
 
-  // Remove null values (slots where student has marked attendance)
-  const availableSlots = filteredSlots.filter(Boolean);
+  // Create a map of slot IDs to attendance status
+  const attendanceMap = new Map();
+  attendanceRecords.forEach(record => {
+    attendanceMap.set(record.slot.toString(), record.status);
+  });
 
-    res.status(200).json({
-      success: true,
-      count: availableSlots.length,
-      data: availableSlots
-    });
+  // Filter slots based on attendance status
+  // Only show slots that are pending (student hasn't marked yet)
+  const availableSlots = activeSlots.filter(slot => {
+    const status = attendanceMap.get(slot._id.toString());
+    return status === 'pending' || !status; // Show if pending or no record exists
+  }).map(slot => ({
+    ...slot.toObject(),
+    attendanceStatus: attendanceMap.get(slot._id.toString()) || 'not_created'
+  }));
+
+  res.status(200).json({
+    success: true,
+    count: availableSlots.length,
+    data: availableSlots
+  });
 });
 
 // @desc    Mark attendance
@@ -237,33 +256,66 @@ exports.markAttendance = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if student has already marked attendance for this slot
+  // Check if student has pending attendance for this slot
   const existingAttendance = await Attendance.findOne({
     student: req.user._id,
-    slot: slotId,
-    date: slot.date,
-    shift: slot.shift
+    slot: slotId
   });
 
-  if (existingAttendance) {
+  if (existingAttendance && existingAttendance.status === 'present') {
     return res.status(400).json({
       success: false,
       message: 'You have already marked your attendance for this slot',
     });
   }
 
+  if (existingAttendance && existingAttendance.status === 'absent') {
+    return res.status(400).json({
+      success: false,
+      message: 'This attendance slot has been closed and marked as absent',
+    });
+  }
+
   // Upload photo to Cloudinary AFTER all validations pass
   const cloudinaryResult = await uploadToCloudinary(req.file);
 
-  // Get current time in IST
+  // Get current time
   const markTime = new Date();
 
-  // Create attendance record
+  // If attendance record exists (pending), update it
+  if (existingAttendance) {
+    existingAttendance.status = 'awaiting_approval';
+    existingAttendance.photo = {
+      url: cloudinaryResult.secure_url,
+      public_id: cloudinaryResult.public_id,
+      format: cloudinaryResult.format,
+      width: cloudinaryResult.width,
+      height: cloudinaryResult.height
+    };
+    existingAttendance.location = {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+      address
+    };
+    existingAttendance.markedAt = markTime;
+
+    await existingAttendance.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Attendance marked successfully. Waiting for teacher approval.',
+      data: existingAttendance,
+    });
+  }
+
+  // Create new attendance record if it doesn't exist (fallback)
   const attendance = new Attendance({
     student: req.user._id,
     slot: slotId,
+    batch: slot.batch,
     date: slot.date,
     shift: slot.shift,
+    status: 'awaiting_approval',
     photo: {
       url: cloudinaryResult.secure_url,
       public_id: cloudinaryResult.public_id,
@@ -286,7 +338,7 @@ exports.markAttendance = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Attendance marked successfully',
+    message: 'Attendance marked successfully. Waiting for teacher approval.',
     data: attendance,
   });
 });
@@ -363,12 +415,28 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     const joinDate = new Date(req.user.createdAt);
     const effectiveStartDate = startOfMonth < joinDate ? joinDate : startOfMonth;
 
-    // Get all attendance slots within the date range and after join date
+    // Get student with batches
+    const student = await User.findById(req.user._id).select('batches');
+
+    if (!student || !student.batches || student.batches.length === 0) {
+      return res.status(200).json({
+        success: true,
+        absences: [],
+        pending: [],
+        totalAbsences: 0,
+        totalPending: 0,
+        totalClosedSlots: 0,
+        totalActiveSlots: 0
+      });
+    }
+
+    // Get all attendance slots within the date range, after join date, AND from student's batches
     const slots = await AttendanceSlot.find({
       date: {
         $gte: effectiveStartDate,
         $lte: endOfMonth
-      }
+      },
+      batch: { $in: student.batches }
     });
 
     // Get the student's attendance records for the same range
