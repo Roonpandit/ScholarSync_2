@@ -18,6 +18,7 @@ import AttendanceSlots from './pages/admin/AttendanceSlots.jsx'
 import AttendanceStats from './pages/admin/AttendanceStats.jsx'
 import IPAddress from './pages/admin/IPAddress.jsx'
 import BatchManagement from './pages/admin/BatchManagement.jsx'
+import AdminLeaveManagement from './pages/admin/LeaveManagement.jsx'
 
 import TeacherDashboard from './pages/teacher/TeacherDashboard.jsx'
 import StudentManagement from './pages/teacher/StudentManagement.jsx'
@@ -25,12 +26,14 @@ import StudentDetail from './pages/teacher/StudentDetail.jsx'
 import Review from './pages/teacher/Review.jsx'
 import AttendanceSlot from './pages/teacher/AttendanceSlot.jsx'
 import AttendanceStat from './pages/teacher/AttendanceStat.jsx'
+import TeacherLeaveManagement from './pages/teacher/LeaveManagement.jsx'
 
 import StudentDashboard from './pages/student/Dashboard.jsx'
 import MarkAttendance from './pages/student/MarkAttendance.jsx'
 import AttendanceHistory from './pages/student/AttendanceHistory.jsx'
 import AbsenceHistory from './pages/student/AbsenceHistory.jsx'
 import Leave from './pages/student/Leave.jsx'
+import LeaveManagement from './pages/student/LeaveManagement.jsx'
 
 import './App.css'
 import Lottie from 'lottie-react'
@@ -146,6 +149,14 @@ function App() {
           <Navigate to="/home" />
         }
       />
+      <Route
+        path="/admin/leave-management"
+        element={
+          user && user.role === 'admin' ?
+          <Layout><AdminLeaveManagement /></Layout> :
+          <Navigate to="/home" />
+        }
+      />
 
       {/* Student Routes */}
       <Route 
@@ -180,15 +191,23 @@ function App() {
           <Navigate to="/home" />
         } 
       />
-      <Route 
-        path="/student/apply-leave" 
+      <Route
+        path="/student/apply-leave"
         element={
-          user && user.role === 'student' ? 
-          <Layout><Leave /></Layout> : 
+          user && user.role === 'student' ?
+          <Layout><Leave /></Layout> :
           <Navigate to="/home" />
-        } 
+        }
       />
-      
+      <Route
+        path="/student/leave-management"
+        element={
+          user && user.role === 'student' ?
+          <Layout><LeaveManagement /></Layout> :
+          <Navigate to="/home" />
+        }
+      />
+
       {/* Teacher Routes - Using admin pages */}
       <Route 
         path="/teacher" 
@@ -230,15 +249,23 @@ function App() {
           <Navigate to="/home" />
         }
       />
-      <Route 
-        path="/teacher/students/:studentId" 
+      <Route
+        path="/teacher/leave-management"
         element={
-          user && user.role === 'teacher' ? 
-          <Layout><StudentDetail /></Layout> : 
+          user && user.role === 'teacher' ?
+          <Layout><TeacherLeaveManagement /></Layout> :
           <Navigate to="/home" />
-        } 
+        }
       />
-      
+      <Route
+        path="/teacher/students/:studentId"
+        element={
+          user && user.role === 'teacher' ?
+          <Layout><StudentDetail /></Layout> :
+          <Navigate to="/home" />
+        }
+      />
+
       {/* Default Route - Show home if not logged in, otherwise redirect based on role */}
       <Route 
         path="/" 
