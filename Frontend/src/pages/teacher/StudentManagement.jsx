@@ -14,8 +14,8 @@ const StudentManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [students, setStudents] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [defaultBatch, setDefaultBatch] = useState(null);
+  const [lectures, setLectures] = useState([]);
+  const [defaultLecture, setdefaultLecture] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +33,7 @@ const StudentManagement = () => {
     email: '',
     studentCode: '',
     phone: '',
-    batches: []
+    lectures: []
   });
   const validateForm = () => {
     const errors = {};
@@ -58,7 +58,7 @@ const StudentManagement = () => {
       errors.phone = 'Please enter a valid 10-digit phone number';
     }
 
-    // Batch validation is handled by backend
+    // Lecture validation is handled by backend
 
     return errors;
   };
@@ -75,14 +75,14 @@ const StudentManagement = () => {
 
   const handleShowAddForm = () => {
     setShowAddForm(!showAddForm);
-    if (!showAddForm && defaultBatch) {
-      // Auto-select default batch when opening form
+    if (!showAddForm && defaultLecture) {
+      // Auto-select default lecture when opening form
       setFormData({
         name: '',
         email: '',
         studentCode: '',
         phone: '',
-        batches: [defaultBatch._id]
+        lectures: [defaultLecture._id]
       });
     }
   };
@@ -93,46 +93,46 @@ const StudentManagement = () => {
 
   useEffect(() => {
     fetchStudents();
-    fetchBatches();
+    fetchLectures();
   }, []);
 
-  const fetchBatches = async () => {
+  const fetchLectures = async () => {
     try {
-      // Teachers use their assigned batches from user context
-      if (user && user.batches && Array.isArray(user.batches)) {
-        setBatches(user.batches);
+      // Teachers use their assigned lectures from user context
+      if (user && user.lectures && Array.isArray(user.lectures)) {
+        setLectures(user.lectures);
 
-        // Get default batch
-        const defBatch = user.batches.find(b => b.isDefault);
-        setDefaultBatch(defBatch);
+        // Get default lecture
+        const defLecture = user.lectures.find(l => l.isDefault);
+        setDefaultLecture(defLecture);
 
-        // Auto-select default batch when form opens
-        if (defBatch && showAddForm && formData.batches.length === 0) {
+        // Auto-select default lecture when form opens
+        if (defLecture && showAddForm && formData.lectures.length === 0) {
           setFormData(prev => ({
             ...prev,
-            batches: [defBatch._id]
+            lectures: [defLecture._id]
           }));
         }
       } else {
-        // Fallback: fetch from API if user context doesn't have batches
+        // Fallback: fetch from API if user context doesn't have lectures
         const res = await axios.get('/auth/me');
-        const batchesData = res.data?.data?.batches || [];
-        setBatches(batchesData);
+        const lecturesData = res.data?.data?.lectures || [];
+        setLectures(lecturesData);
 
-        const defBatch = batchesData.find(b => b.isDefault);
-        setDefaultBatch(defBatch);
+        const defLecture = lecturesData.find(l => l.isDefault);
+        setDefaultLecture(defLecture);
 
-        if (defBatch && showAddForm && formData.batches.length === 0) {
+        if (defLecture && showAddForm && formData.lectures.length === 0) {
           setFormData(prev => ({
             ...prev,
-            batches: [defBatch._id]
+            lectures: [defLecture._id]
           }));
         }
       }
     } catch (error) {
-      console.error('Error fetching batches:', error);
-      toast.error('Failed to load batches');
-      setBatches([]);
+      console.error('Error fetching lectures:', error);
+      toast.error('Failed to load lectures');
+      setLectures([]);
     }
   };
 
@@ -180,7 +180,7 @@ const StudentManagement = () => {
           email: '',
           studentCode: '',
           phone: '',
-          batches: defaultBatch ? [defaultBatch._id] : []
+          lectures: defaultLecture ? [defaultLecture._id] : []
         });
         setShowAddForm(false);
       }
@@ -321,29 +321,29 @@ const StudentManagement = () => {
               </div>
             </div>
 
-            {/* Batch Selection */}
+            {/* Lecture Selection */}
             <div className="mb-4">
-              <label htmlFor="batches" className="block text-gray-700 text-sm font-bold mb-2">
-                Select Batches <span className="text-red-500">*</span>
+              <label htmlFor="lectures" className="block text-gray-700 text-sm font-bold mb-2">
+                Select Lectures <span className="text-red-500">*</span>
               </label>
 
-              {/* Selected Batches Display */}
+              {/* Selected Lectures Display */}
               <div className="mb-3 flex flex-wrap gap-2">
-                {formData.batches.length > 0 ? (
-                  formData.batches.map(batchId => {
-                    const batch = batches.find(b => b._id === batchId);
-                    if (!batch) return null;
-                    const isDefault = batch.isDefault;
+                {formData.lectures.length > 0 ? (
+                  formData.lectures.map(lectureId => {
+                    const lecture = lectures.find(l => l._id === lectureId);
+                    if (!lecture) return null;
+                    const isDefault = lecture.isDefault;
                     return (
                       <span
-                        key={batch._id}
+                        key={lecture._id}
                         className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                           isDefault
                             ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
                             : 'bg-blue-100 text-blue-800 border border-blue-300'
                         }`}
                       >
-                        {batch.name}
+                        {lecture.name}
                         {isDefault && (
                           <span className="ml-1 text-xs">(Default)</span>
                         )}
@@ -353,7 +353,7 @@ const StudentManagement = () => {
                             onClick={() => {
                               setFormData(prev => ({
                                 ...prev,
-                                batches: prev.batches.filter(id => id !== batch._id)
+                                lectures: prev.lectures.filter(id => id !== lecture._id)
                               }));
                             }}
                             className="ml-2 text-blue-600 hover:text-blue-800"
@@ -365,39 +365,39 @@ const StudentManagement = () => {
                     );
                   })
                 ) : (
-                  <span className="text-sm text-gray-500 italic">No batches selected</span>
+                  <span className="text-sm text-gray-500 italic">No lectures selected</span>
                 )}
               </div>
 
-              {/* Dropdown to add batches */}
+              {/* Dropdown to add lectures */}
               <select
-                id="batches"
+                id="lectures"
                 value=""
                 onChange={(e) => {
-                  const batchId = e.target.value;
-                  if (batchId && !formData.batches.includes(batchId)) {
+                  const lectureId = e.target.value;
+                  if (lectureId && !formData.lectures.includes(lectureId)) {
                     setFormData(prev => ({
                       ...prev,
-                      batches: [...prev.batches, batchId]
+                      lectures: [...prev.lectures, lectureId]
                     }));
                   }
                   e.target.value = ''; // Reset dropdown
                 }}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">Click to add more batches...</option>
-                {(batches || []).filter(batch => !formData.batches.includes(batch._id)).map((batch) => (
-                  <option key={batch._id} value={batch._id}>
-                    {batch.name}
+                <option value="">Click to add more lectures...</option>
+                {(lectures || []).filter(lecture => !formData.lectures.includes(lecture._id)).map((lecture) => (
+                  <option key={lecture._id} value={lecture._id}>
+                    {lecture.name}
                   </option>
                 ))}
               </select>
 
-              {errors.batches && (
-                <p className="text-red-500 text-xs italic mt-1">{errors.batches}</p>
+              {errors.lectures && (
+                <p className="text-red-500 text-xs italic mt-1">{errors.lectures}</p>
               )}
               <p className="text-xs text-gray-500 mt-2">
-                Default batch is mandatory and pre-selected. Select additional batches from the dropdown.
+                Default lecture is mandatory and pre-selected. Select additional lectures from the dropdown.
               </p>
             </div>
 

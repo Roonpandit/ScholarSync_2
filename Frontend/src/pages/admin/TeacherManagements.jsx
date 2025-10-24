@@ -6,7 +6,7 @@ import Loader from '../../components/Loader';
 
 const TeacherManagements = () => {
   const [teachers, setTeachers] = useState([]);
-  const [batches, setBatches] = useState([]);
+  const [lectures, setLectures] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -28,7 +28,7 @@ const TeacherManagements = () => {
     email: '',
     teacherCode: '',
     phone: '',
-    batches: []
+    lectures: []
   });
   const [editingId, setEditingId] = useState(null);
   const [errors, setErrors] = useState({});
@@ -56,9 +56,9 @@ const TeacherManagements = () => {
       errors.phone = 'Please enter a valid 10-digit phone number';
     }
 
-    // Batch validation - minimum 1 batch required
-    if (!formData.batches || formData.batches.length === 0) {
-      errors.batches = 'Please assign at least one batch to the teacher';
+    // Lecture validation - minimum 1 lecture required
+    if (!formData.lectures || formData.lectures.length === 0) {
+      errors.lectures = 'Please assign at least one lecture to the teacher';
     }
 
     return errors;
@@ -75,7 +75,7 @@ const TeacherManagements = () => {
 
   useEffect(() => {
     fetchTeachers();
-    fetchBatches();
+    fetchLectures();
   }, []);
 
   const fetchTeachers = async () => {
@@ -91,16 +91,16 @@ const TeacherManagements = () => {
     }
   };
 
-  const fetchBatches = async () => {
+  const fetchLectures = async () => {
     try {
-      const res = await axios.get('/batches');
-      const batchesData = res.data?.data || res.data?.batches || [];
-      // Filter out default batch - teachers don't get assigned to default batch
-      const nonDefaultBatches = batchesData.filter(batch => !batch.isDefault);
-      setBatches(nonDefaultBatches);
+      const res = await axios.get('/lectures');
+      const lecturesData = res.data?.data || res.data?.lectures || [];
+      // Filter out default lecture - teachers don't get assigned to default lecture
+      const nondefaultLecturees = lecturesData.filter(lecture => !lecture.isDefault);
+      setLectures(nondefaultLecturees);
     } catch (error) {
-      console.error('Error fetching batches:', error);
-      toast.error('Failed to load batches');
+      console.error('Error fetching lectures:', error);
+      toast.error('Failed to load lectures');
     }
   };
 
@@ -141,25 +141,25 @@ const TeacherManagements = () => {
       email: teacher.email,
       teacherCode: teacher.teacherCode,
       phone: teacher.phone || '',
-      batches: teacher.batches ? teacher.batches.map(b => b._id || b) : []
+      lectures: teacher.lectures ? teacher.lectures.map(b => l._id || b) : []
     });
     setEditingId(teacher._id);
     setShowAddForm(true);
   };
 
-  const addBatch = (batchId) => {
-    if (batchId && !formData.batches.includes(batchId)) {
+  const addLecture = (lectureId) => {
+    if (lectureId && !formData.lectures.includes(lectureId)) {
       setFormData({
         ...formData,
-        batches: [...formData.batches, batchId]
+        lectures: [...formData.lectures, lectureId]
       });
     }
   };
 
-  const removeBatch = (batchId) => {
+  const removeLecture = (lectureId) => {
     setFormData({
       ...formData,
-      batches: formData.batches.filter(id => id !== batchId)
+      lectures: formData.lectures.filter(id => id !== lectureId)
     });
   };
 
@@ -186,7 +186,7 @@ const TeacherManagements = () => {
           email: formData.email,
           teacherCode: formData.teacherCode,
           phone: formData.phone,
-          batches: formData.batches
+          lectures: formData.lectures
         });
 
         if (res.data.success) {
@@ -217,7 +217,7 @@ const TeacherManagements = () => {
         email: '',
         teacherCode: '',
         phone: '',
-        batches: []
+        lectures: []
       });
       setEditingId(null);
       setShowAddForm(false);
@@ -261,7 +261,7 @@ const TeacherManagements = () => {
                   email: '',
                   teacherCode: '',
                   phone: '',
-                  batches: []
+                  lectures: []
                 });
                 setEditingId(null);
                 setErrors({});
@@ -370,27 +370,27 @@ const TeacherManagements = () => {
               </div>
             </div>
 
-            {/* Batch Selection */}
+            {/* Lecture Selection */}
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
-                Assign Batches <span className="text-red-500">*</span>
+                Assign Lectures <span className="text-red-500">*</span>
               </label>
 
-              {/* Selected Batches Display */}
-              {formData.batches.length > 0 && (
+              {/* Selected Lectures Display */}
+              {formData.lectures.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
-                  {formData.batches.map(batchId => {
-                    const batch = batches.find(b => b._id === batchId);
-                    if (!batch) return null;
+                  {formData.lectures.map(lectureId => {
+                    const lecture = lectures.find(l => l._id === lectureId);
+                    if (!lecture) return null;
                     return (
                       <span
-                        key={batch._id}
+                        key={lecture._id}
                         className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
                       >
-                        {batch.name}
+                        {lecture.name}
                         <button
                           type="button"
-                          onClick={() => removeBatch(batch._id)}
+                          onClick={() => removeLecture(lecture._id)}
                           className="ml-2 text-blue-600 hover:text-blue-800"
                         >
                           <X className="h-3 w-3" />
@@ -401,24 +401,24 @@ const TeacherManagements = () => {
                 </div>
               )}
 
-              {/* Dropdown to add batches */}
+              {/* Dropdown to add lectures */}
               <select
                 value=""
-                onChange={(e) => addBatch(e.target.value)}
+                onChange={(e) => addLecture(e.target.value)}
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               >
-                <option value="">Click to assign batches...</option>
-                {batches.filter(batch => !formData.batches.includes(batch._id)).map((batch) => (
-                  <option key={batch._id} value={batch._id}>
-                    {batch.name}
+                <option value="">Click to assign lectures...</option>
+                {lectures.filter(lecture => !formData.lectures.includes(lecture._id)).map((lecture) => (
+                  <option key={lecture._id} value={lecture._id}>
+                    {lecture.name}
                   </option>
                 ))}
               </select>
-              {errors.batches && (
-                <p className="text-red-500 text-xs italic mt-1">{errors.batches}</p>
+              {errors.lectures && (
+                <p className="text-red-500 text-xs italic mt-1">{errors.lectures}</p>
               )}
               <p className="text-xs text-gray-500 mt-1">
-                Teachers must be assigned to at least one batch. They can only create students and slots for their assigned batches.
+                Teachers must be assigned to at least one lecture. They can only create students and slots for their assigned lectures.
               </p>
             </div>
 
@@ -639,22 +639,22 @@ const TeacherManagements = () => {
                   </div>
                 </div>
 
-                {/* Batches Section */}
+                {/* Lectures Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">Assigned Batches</label>
-                  {selectedTeacher.batches && selectedTeacher.batches.length > 0 ? (
+                  <label className="block text-sm font-medium text-gray-500 mb-2">Assigned Lectures</label>
+                  {selectedTeacher.lectures && selectedTeacher.lectures.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                      {selectedTeacher.batches.map((batch) => (
+                      {selectedTeacher.lectures.map((lecture) => (
                         <span
-                          key={batch._id || batch}
+                          key={lecture._id || lecture}
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
                         >
-                          {batch.name || batch}
+                          {lecture.name || lecture}
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-sm">No batches assigned</p>
+                    <p className="text-gray-500 text-sm">No lectures assigned</p>
                   )}
                 </div>
 

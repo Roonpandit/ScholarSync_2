@@ -14,27 +14,27 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
   const [loading, setLoading] = useState(!teacherDataProp);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm] = Form.useForm();
-  const [allBatches, setAllBatches] = useState([]);
-  const [selectedBatchIds, setSelectedBatchIds] = useState([]);
+  const [allLectures, setAllLectures] = useState([]);
+  const [selectedLectureIds, setSelectedLectureIds] = useState([]);
 
   useEffect(() => {
     if (!teacherDataProp && teacherId) {
       fetchTeacherDetails();
     }
-    fetchAllBatches();
+    fetchAllLectures();
   }, [teacherId, teacherDataProp]);
 
-  const fetchAllBatches = async () => {
+  const fetchAllLectures = async () => {
     try {
-      const response = await axios.get('/batches');
-      const batchesData = response.data?.data || response.data?.batches || [];
-      // Filter out default batch - teachers don't get assigned to default batch
-      const nonDefaultBatches = batchesData.filter(batch => !batch.isDefault);
-      setAllBatches(nonDefaultBatches);
+      const response = await axios.get('/lectures');
+      const lecturesData = response.data?.data || response.data?.lectures || [];
+      // Filter out default lecture - teachers don't get assigned to default lecture
+      const nondefaultLecturees = lecturesData.filter(lecture => !lecture.isDefault);
+      setAllLectures(nondefaultLecturees);
     } catch (error) {
-      console.error('Error fetching batches:', error);
-      toast.error('Failed to load batches');
-      setAllBatches([]);
+      console.error('Error fetching lectures:', error);
+      toast.error('Failed to load lectures');
+      setAllLectures([]);
     }
   };
 
@@ -53,8 +53,8 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
 
   const handleEdit = () => {
     setIsEditing(true);
-    const teacherBatchIds = teacher.batches ? teacher.batches.map(b => b._id || b) : [];
-    setSelectedBatchIds(teacherBatchIds);
+    const teacherLectureIds = teacher.lectures ? teacher.lectures.map(b => l._id || b) : [];
+    setSelectedLectureIds(teacherLectureIds);
     editForm.setFieldsValue({
       name: teacher.name,
       email: teacher.email,
@@ -64,9 +64,9 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
   };
 
   const handleEditSubmit = async (values) => {
-    // Validate batches
-    if (selectedBatchIds.length === 0) {
-      toast.error('Please assign at least one batch to the teacher');
+    // Validate lectures
+    if (selectedLectureIds.length === 0) {
+      toast.error('Please assign at least one lecture to the teacher');
       return;
     }
 
@@ -77,24 +77,24 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
         email,
         teacherCode,
         phone,
-        batches: selectedBatchIds
+        lectures: selectedLectureIds
       });
 
       if (response.data.success) {
         toast.success('Teacher details updated successfully');
-        // Refresh teacher data to get updated batches
+        // Refresh teacher data to get updated lectures
         if (!isModal && !teacherDataProp) {
           fetchTeacherDetails();
         } else {
           // Update local state
-          const updatedBatches = allBatches.filter(b => selectedBatchIds.includes(b._id));
+          const updatedLectures = allLectures.filter(b => selectedLectureIds.includes(l._id));
           setTeacher({
             ...teacher,
             name,
             email,
             teacherCode,
             phone,
-            batches: updatedBatches
+            lectures: updatedLectures
           });
         }
         setIsEditing(false);
@@ -106,15 +106,15 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
 
   const handleEditCancel = () => {
     setIsEditing(false);
-    setSelectedBatchIds([]);
+    setSelectedLectureIds([]);
     editForm.resetFields();
   };
 
-  const handleBatchToggle = (batchId) => {
-    setSelectedBatchIds(prev =>
-      prev.includes(batchId)
-        ? prev.filter(id => id !== batchId)
-        : [...prev, batchId]
+  const handleLectureToggle = (lectureId) => {
+    setSelectedLectureIds(prev =>
+      prev.includes(lectureId)
+        ? prev.filter(id => id !== lectureId)
+        : [...prev, lectureId]
     );
   };
 
@@ -197,22 +197,22 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
               </div>
             </div>
 
-            {/* Batches Section */}
+            {/* Lectures Section */}
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-2">Assigned Batches</label>
-              {teacher.batches && teacher.batches.length > 0 ? (
+              <label className="block text-sm font-medium text-gray-500 mb-2">Assigned Lectures</label>
+              {teacher.lectures && teacher.lectures.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {teacher.batches.map((batch) => (
+                  {teacher.lectures.map((lecture) => (
                     <span
-                      key={batch._id || batch}
+                      key={lecture._id || lecture}
                       className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
                     >
-                      {batch.name || batch}
+                      {lecture.name || lecture}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">No batches assigned</p>
+                <p className="text-gray-500 text-sm">No lectures assigned</p>
               )}
             </div>
 
@@ -330,26 +330,26 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assign Batches <span className="text-red-500">*</span>
+                Assign Lectures <span className="text-red-500">*</span>
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
-                {allBatches.map((batch) => (
-                  <div key={batch._id} className="flex items-center">
+                {allLectures.map((lecture) => (
+                  <div key={lecture._id} className="flex items-center">
                     <input
                       type="checkbox"
-                      id={`batch-${batch._id}`}
-                      checked={selectedBatchIds.includes(batch._id)}
-                      onChange={() => handleBatchToggle(batch._id)}
+                      id={`lecture-${lecture._id}`}
+                      checked={selectedLectureIds.includes(lecture._id)}
+                      onChange={() => handleLectureToggle(lecture._id)}
                       className="mr-2"
                     />
-                    <label htmlFor={`batch-${batch._id}`} className="cursor-pointer">
-                      {batch.name}
+                    <label htmlFor={`lecture-${lecture._id}`} className="cursor-pointer">
+                      {lecture.name}
                     </label>
                   </div>
                 ))}
               </div>
-              {selectedBatchIds.length === 0 && (
-                <p className="text-red-500 text-xs mt-1">Please assign at least one batch</p>
+              {selectedLectureIds.length === 0 && (
+                <p className="text-red-500 text-xs mt-1">Please assign at least one lecture</p>
               )}
             </div>
 
@@ -426,26 +426,26 @@ const TeacherDetails = ({ isModal = false, teacherIdProp = null, teacherDataProp
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Assign Batches <span className="text-red-500">*</span>
+              Assign Lectures <span className="text-red-500">*</span>
             </label>
             <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
-              {allBatches.map((batch) => (
-                <div key={batch._id} className="flex items-center">
+              {allLectures.map((lecture) => (
+                <div key={lecture._id} className="flex items-center">
                   <input
                     type="checkbox"
-                    id={`batch-page-${batch._id}`}
-                    checked={selectedBatchIds.includes(batch._id)}
-                    onChange={() => handleBatchToggle(batch._id)}
+                    id={`lecture-page-${lecture._id}`}
+                    checked={selectedLectureIds.includes(lecture._id)}
+                    onChange={() => handleLectureToggle(lecture._id)}
                     className="mr-2"
                   />
-                  <label htmlFor={`batch-page-${batch._id}`} className="cursor-pointer">
-                    {batch.name}
+                  <label htmlFor={`lecture-page-${lecture._id}`} className="cursor-pointer">
+                    {lecture.name}
                   </label>
                 </div>
               ))}
             </div>
-            {selectedBatchIds.length === 0 && (
-              <p className="text-red-500 text-xs mt-1">Please assign at least one batch</p>
+            {selectedLectureIds.length === 0 && (
+              <p className="text-red-500 text-xs mt-1">Please assign at least one lecture</p>
             )}
           </div>
 

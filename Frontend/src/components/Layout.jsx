@@ -443,8 +443,8 @@ const Layout = ({ children }) => {
                     Organization
                   </div>
                   <NavItem
-                    to="/admin/batch-management"
-                    isActive={isActive("/admin/batch-management")}
+                    to="/admin/lecture-management"
+                    isActive={isActive("/admin/lecture-management")}
                     icon={
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -462,7 +462,7 @@ const Layout = ({ children }) => {
                       </svg>
                     }
                   >
-                    Batch Management
+                    Lecture Management
                   </NavItem>
                   <NavItem
                     to="/admin/leave-management"

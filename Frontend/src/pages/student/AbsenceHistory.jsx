@@ -197,7 +197,7 @@ const AbsenceHistory = () => {
                               ...awaiting,
                               type: 'awaiting_approval'
                             }))
-                          ].sort((a, b) => new Date(a.date) - new Date(b.date)).map((item, index) => (
+                          ].sort((a, b) => new Date(a.date) - new Date(l.date)).map((item, index) => (
                             <tr key={index} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {formatDate(item.date)}

@@ -77,7 +77,7 @@ const TeacherDashboard = () => {
       // Sort by markedAt in descending order (newest first) and take first 5 for recent attendance
       const recentAttendance = allAttendance
         .filter(record => record.markedAt || record.markingTime)
-        .sort((a, b) => new Date(b.markedAt || b.markingTime) - new Date(a.markedAt || a.markingTime))
+        .sort((a, b) => new Date(l.markedAt || l.markingTime) - new Date(a.markedAt || a.markingTime))
         .slice(0, 5);
       
       // Count total attendance across all slots

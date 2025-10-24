@@ -26,7 +26,7 @@ const AdminLeaveManagement = () => {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    batch: "",
+    lecture: "",
     teacher: "",
     student: "",
     status: "",
@@ -38,7 +38,7 @@ const AdminLeaveManagement = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Dropdown data
-  const [batches, setBatches] = useState([]);
+  const [lectures, setLectures] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [students, setStudents] = useState([]);
 
@@ -50,9 +50,9 @@ const AdminLeaveManagement = () => {
 
   const fetchDropdownData = async () => {
     try {
-      // Fetch batches
-      const batchesRes = await axios.get('/batches');
-      setBatches(batchesRes.data.data || []);
+      // Fetch lectures
+      const lecturesRes = await axios.get('/lectures');
+      setLectures(lecturesRes.data.data || []);
 
       // Fetch teachers
       const teachersRes = await axios.get('/admin/teachers');
@@ -71,7 +71,7 @@ const AdminLeaveManagement = () => {
     try {
       const response = await axios.get('/admin/leave/all', {
         params: {
-          batch: filters.batch || undefined,
+          lecture: filters.lecture || undefined,
           teacher: filters.teacher || undefined,
           student: filters.student || undefined,
           status: filters.status || undefined,
@@ -150,7 +150,7 @@ const AdminLeaveManagement = () => {
           </div>
           <div className="ml-13 text-sm text-gray-600">
             <p><span className="font-medium">Teacher:</span> {request.teacherId?.name || "N/A"}</p>
-            <p><span className="font-medium">Batch:</span> {request.batchId?.name || "N/A"}</p>
+            <p><span className="font-medium">Lecture:</span> {request.lectureId?.name || "N/A"}</p>
           </div>
         </div>
 
@@ -416,17 +416,17 @@ const AdminLeaveManagement = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Batch
+                    Lecture
                   </label>
                   <select
-                    value={filters.batch}
-                    onChange={(e) => setFilters({ ...filters, batch: e.target.value })}
+                    value={filters.lecture}
+                    onChange={(e) => setFilters({ ...filters, lecture: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">All Batches</option>
-                    {batches.map((batch) => (
-                      <option key={batch._id} value={batch._id}>
-                        {batch.name}
+                    <option value="">All Lectures</option>
+                    {lectures.map((lecture) => (
+                      <option key={lecture._id} value={lecture._id}>
+                        {lecture.name}
                       </option>
                     ))}
                   </select>
@@ -485,7 +485,7 @@ const AdminLeaveManagement = () => {
                 </button>
                 <button
                   onClick={() => {
-                    setFilters({ batch: "", teacher: "", student: "", status: "", fromDate: "", toDate: "" });
+                    setFilters({ lecture: "", teacher: "", student: "", status: "", fromDate: "", toDate: "" });
                     fetchLeaveRequests();
                   }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium"
@@ -574,7 +574,7 @@ const AdminLeaveManagement = () => {
                 </div>
               </div>
 
-              {/* Teacher & Batch Info */}
+              {/* Teacher & Lecture Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-purple-50 rounded-lg p-4">
                   <h4 className="text-sm font-medium text-purple-900 mb-2">Teacher</h4>
@@ -582,8 +582,8 @@ const AdminLeaveManagement = () => {
                   <p className="text-sm text-purple-700">{selectedRequest.teacherId?.teacherCode || "N/A"}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-green-900 mb-2">Batch</h4>
-                  <p className="font-medium text-green-900">{selectedRequest.batchId?.name || "N/A"}</p>
+                  <h4 className="text-sm font-medium text-green-900 mb-2">Lecture</h4>
+                  <p className="font-medium text-green-900">{selectedRequest.lectureId?.name || "N/A"}</p>
                 </div>
               </div>
 

@@ -221,8 +221,8 @@ const AttendanceSlots = () => {
 
   // Rest of the component code... 
   const [slots, setSlots] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [defaultBatch, setDefaultBatch] = useState(null);
+  const [lectures, setLectures] = useState([]);
+  const [defaultLecture, setDefaultLecture] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -240,7 +240,7 @@ const AttendanceSlots = () => {
     date: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
     startTime: "09:00",
     endTime: "10:00",
-    batches: []
+    lectures: []
   });
 
   const [filterDate, setFilterDate] = useState("");
@@ -299,7 +299,7 @@ const AttendanceSlots = () => {
           date: slot.date, // Already in YYYY-MM-DD format
           startTime: slot.startTime, // Keep as ISO string
           endTime: slot.endTime, // Keep as ISO string
-          batch: slot.batch, // Keep batch info
+          lecture: slot.lecture, // Keep lecture info
           isExpired,
           isActive, // This will be false if expired, regardless of the backend value
           displayActive: isActive,
@@ -309,7 +309,7 @@ const AttendanceSlots = () => {
       });
 
       processedSlots.sort(
-        (a, b) => convertToIST(new Date(b.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
+        (a, b) => convertToIST(new Date(l.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
       );
       setSlots(processedSlots);
 
@@ -417,12 +417,12 @@ const AttendanceSlots = () => {
     }));
   }, []);
 
-  const handleBatchToggle = (batchId) => {
+  const handleLectureToggle = (lectureId) => {
     setFormData(prev => ({
       ...prev,
-      batches: prev.batches.includes(batchId)
-        ? prev.batches.filter(id => id !== batchId)
-        : [...prev.batches, batchId]
+      lectures: prev.lectures.includes(lectureId)
+        ? prev.lectures.filter(id => id !== lectureId)
+        : [...prev.lectures, lectureId]
     }));
   };
 
@@ -437,9 +437,9 @@ const AttendanceSlots = () => {
         return;
       }
 
-      // Validate batch selection
-      if (!formData.batches || formData.batches.length === 0) {
-        toast.error('Please select at least one batch');
+      // Validate lecture selection
+      if (!formData.lectures || formData.lectures.length === 0) {
+        toast.error('Please select at least one lecture');
         return;
       }
 
@@ -463,7 +463,7 @@ const AttendanceSlots = () => {
         startTime,
         endTime,
         shift: formData.shift,
-        batches: formData.batches
+        lectures: formData.lectures
       };
 
       const token = localStorage.getItem("token");
@@ -489,7 +489,7 @@ const AttendanceSlots = () => {
       }, config);
 
       if (res.data.success) {
-        const slotsCount = formData.batches.length;
+        const slotsCount = formData.lectures.length;
         toast.success(`${slotsCount} attendance slot${slotsCount > 1 ? 's' : ''} created successfully`);
         setShowAddForm(false);
         setFormData({
@@ -497,7 +497,7 @@ const AttendanceSlots = () => {
           date: new Date().toISOString().split("T")[0],
           startTime: "09:00",
           endTime: "10:00",
-          batches: []
+          lectures: []
         });
         fetchSlots();
       }
@@ -646,24 +646,24 @@ const AttendanceSlots = () => {
 
   useEffect(() => {
     fetchSlots();
-    fetchBatches();
+    fetchLectures();
   }, []);
 
-  const fetchBatches = async () => {
+  const fetchLectures = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/batches', {
+      const res = await axios.get('/lectures', {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Backend returns data in res.data.data
-      const batchesData = res.data?.data || res.data?.batches || [];
-      setBatches(batchesData);
-      const defBatch = batchesData.find(b => b.isDefault);
-      setDefaultBatch(defBatch);
+      const lecturesData = res.data?.data || res.data?.Lectures || [];
+      setLectures(lecturesData);
+      const defLecture = lecturesData.find(l => l.isDefault);
+      setDefaultLecture(defLecture);
     } catch (error) {
-      console.error('Error fetching batches:', error);
-      toast.error('Failed to load batches');
-      setBatches([]); // Set empty array on error
+      console.error('Error fetching lectures:', error);
+      toast.error('Failed to load lectures');
+      setLectures([]); // Set empty array on error
     }
   };
 
@@ -802,7 +802,7 @@ const AttendanceSlots = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell"
                       >
-                        Batch
+                        Lecture
                       </th>
                       <th
                         scope="col"
@@ -904,8 +904,8 @@ const AttendanceSlots = () => {
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-700 hidden md:table-cell">
                             <div className="flex items-center">
-                              <span className="font-medium">{slot.batch?.name || 'N/A'}</span>
-                              {slot.batch?.isDefault && (
+                              <span className="font-medium">{slot.lecture?.name || 'N/A'}</span>
+                              {slot.lecture?.isDefault && (
                                 <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                                   Default
                                 </span>
@@ -1311,19 +1311,19 @@ const AttendanceSlots = () => {
               </div>
             </div>
 
-            {/* Batch Selection */}
+            {/* Lecture Selection */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Batches <span className="text-red-500">*</span>
+                Select Lectures <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-                {(batches || []).map((batch) => {
-                  const isDefault = batch.isDefault;
-                  const isChecked = formData.batches.includes(batch._id);
+                {(lectures || []).map((lecture) => {
+                  const isDefault = lecture.isDefault;
+                  const isChecked = formData.lectures.includes(lecture._id);
 
                   return (
                     <label
-                      key={batch._id}
+                      key={lecture._id}
                       className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${
                         isChecked
                           ? 'bg-blue-50 border-blue-500'
@@ -1333,13 +1333,13 @@ const AttendanceSlots = () => {
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => handleBatchToggle(batch._id)}
+                        onChange={() => handleLectureToggle(lecture._id)}
                         disabled={creatingSlot}
                         className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50"
                       />
                       <span className="ml-2 flex-1">
                         <span className="text-sm font-medium text-gray-900">
-                          {batch.name}
+                          {lecture.name}
                           {isDefault && (
                             <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                               Default
@@ -1351,10 +1351,10 @@ const AttendanceSlots = () => {
                   );
                 })}
               </div>
-              {formData.batches.length > 0 && (
+              {formData.lectures.length > 0 && (
                 <p className="text-xs text-blue-600 mt-2">
-                  {formData.batches.length} batch{formData.batches.length > 1 ? 'es' : ''} selected.
-                  {formData.batches.length} separate slot{formData.batches.length > 1 ? 's' : ''} will be created.
+                  {formData.lectures.length} lecture{formData.lectures.length > 1 ? 'es' : ''} selected.
+                  {formData.lectures.length} separate slot{formData.lectures.length > 1 ? 's' : ''} will be created.
                 </p>
               )}
             </div>

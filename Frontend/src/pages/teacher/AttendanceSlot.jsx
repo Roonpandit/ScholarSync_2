@@ -232,14 +232,14 @@ const AttendanceSlot = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [slotToDelete, setSlotToDelete] = useState(null);
   const [deletingSlot, setDeletingSlot] = useState(false);
-  const [batches, setBatches] = useState([]);
+  const [lectures, setLectures] = useState([]);
 
   const [formData, setFormData] = useState({
     shift: "morning",
     date: new Date().toISOString().split("T")[0], // Format as YYYY-MM-DD
     startTime: "09:00",
     endTime: "10:00",
-    batches: [], // Array of selected batch IDs
+    lectures: [], // Array of selected lecture IDs
   });
 
   const [filterDate, setFilterDate] = useState("");
@@ -307,7 +307,7 @@ const AttendanceSlot = () => {
       });
 
       processedSlots.sort(
-        (a, b) => convertToIST(new Date(b.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
+        (a, b) => convertToIST(new Date(l.startTime)).getTime() - convertToIST(new Date(a.startTime)).getTime()
       );
       setSlots(processedSlots);
 
@@ -333,16 +333,16 @@ const AttendanceSlot = () => {
     }
   };
 
-  const fetchBatches = async () => {
+  const fetchLectures = async () => {
     try {
-      // Teachers get batches from /auth/me endpoint (includes teacher's assigned batches)
+      // Teachers get lectures from /auth/me endpoint (includes teacher's assigned lectures)
       const response = await axios.get('/auth/me');
-      const batchesData = response.data?.data?.batches || [];
-      setBatches(batchesData);
+      const lecturesData = response.data?.data?.lectures || [];
+      setLectures(lecturesData);
     } catch (error) {
-      console.error('Error fetching batches:', error);
-      toast.error('Failed to load batches');
-      setBatches([]);
+      console.error('Error fetching lectures:', error);
+      toast.error('Failed to load lectures');
+      setLectures([]);
     }
   };
 
@@ -439,9 +439,9 @@ const AttendanceSlot = () => {
         return;
       }
 
-      // Validate batches
-      if (!formData.batches || formData.batches.length === 0) {
-        toast.error('Please select at least one batch');
+      // Validate lectures
+      if (!formData.lectures || formData.lectures.length === 0) {
+        toast.error('Please select at least one lecture');
         return;
       }
 
@@ -465,7 +465,7 @@ const AttendanceSlot = () => {
         startTime,
         endTime,
         shift: formData.shift,
-        batches: formData.batches
+        lectures: formData.lectures
       };
 
       const token = localStorage.getItem("token");
@@ -488,7 +488,7 @@ const AttendanceSlot = () => {
         date: preparedTimes.date,
         startTime: preparedTimes.startTime,
         endTime: preparedTimes.endTime,
-        batches: formData.batches
+        lectures: formData.lectures
       }, config);
 
       if (res.data.success) {
@@ -500,7 +500,7 @@ const AttendanceSlot = () => {
           date: new Date().toISOString().split("T")[0],
           startTime: "09:00",
           endTime: "10:00",
-          batches: []
+          lectures: []
         });
         fetchSlots();
       }
@@ -649,7 +649,7 @@ const AttendanceSlot = () => {
 
   useEffect(() => {
     fetchSlots();
-    fetchBatches();
+    fetchLectures();
   }, []);
 
   if (loading) {
@@ -1280,27 +1280,27 @@ const AttendanceSlot = () => {
               </div>
             </div>
 
-            {/* Batch Selection */}
+            {/* Lecture Selection */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Batches *
+                Select Lectures *
               </label>
               <div className="mb-3 flex flex-wrap gap-2">
-                {formData.batches.map(batchId => {
-                  const batch = batches.find(b => b._id === batchId);
-                  if (!batch) return null;
+                {formData.lectures.map(lectureId => {
+                  const lecture = lectures.find(l => l._id === lectureId);
+                  if (!lecture) return null;
                   return (
                     <span
-                      key={batch._id}
+                      key={lecture._id}
                       className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
                     >
-                      {batch.name}
+                      {lecture.name}
                       <button
                         type="button"
                         onClick={() => {
                           setFormData(prev => ({
                             ...prev,
-                            batches: prev.batches.filter(id => id !== batch._id)
+                            lectures: prev.lectures.filter(id => id !== lecture._id)
                           }));
                         }}
                         className="ml-2 text-blue-600 hover:text-blue-800"
@@ -1315,26 +1315,26 @@ const AttendanceSlot = () => {
               <select
                 value=""
                 onChange={(e) => {
-                  const batchId = e.target.value;
-                  if (batchId && !formData.batches.includes(batchId)) {
+                  const lectureId = e.target.value;
+                  if (lectureId && !formData.lectures.includes(lectureId)) {
                     setFormData(prev => ({
                       ...prev,
-                      batches: [...prev.batches, batchId]
+                      lectures: [...prev.lectures, lectureId]
                     }));
                   }
                 }}
                 disabled={creatingSlot}
                 className={`w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${creatingSlot ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               >
-                <option value="">Click to select batches...</option>
-                {batches.filter(batch => !formData.batches.includes(batch._id)).map((batch) => (
-                  <option key={batch._id} value={batch._id}>
-                    {batch.name}
+                <option value="">Click to select lectures...</option>
+                {lectures.filter(lecture => !formData.lectures.includes(lecture._id)).map((lecture) => (
+                  <option key={lecture._id} value={lecture._id}>
+                    {lecture.name}
                   </option>
                 ))}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Select one or more batches to create attendance slots. One slot will be created per batch.
+                Select one or more lectures to create attendance slots. One slot will be created per lecture.
               </p>
             </div>
 

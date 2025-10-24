@@ -17,7 +17,7 @@ import Reviews from './pages/admin/Reviews.jsx';
 import AttendanceSlots from './pages/admin/AttendanceSlots.jsx'
 import AttendanceStats from './pages/admin/AttendanceStats.jsx'
 import IPAddress from './pages/admin/IPAddress.jsx'
-import BatchManagement from './pages/admin/BatchManagement.jsx'
+import LectureManagement from './pages/admin/LectureManagement.jsx'
 import AdminLeaveManagement from './pages/admin/LeaveManagement.jsx'
 
 import TeacherDashboard from './pages/teacher/TeacherDashboard.jsx'
@@ -142,10 +142,10 @@ function App() {
         }
       />
       <Route
-        path="/admin/batch-management"
+        path="/admin/lecture-management"
         element={
           user && user.role === 'admin' ?
-          <Layout><BatchManagement /></Layout> :
+          <Layout><LectureManagement /></Layout> :
           <Navigate to="/home" />
         }
       />

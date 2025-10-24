@@ -29,9 +29,9 @@ const LeaveManagement = () => {
   const navigate = useNavigate();
 
   // State for Apply Leave Tab
-  const [batchTeacherPairs, setBatchTeacherPairs] = useState([{ batchId: "", teacherId: "" }]);
-  const [availableBatches, setAvailableBatches] = useState([]);
-  const [teachersForBatch, setTeachersForBatch] = useState({});
+  const [lectureTeacherPairs, setLectureTeacherPairs] = useState([{ lectureId: "", teacherId: "" }]);
+  const [availableLectures, setAvailableLectures] = useState([]);
+  const [teachersForLecture, setTeachersForLecture] = useState({});
   const [leaveType, setLeaveType] = useState("sick");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -43,7 +43,7 @@ const LeaveManagement = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [filters, setFilters] = useState({
-    batch: [],
+    lecture: [],
     teacher: [],
     status: [],
     fromDate: "",
@@ -57,9 +57,9 @@ const LeaveManagement = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [resendRemark, setResendRemark] = useState("");
 
-  // Fetch batches on mount
+  // Fetch lectures on mount
   useEffect(() => {
-    fetchNonDefaultBatches();
+    fetchNondefaultLecturees();
   }, []);
 
   // Fetch requests when switching to requests tab
@@ -69,53 +69,53 @@ const LeaveManagement = () => {
     }
   }, [activeTab]);
 
-  const fetchNonDefaultBatches = async () => {
+  const fetchNondefaultLecturees = async () => {
     try {
-      const response = await axios.get('/batches/non-default');
-      setAvailableBatches(response.data.data);
+      const response = await axios.get('/lectures/non-default');
+      setAvailableLectures(response.data.data);
     } catch (error) {
-      console.error("Error fetching batches:", error);
-      toast.error("Failed to load batches");
+      console.error("Error fetching lectures:", error);
+      toast.error("Failed to load lectures");
     }
   };
 
-  const fetchTeacherForBatch = async (batchId, index) => {
+  const fetchTeacherForLecture = async (lectureId, index) => {
     try {
-      const response = await axios.get(`/batches/${batchId}/teacher`);
+      const response = await axios.get(`/lectures/${lectureId}/teacher`);
 
-      setTeachersForBatch(prev => ({
+      setTeachersForLecture(prev => ({
         ...prev,
-        [batchId]: response.data.data
+        [lectureId]: response.data.data
       }));
 
       // Auto-select the teacher
-      const newPairs = [...batchTeacherPairs];
+      const newPairs = [...lectureTeacherPairs];
       newPairs[index].teacherId = response.data.data._id;
-      setBatchTeacherPairs(newPairs);
+      setLectureTeacherPairs(newPairs);
     } catch (error) {
       console.error("Error fetching teacher:", error);
-      toast.error("Failed to load teacher for this batch");
+      toast.error("Failed to load teacher for this lecture");
     }
   };
 
-  const handleBatchChange = (index, batchId) => {
-    const newPairs = [...batchTeacherPairs];
-    newPairs[index].batchId = batchId;
+  const handleLectureChange = (index, lectureId) => {
+    const newPairs = [...lectureTeacherPairs];
+    newPairs[index].lectureId = lectureId;
     newPairs[index].teacherId = ""; // Reset teacher
-    setBatchTeacherPairs(newPairs);
+    setLectureTeacherPairs(newPairs);
 
-    if (batchId) {
-      fetchTeacherForBatch(batchId, index);
+    if (lectureId) {
+      fetchTeacherForLecture(lectureId, index);
     }
   };
 
-  const addBatchTeacherPair = () => {
-    setBatchTeacherPairs([...batchTeacherPairs, { batchId: "", teacherId: "" }]);
+  const addLectureTeacherPair = () => {
+    setLectureTeacherPairs([...lectureTeacherPairs, { lectureId: "", teacherId: "" }]);
   };
 
-  const removeBatchTeacherPair = (index) => {
-    const newPairs = batchTeacherPairs.filter((_, i) => i !== index);
-    setBatchTeacherPairs(newPairs);
+  const removeLectureTeacherPair = (index) => {
+    const newPairs = lectureTeacherPairs.filter((_, i) => i !== index);
+    setLectureTeacherPairs(newPairs);
   };
 
   const getMinFromDate = () => {
@@ -148,9 +148,9 @@ const LeaveManagement = () => {
     e.preventDefault();
 
     // Validation
-    const validPairs = batchTeacherPairs.filter(pair => pair.batchId && pair.teacherId);
+    const validPairs = lectureTeacherPairs.filter(pair => pair.lectureId && pair.teacherId);
     if (validPairs.length === 0) {
-      toast.error("Please select at least one batch-teacher pair");
+      toast.error("Please select at least one lecture-teacher pair");
       return;
     }
 
@@ -184,11 +184,11 @@ const LeaveManagement = () => {
       toast.success(`Leave request submitted successfully! (${validPairs.length} request${validPairs.length > 1 ? 's' : ''} created)`);
 
       // Reset form
-      setBatchTeacherPairs([{ batchId: "", teacherId: "" }]);
+      setLectureTeacherPairs([{ lectureId: "", teacherId: "" }]);
       setFromDate("");
       setToDate("");
       setReason("");
-      setTeachersForBatch({});
+      setTeachersForLecture({});
 
       // Switch to requests tab
       setActiveTab("requests");
@@ -205,7 +205,7 @@ const LeaveManagement = () => {
       const response = await axios.get('/student/leave/my-requests', {
         params: {
           ...filters,
-          batch: filters.batch.length > 0 ? filters.batch : undefined,
+          lecture: filters.lecture.length > 0 ? filters.lecture : undefined,
           teacher: filters.teacher.length > 0 ? filters.teacher : undefined,
           status: filters.status.length > 0 ? filters.status : undefined,
           fromDate: filters.fromDate || undefined,
@@ -403,38 +403,38 @@ const LeaveManagement = () => {
                 </div>
               </div>
 
-              {/* Batch-Teacher Selection */}
+              {/* Lecture-Teacher Selection */}
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Select Batch & Teacher</h3>
+                  <h3 className="text-lg font-semibold">Select Lecture & Teacher</h3>
                   <button
                     type="button"
-                    onClick={addBatchTeacherPair}
+                    onClick={addLectureTeacherPair}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Add Batch
+                    Add Lecture
                   </button>
                 </div>
 
                 <div className="space-y-4">
-                  {batchTeacherPairs.map((pair, index) => (
+                  {lectureTeacherPairs.map((pair, index) => (
                     <div key={index} className="flex gap-3 items-start">
                       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Batch
+                            Lecture
                           </label>
                           <select
-                            value={pair.batchId}
-                            onChange={(e) => handleBatchChange(index, e.target.value)}
+                            value={pair.lectureId}
+                            onChange={(e) => handleLectureChange(index, e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             required
                           >
-                            <option value="">Select Batch</option>
-                            {availableBatches.map((batch) => (
-                              <option key={batch._id} value={batch._id}>
-                                {batch.name}
+                            <option value="">Select Lecture</option>
+                            {availableLectures.map((lecture) => (
+                              <option key={lecture._id} value={lecture._id}>
+                                {lecture.name}
                               </option>
                             ))}
                           </select>
@@ -446,18 +446,18 @@ const LeaveManagement = () => {
                           </label>
                           <input
                             type="text"
-                            value={teachersForBatch[pair.batchId]?.name || ""}
+                            value={teachersForLecture[pair.lectureId]?.name || ""}
                             readOnly
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
-                            placeholder={pair.batchId ? "Loading..." : "Select batch first"}
+                            placeholder={pair.lectureId ? "Loading..." : "Select lecture first"}
                           />
                         </div>
                       </div>
 
-                      {batchTeacherPairs.length > 1 && (
+                      {lectureTeacherPairs.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => removeBatchTeacherPair(index)}
+                          onClick={() => removeLectureTeacherPair(index)}
                           className="mt-7 p-2 text-red-600 hover:bg-red-50 rounded-md"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -611,7 +611,7 @@ const LeaveManagement = () => {
                     </button>
                     <button
                       onClick={() => {
-                        setFilters({ batch: [], teacher: [], status: [], fromDate: "", toDate: "" });
+                        setFilters({ lecture: [], teacher: [], status: [], fromDate: "", toDate: "" });
                         fetchLeaveRequests();
                       }}
                       className="ml-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium"
@@ -667,8 +667,8 @@ const LeaveManagement = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
                       <div>
-                        <p className="text-gray-500">Batch</p>
-                        <p className="font-medium">{request.batchId?.name || "N/A"}</p>
+                        <p className="text-gray-500">Lecture</p>
+                        <p className="font-medium">{request.lectureId?.name || "N/A"}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">Teacher</p>
@@ -785,8 +785,8 @@ const LeaveManagement = () => {
                   <p className="font-medium">{formatDate(selectedRequest.toDate)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Batch</p>
-                  <p className="font-medium">{selectedRequest.batchId?.name || "N/A"}</p>
+                  <p className="text-sm text-gray-500">Lecture</p>
+                  <p className="font-medium">{selectedRequest.lectureId?.name || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Teacher</p>

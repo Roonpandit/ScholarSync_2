@@ -421,7 +421,7 @@ const MarkAttendance = () => {
                     .filter(slot => slot.status === 'active')
                     .map((slot) => (
                       <option key={slot._id} value={slot._id} className="text-gray-500">
-                        {slot.batch?.name || 'N/A'} - {formatDate(slot.date)} -
+                        {slot.lecture?.name || 'N/A'} - {formatDate(slot.date)} -
                         {slot.shift.charAt(0).toUpperCase() + slot.shift.slice(1)} Shift -
                         {formatTime(slot.startTime)} to
                         {formatTime(slot.endTime)}

@@ -25,7 +25,7 @@ const TeacherLeaveManagement = () => {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    batch: "",
+    lecture: "",
     student: "",
     status: "",
     fromDate: "",
@@ -214,8 +214,8 @@ const TeacherLeaveManagement = () => {
         </div>
 
         <div>
-          <p className="text-gray-500 mb-1">Batch</p>
-          <p className="font-medium text-gray-900">{request.batchId?.name || "N/A"}</p>
+          <p className="text-gray-500 mb-1">Lecture</p>
+          <p className="font-medium text-gray-900">{request.lectureId?.name || "N/A"}</p>
         </div>
 
         <div>
@@ -536,8 +536,8 @@ const TeacherLeaveManagement = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Batch</p>
-                  <p className="font-medium">{selectedRequest.batchId?.name || "N/A"}</p>
+                  <p className="text-sm text-gray-500">Lecture</p>
+                  <p className="font-medium">{selectedRequest.lectureId?.name || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Applied On</p>
