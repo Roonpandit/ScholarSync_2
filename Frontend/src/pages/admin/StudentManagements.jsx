@@ -107,7 +107,7 @@ const StudentManagements = () => {
       const lecturesData = res.data?.data || res.data?.Lectures || [];
       setLectures(lecturesData);
       const defLecture = lecturesData.find(l => l.isDefault);
-      setDefaultLecture(defLecture);
+      setdefaultLecture(defLecture);
       // Auto-select default lecture when form opens
       if (defLecture && showAddForm && formData.lectures.length === 0) {
         setFormData(prev => ({

@@ -141,7 +141,7 @@ const TeacherManagements = () => {
       email: teacher.email,
       teacherCode: teacher.teacherCode,
       phone: teacher.phone || '',
-      lectures: teacher.lectures ? teacher.lectures.map(b => l._id || b) : []
+      lectures: teacher.lectures ? teacher.lectures.map(l => l._id || l) : []
     });
     setEditingId(teacher._id);
     setShowAddForm(true);
