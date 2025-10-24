@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { formatDateDisplay, formatTime24h, convertToIST } from '../../utils/timeUtils';
-import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle, Trash2 } from 'lucide-react';
+import { Users, Plus, X, Calendar, Mail, UserCheck, Search, Eye, CheckCircle } from 'lucide-react';
 import BulkUpload from './BulkUpload';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../../components/Loader';
@@ -16,9 +16,6 @@ const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [batches, setBatches] = useState([]);
   const [defaultBatch, setDefaultBatch] = useState(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,31 +149,6 @@ const StudentManagement = () => {
     }
   };
 
-  const handleDelete = (studentId, studentName) => {
-    setStudentToDelete({ id: studentId, name: studentName });
-    setDeleteModalOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    try {
-      setIsDeleting(true);
-      const res = await axios.delete(`/teacher/students/${studentToDelete.id}`);
-      
-      if (res.data.success) {
-        toast.success(`Student ${studentToDelete.name} deleted successfully`);
-        setStudents(students.filter(student => student._id !== studentToDelete.id));
-      } else {
-        toast.error('Failed to delete student');
-      }
-    } catch (error) {
-      console.error('Error deleting student:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete student');
-    } finally {
-      setIsDeleting(false);
-      setDeleteModalOpen(false);
-      setStudentToDelete(null);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -532,22 +504,13 @@ const StudentManagement = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => viewStudentDetails(student._id)}
-                            className="text-blue-600 hover:text-blue-900 flex items-center"
-                          >
-                            <Eye className="w-5 h-5 mr-1" />
-                            View
-                          </button>
-                          <button
-                            onClick={() => handleDelete(student._id, student.name)}
-                            className="text-red-600 hover:text-red-900 flex items-center"
-                          >
-                            <Trash2 className="w-5 h-5 mr-1" />
-                            Delete
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => viewStudentDetails(student._id)}
+                          className="text-blue-600 hover:text-blue-900 flex items-center"
+                        >
+                          <Eye className="w-5 h-5 mr-1" />
+                          View
+                        </button>
                       </td>
                       </tr>
                     ))}
@@ -571,33 +534,14 @@ const StudentManagement = () => {
                             <div className="text-sm font-medium text-gray-900">{student.name}</div>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => viewStudentDetails(student._id)}
-                            className="text-blue-600 hover:text-blue-900 text-sm flex items-center"
-                            title="View Details"
-                          >
-                            <Eye size={18} className="inline-block mr-1" />
-                            View
-                          </button>
-                          <button
-                            onClick={() => handleDelete(student._id, student.name)}
-                            className="text-red-600 hover:text-red-900 text-sm flex items-center"
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1" />
-                                Deleting...
-                              </>
-                            ) : (
-                              <>
-                                <Trash2 size={18} className="inline-block mr-1" />
-                                Delete
-                              </>
-                            )}
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => viewStudentDetails(student._id)}
+                          className="text-blue-600 hover:text-blue-900 text-sm flex items-center"
+                          title="View Details"
+                        >
+                          <Eye size={18} className="inline-block mr-1" />
+                          View
+                        </button>
                       </div>
                       <div className="text-sm text-gray-500 flex items-center mb-2">
                         <Mail size={14} className="mr-1 text-gray-400" />
@@ -624,61 +568,6 @@ const StudentManagement = () => {
           </div>
         )}
       </div>
-    <div>
-      {/* Delete Modal */}
-      {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-          <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-lg w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                Delete Student
-              </h3>
-              <button
-                onClick={() => {
-                  setDeleteModalOpen(false);
-                  setStudentToDelete(null);
-                }}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="mb-6">
-              <p className="text-gray-600">
-                Are you sure you want to delete {studentToDelete?.name}? This action cannot be undone.
-              </p>
-            </div>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => {
-                  setDeleteModalOpen(false);
-                  setStudentToDelete(null);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={isDeleting}
-                className={`px-4 py-2 ${isDeleting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'} text-white rounded-md`}
-              >
-                {isDeleting ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Deleting...
-                  </span>
-                ) : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
 
       {/* Student Detail Modal */}
       {viewingStudentId && (

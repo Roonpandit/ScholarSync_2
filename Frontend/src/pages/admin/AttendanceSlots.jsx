@@ -599,28 +599,18 @@ const AttendanceSlots = () => {
 
         //console.log("Present student IDs:", presentStudentIds); 
 
-        // Process all students to include absent ones
-        const processedStudents = allStudents.map((student) => {
-          const isPresent = presentStudentIds.has(student._id);
-          if (!isPresent) {
-            // Add absent students to the attendance map
-            attendanceMap[student._id] = {
-              isPresent: false,
-              status: 'pending',
-              markedAt: null,
-              location: null,
-              photo: null,
+        // Process all students - only show those with attendance records
+        const processedStudents = allStudents
+          .filter(student => presentStudentIds.has(student._id))
+          .map((student) => {
+            return {
+              _id: student._id,
+              name: student.name || "Unknown",
+              email: student.email || "",
+              rollNumber: student.rollNumber || "",
               studentCode: student.studentCode || "",
             };
-          }
-          return {
-            _id: student._id,
-            name: student.name || "Unknown",
-            email: student.email || "",
-            rollNumber: student.rollNumber || "",
-            studentCode: student.studentCode || "",
-          };
-        });
+          });
 
         //console.log("Processed students:", processedStudents); 
         //console.log("Attendance map:", attendanceMap); 
