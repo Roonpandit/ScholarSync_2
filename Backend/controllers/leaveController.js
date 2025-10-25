@@ -90,6 +90,28 @@ exports.applyLeave = async (req, res) => {
         });
       }
 
+      // Check for existing overlapping leave requests for this lecture
+      const existingLeave = await LeaveRequest.findOne({
+        studentId,
+        lectureId,
+        status: { $in: ['pending', 'approved'] }, // Check pending and approved leaves
+        $or: [
+          {
+            // New leave starts during existing leave
+            fromDate: { $lte: new Date(toDate) },
+            toDate: { $gte: new Date(fromDate) }
+          }
+        ]
+      }).populate('lectureId', 'name');
+
+      if (existingLeave) {
+        const formatDate = (date) => new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        return res.status(400).json({
+          success: false,
+          message: `You already have a ${existingLeave.status} leave request for ${existingLeave.lectureId.name} from ${formatDate(existingLeave.fromDate)} to ${formatDate(existingLeave.toDate)}. Please delete or cancel it before applying for overlapping dates.`
+        });
+      }
+
       // Create leave request
       const leaveRequest = await LeaveRequest.create({
         studentId,
@@ -298,52 +320,47 @@ exports.resendLeaveRequest = async (req, res) => {
       });
     }
 
-    const originalRequest = await LeaveRequest.findOne({ _id: requestId, studentId });
+    const request = await LeaveRequest.findOne({ _id: requestId, studentId });
 
-    if (!originalRequest) {
+    if (!request) {
       return res.status(404).json({
         success: false,
         message: 'Leave request not found'
       });
     }
 
-    if (!originalRequest.canResend()) {
+    if (!request.canResend()) {
       return res.status(400).json({
         success: false,
         message: 'Cannot resend this request. Either it is not rejected, already resent once, or the 48-hour window has expired'
       });
     }
 
-    // Create new request with same details
-    const newRequest = await LeaveRequest.create({
-      studentId: originalRequest.studentId,
-      lectureId: originalRequest.lectureId,
-      teacherId: originalRequest.teacherId,
-      leaveType: originalRequest.leaveType,
-      fromDate: originalRequest.fromDate,
-      toDate: originalRequest.toDate,
-      reason: originalRequest.reason,
-      studentRemark,
-      status: 'pending',
-      isResent: true,
-      resendCount: 1,
-      parentRequestId: originalRequest._id,
-      appliedAt: new Date()
-    });
+    // Update the existing request instead of creating a new one
+    request.status = 'pending';
+    request.studentRemark = studentRemark;
+    request.isResent = true;
+    request.resendCount = (request.resendCount || 0) + 1;
+    request.appliedAt = new Date(); // Update applied date
+    // Clear rejection fields
+    request.rejectedAt = undefined;
+    request.rejectExpiresAt = undefined;
 
-    // Create leave slots for the new request
+    await request.save();
+
+    // Create leave slots for the resent request
     await LeaveSlot.createSlotsForLeave(
-      newRequest._id,
+      request._id,
       studentId,
-      originalRequest.lectureId,
-      originalRequest.fromDate,
-      originalRequest.toDate
+      request.lectureId,
+      request.fromDate,
+      request.toDate
     );
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       message: 'Leave request resent successfully',
-      data: newRequest
+      data: request
     });
 
   } catch (error) {
