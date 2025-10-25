@@ -961,12 +961,18 @@ const AttendanceSlots = () => {
                       timeZone: 'Asia/Kolkata'
                     })}
                   </div>
-                  <div className="flex space-x-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {Object.values(attendance).filter((a) => a?.isPresent).length} Present
+                  <div className="flex space-x-2 flex-wrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      {Object.values(attendance).filter((a) => a?.status === 'pending').length} Pending
                     </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-200 text-gray-800">
-                      {Object.values(attendance).filter((a) => !a?.isPresent).length} Absent
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      {Object.values(attendance).filter((a) => a?.status === 'awaiting_approval').length} Awaiting
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {Object.values(attendance).filter((a) => a?.status === 'present').length} Present
+                    </span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      {Object.values(attendance).filter((a) => a?.status === 'absent').length} Absent
                     </span>
                     <button
                       onClick={exportSlotAttendance}
