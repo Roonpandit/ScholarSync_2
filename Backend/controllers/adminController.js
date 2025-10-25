@@ -411,57 +411,6 @@ exports.getStudentAttendanceCounts = asyncHandler(async (req, res) => {
 });
 
 
-// @desc    Get all attendance slots
-// @route   GET /api/admin/attendance-slots
-// @access  Private/Admin
-exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
-  try {
-    const { date } = req.query;
-    let query = {};
-    
-    // If date is provided, filter slots for that date
-    if (date) {
-      const parsedDate = new Date(date);
-      if (isNaN(parsedDate.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid date format. Please provide a valid date in YYYY-MM-DD format',
-        });
-      }
-      
-      query.date = {
-        $gte: parsedDate,
-        $lte: parsedDate
-      };
-    }
-    
-    const slots = await AttendanceSlot.find(query)
-      .sort({ date: -1, startTime: 1 });
-    
-    // Add isExpired flag and convert times to IST for display
-    const now = new Date();
-    const processedSlots = slots.map(slot => {
-      const slotObj = slot.toObject();
-      return {
-        ...slotObj,
-        isExpired: isDateBefore(slotObj.endTime, now)
-      };
-    });
-    
-    res.status(200).json({
-      success: true,
-      count: processedSlots.length,
-      data: processedSlots
-    });
-  } catch (error) {
-    console.error('Error fetching attendance slots:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching attendance slots',
-      error: error.message
-    });
-  }
-});
 
 // @desc    Get attendance records by slot ID
 // @route   GET /api/attendance?slotId=:slotId
@@ -1740,7 +1689,8 @@ exports.getAllAttendanceSlots = asyncHandler(async (req, res) => {
   // Find all slots that match the query
   const attendanceSlots = await AttendanceSlot.find(query)
     .sort({ date: -1, shift: 1 })
-    .populate('createdBy', 'name email');
+    .populate('createdBy', 'name email')
+    .populate('lecture', 'name isDefault');
 
   // Check for and close expired slots
   const updatePromises = [];
