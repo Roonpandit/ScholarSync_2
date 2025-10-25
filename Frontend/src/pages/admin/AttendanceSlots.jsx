@@ -585,6 +585,7 @@ const AttendanceSlots = () => {
             const studentId = record.student._id || record.student;
             presentStudentIds.add(studentId);
             attendanceMap[studentId] = {
+              _id: record._id, // Include the attendance record ID
               isPresent: record.isPresent !== undefined ? record.isPresent : true,
               status: record.status || (record.isPresent ? 'present' : 'absent'),
               markedAt: record.markedAt,
@@ -596,6 +597,7 @@ const AttendanceSlots = () => {
           }
         });
 
+        console.log("📋 Attendance Map:", attendanceMap);
         //console.log("Present student IDs:", presentStudentIds); 
 
         // Process all students - only show those with attendance records
@@ -644,6 +646,14 @@ const AttendanceSlots = () => {
   }, []);
 
   const handleApproveAttendance = async (attendanceId) => {
+    console.log("🟢 handleApproveAttendance called with ID:", attendanceId);
+
+    if (!attendanceId) {
+      toast.error("Attendance ID is missing");
+      console.error("❌ No attendance ID provided");
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -657,6 +667,7 @@ const AttendanceSlots = () => {
         },
       };
 
+      console.log("📤 Sending approve request to:", `/admin/attendance/${attendanceId}/approve`);
       await axios.post(`/admin/attendance/${attendanceId}/approve`, {}, config);
       toast.success("Attendance approved successfully");
 

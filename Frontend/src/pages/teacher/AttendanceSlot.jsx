@@ -589,6 +589,7 @@ const AttendanceSlot = () => {
             const studentId = record.student._id || record.student;
             presentStudentIds.add(studentId);
             attendanceMap[studentId] = {
+              _id: record._id, // Include the attendance record ID
               isPresent: record.isPresent !== undefined ? record.isPresent : true,
               status: record.status || (record.isPresent ? 'present' : 'absent'),
               markedAt: record.markedAt,
