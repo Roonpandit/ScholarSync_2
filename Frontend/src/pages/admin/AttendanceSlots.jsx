@@ -795,13 +795,7 @@ const AttendanceSlots = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900"
                       >
-                        Shift
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell"
-                      >
-                        Lecture
+                        Lecture Name
                       </th>
                       <th
                         scope="col"
@@ -839,7 +833,7 @@ const AttendanceSlots = () => {
                       if (filterDate && filteredSlots.length === 0) {
                         return (
                           <tr>
-                            <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
                               No slots found for the selected date
                             </td>
                           </tr>
@@ -879,29 +873,14 @@ const AttendanceSlots = () => {
                                   })}
                                 </div>
                                 <div className="text-gray-500 sm:hidden mt-1">
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getShiftColor(
-                                      slot.shift
-                                    )}`}
-                                  >
-                                    {slot.shift.charAt(0).toUpperCase() +
-                                      slot.shift.slice(1)}
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {slot.lecture?.name || 'N/A'}
                                   </span>
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-500 hidden sm:table-cell">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getShiftColor(
-                                slot.shift
-                              )}`}
-                            >
-                              {slot.shift.charAt(0).toUpperCase() +
-                                slot.shift.slice(1)}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-700 hidden md:table-cell">
+                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-700 hidden sm:table-cell">
                             <div className="flex items-center">
                               <span className="font-medium">{slot.lecture?.name || 'N/A'}</span>
                               {slot.lecture?.isDefault && (

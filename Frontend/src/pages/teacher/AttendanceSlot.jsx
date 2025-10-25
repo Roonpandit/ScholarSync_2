@@ -781,7 +781,7 @@ const AttendanceSlot = () => {
                         scope="col"
                         className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900"
                       >
-                        Shift
+                        Lecture Name
                       </th>
                       <th
                         scope="col"
@@ -859,27 +859,22 @@ const AttendanceSlot = () => {
                                   })}
                                 </div>
                                 <div className="text-gray-500 sm:hidden mt-1">
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getShiftColor(
-                                      slot.shift
-                                    )}`}
-                                  >
-                                    {slot.shift.charAt(0).toUpperCase() +
-                                      slot.shift.slice(1)}
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {slot.lecture?.name || 'N/A'}
                                   </span>
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-500 hidden sm:table-cell">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getShiftColor(
-                                slot.shift
-                              )}`}
-                            >
-                              {slot.shift.charAt(0).toUpperCase() +
-                                slot.shift.slice(1)}
-                            </span>
+                          <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm text-gray-700 hidden sm:table-cell">
+                            <div className="flex items-center">
+                              <span className="font-medium">{slot.lecture?.name || 'N/A'}</span>
+                              {slot.lecture?.isDefault && (
+                                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  Default
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-xs sm:text-sm">
                             <div className="flex items-center">
