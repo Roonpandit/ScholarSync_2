@@ -116,7 +116,7 @@ attendanceSchema.index({ status: 1 });
 attendanceSchema.index({ slot: 1, status: 1 });
 attendanceSchema.index({ statusUpdatedBy: 1 });
 
-// Add a 2dsphere index for geospatial queries
-attendanceSchema.index({ 'location': '2dsphere' });
+// Add a 2dsphere index for geospatial queries (sparse: true means only index documents that have the location field)
+attendanceSchema.index({ 'location': '2dsphere' }, { sparse: true });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
