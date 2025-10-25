@@ -54,8 +54,10 @@ const LeaveManagement = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showResendModal, setShowResendModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [resendRemark, setResendRemark] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch lectures on mount
   useEffect(() => {
@@ -220,18 +222,19 @@ const LeaveManagement = () => {
     }
   };
 
-  const handleDeleteRequest = async (requestId) => {
-    if (!window.confirm("Are you sure you want to delete this leave request?")) {
-      return;
-    }
-
+  const handleDeleteRequest = async () => {
+    setDeleteLoading(true);
     try {
-      await axios.delete(`/students/leave/${requestId}`);
+      await axios.delete(`/students/leave/${selectedRequest._id}`);
       toast.success("Leave request deleted successfully");
+      setShowDeleteModal(false);
+      setSelectedRequest(null);
       fetchLeaveRequests();
     } catch (error) {
       console.error("Error deleting request:", error);
       toast.error(error.response?.data?.message || "Failed to delete request");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -710,7 +713,10 @@ const LeaveManagement = () => {
 
                       {request.status === "pending" && (
                         <button
-                          onClick={() => handleDeleteRequest(request._id)}
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowDeleteModal(true);
+                          }}
                           className="flex items-center px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
@@ -903,7 +909,7 @@ const LeaveManagement = () => {
 
               {selectedRequest.teacherRemark && (
                 <div className="mb-4 p-3 bg-red-50 rounded-md">
-                  <p className="text-sm text-red-700 font-medium mb-1">Teacher's Rejection Reason</p>
+                  <p className="text-sm text-red-700 font-medium mb-1">Teacher&apos;s Rejection Reason</p>
                   <p className="text-sm text-red-600">{selectedRequest.teacherRemark}</p>
                 </div>
               )}
@@ -935,6 +941,80 @@ const LeaveManagement = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Resend Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center">
+                <AlertCircle className="w-6 h-6 text-red-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Delete Leave Request</h3>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to delete this leave request?
+              </p>
+
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Lecture:</span>
+                  <span className="font-medium text-gray-900">{selectedRequest.lectureId?.name || "N/A"}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Duration:</span>
+                  <span className="font-medium text-gray-900">
+                    {new Date(selectedRequest.fromDate).toLocaleDateString()} - {new Date(selectedRequest.toDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Type:</span>
+                  <span className="font-medium text-gray-900 capitalize">{selectedRequest.leaveType}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-red-50 rounded-md">
+                <p className="text-sm text-red-800">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
+                  This action cannot be undone. The leave request will be permanently deleted.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedRequest(null);
+                }}
+                disabled={deleteLoading}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRequest}
+                disabled={deleteLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                {deleteLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </>
+                )}
               </button>
             </div>
           </div>
