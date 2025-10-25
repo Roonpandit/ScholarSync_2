@@ -65,13 +65,15 @@ const AttendanceHistory = () => {
 
   // Calculate attendance statistics
   const calculateStats = () => {
+    // Only count records with status 'present' as actually present
+    const presentDays = attendanceRecords.filter(record => record.status === 'present').length;
+    const awaitingApprovalDays = attendanceRecords.filter(record => record.status === 'awaiting_approval').length;
     const totalDays = attendanceRecords.length;
-    const totalExpectedDays = 20; // Assuming 20 working days per month
-    const attendanceRate = totalDays > 0 ? Math.min(100, Math.round((totalDays / totalExpectedDays) * 100)) : 0;
-    
+
     return {
       totalDays,
-      attendanceRate
+      presentDays,
+      awaitingApprovalDays
     };
   };
 
@@ -134,6 +136,14 @@ const AttendanceHistory = () => {
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-100">
                   <span className="text-sm sm:text-base text-gray-600">Total Present</span>
+                  <span className="text-xl sm:text-2xl font-bold text-green-600">{stats.presentDays}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <span className="text-sm sm:text-base text-gray-600">Awaiting Approval</span>
+                  <span className="text-xl sm:text-2xl font-bold text-orange-600">{stats.awaitingApprovalDays}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm sm:text-base text-gray-600">Total Records</span>
                   <span className="text-xl sm:text-2xl font-bold text-gray-800">{stats.totalDays}</span>
                 </div>
               </div>
@@ -228,9 +238,25 @@ const AttendanceHistory = () => {
                         {record.shift}
                       </div>
                     </div>
-                    <div className="flex items-center mb-3 text-xs text-gray-500">
-                      <Clock className="w-3 h-3 text-gray-400 mr-1" />
-                      {formatTime(record.markedAt)}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Clock className="w-3 h-3 text-gray-400 mr-1" />
+                        {formatTime(record.markedAt)}
+                      </div>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        record.status === 'present'
+                          ? 'bg-green-100 text-green-800'
+                          : record.status === 'awaiting_approval'
+                          ? 'bg-orange-100 text-orange-800'
+                          : record.status === 'absent'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {record.status === 'present' ? 'Present' :
+                         record.status === 'awaiting_approval' ? 'Awaiting' :
+                         record.status === 'absent' ? 'Absent' :
+                         record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                      </span>
                     </div>
                     <div className="flex space-x-2">
                       <button
@@ -272,6 +298,9 @@ const AttendanceHistory = () => {
                           Shift
                         </th>
                         <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Photo
                         </th>
                         <th scope="col" className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -289,6 +318,22 @@ const AttendanceHistory = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.shift.charAt(0)?.toUpperCase() + record.shift.slice(1)}</td>
+                          <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              record.status === 'present'
+                                ? 'bg-green-100 text-green-800'
+                                : record.status === 'awaiting_approval'
+                                ? 'bg-orange-100 text-orange-800'
+                                : record.status === 'absent'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {record.status === 'present' ? 'Present' :
+                               record.status === 'awaiting_approval' ? 'Awaiting Approval' :
+                               record.status === 'absent' ? 'Absent' :
+                               record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                            </span>
+                          </td>
                           <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                             <div className="flex items-center">
                               <button

@@ -656,9 +656,14 @@ const AttendanceSlots = () => {
       });
       // Backend returns data in res.data.data
       const lecturesData = res.data?.data || res.data?.Lectures || [];
+      console.log('📚 Admin - Fetched lectures:', lecturesData.length, lecturesData);
       setLectures(lecturesData);
       const defLecture = lecturesData.find(l => l.isDefault);
       setDefaultLecture(defLecture);
+
+      if (lecturesData.length === 0) {
+        console.warn('⚠️ No lectures found for admin. Check /lectures API endpoint.');
+      }
     } catch (error) {
       console.error('Error fetching lectures:', error);
       toast.error('Failed to load lectures');
@@ -1298,49 +1303,58 @@ const AttendanceSlots = () => {
             {/* Lecture Selection */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Lectures <span className="text-red-500">*</span>
+                Select Lectures *
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-                {(lectures || []).map((lecture) => {
-                  const isDefault = lecture.isDefault;
-                  const isChecked = formData.lectures.includes(lecture._id);
-
+              <div className="mb-3 flex flex-wrap gap-2">
+                {formData.lectures.map(lectureId => {
+                  const lecture = lectures.find(l => l._id === lectureId);
+                  if (!lecture) return null;
                   return (
-                    <label
+                    <span
                       key={lecture._id}
-                      className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${
-                        isChecked
-                          ? 'bg-blue-50 border-blue-500'
-                          : 'bg-white border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => handleLectureToggle(lecture._id)}
+                      {lecture.name}
+                      {lecture.isDefault && (
+                        <span className="ml-1 text-xs">(Default)</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleLectureToggle(lecture._id)}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
                         disabled={creatingSlot}
-                        className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50"
-                      />
-                      <span className="ml-2 flex-1">
-                        <span className="text-sm font-medium text-gray-900">
-                          {lecture.name}
-                          {isDefault && (
-                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                              Default
-                            </span>
-                          )}
-                        </span>
-                      </span>
-                    </label>
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
                   );
                 })}
               </div>
-              {formData.lectures.length > 0 && (
-                <p className="text-xs text-blue-600 mt-2">
-                  {formData.lectures.length} lecture{formData.lectures.length > 1 ? 'es' : ''} selected.
-                  {formData.lectures.length} separate slot{formData.lectures.length > 1 ? 's' : ''} will be created.
-                </p>
-              )}
+              <select
+                value=""
+                onChange={(e) => {
+                  const lectureId = e.target.value;
+                  if (lectureId && !formData.lectures.includes(lectureId)) {
+                    handleLectureToggle(lectureId);
+                  }
+                }}
+                disabled={creatingSlot}
+                className={`w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${creatingSlot ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              >
+                <option value="">Click to select lectures...</option>
+                {lectures && lectures.length > 0 ? (
+                  lectures.filter(lecture => !formData.lectures.includes(lecture._id)).map((lecture) => (
+                    <option key={lecture._id} value={lecture._id}>
+                      {lecture.name} {lecture.isDefault ? '(Default)' : ''}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No lectures available</option>
+                )}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Select one or more lectures to create attendance slots. One slot will be created per lecture.
+              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">

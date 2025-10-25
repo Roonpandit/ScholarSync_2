@@ -45,26 +45,27 @@ const StudentDashboard = () => {
             firstDay.toISOString().split("T")[0]
           }&endDate=${lastDay.toISOString().split("T")[0]}`
         );
-        setRecentAttendance(attendanceRes.data.data.slice(0, 5) || []);
+        const attendanceData = attendanceRes.data.data || [];
+        setRecentAttendance(attendanceData.slice(0, 5));
 
         // Fetch absence history for current month
         const absenceRes = await axios.get(
           `/students/absences?month=${currentMonth}&year=${currentYear}`
         );
 
-        // Calculate stats
-        const present = attendanceRes.data.count || 0;
+        // Calculate stats by counting records with specific statuses
+        const present = attendanceData.filter(record => record.status === 'present').length;
+        const awaitingApproval = attendanceData.filter(record => record.status === 'awaiting_approval').length;
         const totalClosedSlots = absenceRes.data.totalClosedSlots || 0;
         const totalAbsences = absenceRes.data.totalAbsences || 0;
         const totalPending = absenceRes.data.totalPending || 0;
-        const totalAwaitingApproval = absenceRes.data.totalAwaitingApproval || 0;
 
         setAttendanceStats({
           present,
           absent: totalAbsences,
           pending: totalPending,
-          awaitingApproval: totalAwaitingApproval,
-          total: present + totalAbsences + totalPending + totalAwaitingApproval,
+          awaitingApproval: awaitingApproval,
+          total: present + totalAbsences + totalPending + awaitingApproval,
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);

@@ -197,7 +197,7 @@ const AbsenceHistory = () => {
                               ...awaiting,
                               type: 'awaiting_approval'
                             }))
-                          ].sort((a, b) => new Date(a.date) - new Date(l.date)).map((item, index) => (
+                          ].sort((a, b) => new Date(a.date) - new Date(b.date)).map((item, index) => (
                             <tr key={index} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {formatDate(item.date)}
@@ -236,33 +236,37 @@ const AbsenceHistory = () => {
 
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Summary</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Summary for {getMonthName(filters.month)} {filters.year}</h2>
 
             <div className="space-y-4">
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                <span className="text-gray-600">Total Closed Slots:</span>
+                <span className="font-semibold text-gray-800">{attendanceData.totalClosedSlots || 0}</span>
+              </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Absences:</span>
+                <span className="text-gray-600">Absences (Not Marked):</span>
                 <span className="font-semibold text-red-600">{attendanceData.totalAbsences}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Pending Slots:</span>
+                <span className="text-gray-600">Active Slots (Pending):</span>
                 <span className="font-semibold text-yellow-600">{attendanceData.totalPending}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Awaiting Approval:</span>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                <span className="text-gray-600">Awaiting Teacher Approval:</span>
                 <span className="font-semibold text-orange-600">{attendanceData.totalAwaitingApproval || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Status:</span>
-                <span className={`font-semibold ${
-                  attendanceData.absences.length > 3
+                <span className="text-gray-600 font-medium">Attendance Status:</span>
+                <span className={`font-bold text-lg ${
+                  attendanceData.totalAbsences > 3
                     ? "text-red-600"
-                    : attendanceData.absences.length > 1
+                    : attendanceData.totalAbsences > 1
                     ? "text-yellow-600"
                     : "text-green-600"
                 }`}>
-                  {attendanceData.absences.length > 3
+                  {attendanceData.totalAbsences > 3
                     ? "Critical"
-                    : attendanceData.absences.length > 1
+                    : attendanceData.totalAbsences > 1
                     ? "Warning"
                     : "Good"}
                 </span>
