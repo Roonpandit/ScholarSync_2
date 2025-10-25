@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const AttendanceSlot = require('../models/AttendanceSlot');
 const Attendance = require('../models/Attendance');
-const { sendTeacherReviewEmail } = require('../services/teacherReviewEmailService');
+// const { sendTeacherReviewEmail } = require('../services/teacherReviewEmailService'); // DISABLED
 
 // Function to mark pending attendance as absent when slots close
 const markPendingAsAbsent = async () => {
@@ -61,16 +61,17 @@ const markPendingAsAbsent = async () => {
       if (awaitingApprovalCount > 0) {
         console.log(`Found ${awaitingApprovalCount} attendance(s) awaiting approval for slot ${slot._id}`);
 
+        // EMAIL SENDING DISABLED
         // Send email to teachers
-        sendTeacherReviewEmail({
-          lectureId: slot.lecture,
-          slotId: slot._id,
-          shift: slot.shift,
-          date: slot.date,
-          pendingCount: awaitingApprovalCount
-        }).catch(err => {
-          console.error('Error sending teacher review email:', err);
-        });
+        // sendTeacherReviewEmail({
+        //   lectureId: slot.lecture,
+        //   slotId: slot._id,
+        //   shift: slot.shift,
+        //   date: slot.date,
+        //   pendingCount: awaitingApprovalCount
+        // }).catch(err => {
+        //   console.error('Error sending teacher review email:', err);
+        // });
       }
     }
 
