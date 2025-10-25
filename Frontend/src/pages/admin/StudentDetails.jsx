@@ -65,7 +65,7 @@ const StudentDetails = ({ isModal = false, studentIdProp = null, onClose = null 
 
   const handleEdit = () => {
     setIsEditing(true);
-    const studentLectureIds = student?.student?.Lectures ? student.student.lectures.map(b => l._id || b) : [];
+    const studentLectureIds = student?.student?.lectures ? student.student.lectures.map(lecture => lecture._id || lecture) : [];
     setSelectedLectureIds(studentLectureIds);
     editForm.setFieldsValue({
       name: student?.student?.name || '',
@@ -303,7 +303,7 @@ const StudentDetails = ({ isModal = false, studentIdProp = null, onClose = null 
             {/* Lectures Section */}
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-2">Assigned Lectures</label>
-              {student?.student?.Lectures && student.student.lectures.length > 0 ? (
+              {student?.student?.lectures && student.student.lectures.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {student.student.lectures.map((lecture) => (
                     <span

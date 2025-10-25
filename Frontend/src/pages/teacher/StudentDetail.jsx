@@ -466,9 +466,9 @@ const StudentDetail = ({ isModal = false, studentIdProp = null, onClose = null }
                 Add More Lectures (Optional)
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
-                {allLectures.filter(lecture => !lectures.some(b => l._id === lecture._id)).length > 0 ? (
+                {allLectures.filter(lecture => !lectures.some(l => l._id === lecture._id)).length > 0 ? (
                   allLectures
-                    .filter(lecture => !lectures.some(b => l._id === lecture._id))
+                    .filter(lecture => !lectures.some(l => l._id === lecture._id))
                     .map((lecture) => (
                       <div key={lecture._id} className="flex items-center">
                         <input
@@ -975,9 +975,9 @@ const StudentDetail = ({ isModal = false, studentIdProp = null, onClose = null }
               Add More Lectures (Optional)
             </label>
             <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
-              {allLectures.filter(lecture => !lectures.some(b => l._id === lecture._id)).length > 0 ? (
+              {allLectures.filter(lecture => !lectures.some(l => l._id === lecture._id)).length > 0 ? (
                 allLectures
-                  .filter(lecture => !lectures.some(b => l._id === lecture._id))
+                  .filter(lecture => !lectures.some(l => l._id === lecture._id))
                   .map((lecture) => (
                     <div key={lecture._id} className="flex items-center">
                       <input

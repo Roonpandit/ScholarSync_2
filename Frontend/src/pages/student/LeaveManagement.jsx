@@ -173,7 +173,7 @@ const LeaveManagement = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('/student/leave/apply', {
+      const response = await axios.post('/students/leave/apply', {
         leaveRequests: validPairs,
         leaveType,
         fromDate,
@@ -202,7 +202,7 @@ const LeaveManagement = () => {
 
   const fetchLeaveRequests = async () => {
     try {
-      const response = await axios.get('/student/leave/my-requests', {
+      const response = await axios.get('/students/leave/my-requests', {
         params: {
           ...filters,
           lecture: filters.lecture.length > 0 ? filters.lecture : undefined,
@@ -226,7 +226,7 @@ const LeaveManagement = () => {
     }
 
     try {
-      await axios.delete(`/student/leave/${requestId}`);
+      await axios.delete(`/students/leave/${requestId}`);
       toast.success("Leave request deleted successfully");
       fetchLeaveRequests();
     } catch (error) {
@@ -242,7 +242,7 @@ const LeaveManagement = () => {
     }
 
     try {
-      await axios.post(`/student/leave/${selectedRequest._id}/cancel`, { cancelReason });
+      await axios.post(`/students/leave/${selectedRequest._id}/cancel`, { cancelReason });
       toast.success("Leave cancelled successfully");
       setShowCancelModal(false);
       setCancelReason("");
@@ -261,7 +261,7 @@ const LeaveManagement = () => {
     }
 
     try {
-      await axios.post(`/student/leave/${selectedRequest._id}/resend`, { studentRemark: resendRemark });
+      await axios.post(`/students/leave/${selectedRequest._id}/resend`, { studentRemark: resendRemark });
       toast.success("Leave request resent successfully");
       setShowResendModal(false);
       setResendRemark("");
