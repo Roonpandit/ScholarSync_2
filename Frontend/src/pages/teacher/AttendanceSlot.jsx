@@ -647,6 +647,67 @@ const AttendanceSlot = () => {
     }
   }, []);
 
+  const handleApproveAttendance = async (attendanceId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+      await axios.post(`/teacher/attendance/${attendanceId}/approve`, {}, config);
+      toast.success("Attendance approved successfully");
+
+      // Refresh the attendance list
+      if (currentSlot) {
+        await handleViewAttendance(currentSlot);
+      }
+    } catch (error) {
+      console.error("Error approving attendance:", error);
+      toast.error(error.response?.data?.message || "Failed to approve attendance");
+    }
+  };
+
+  const handleRejectAttendance = async (attendanceId) => {
+    const remark = prompt("Please provide a reason for rejecting this attendance:");
+
+    if (!remark || remark.trim() === '') {
+      toast.error("Rejection reason is required");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+      await axios.post(`/teacher/attendance/${attendanceId}/reject`, { remark: remark.trim() }, config);
+      toast.success("Attendance rejected successfully. Student has been notified.");
+
+      // Refresh the attendance list
+      if (currentSlot) {
+        await handleViewAttendance(currentSlot);
+      }
+    } catch (error) {
+      console.error("Error rejecting attendance:", error);
+      toast.error(error.response?.data?.message || "Failed to reject attendance");
+    }
+  };
+
   useEffect(() => {
     fetchSlots();
     fetchLectures();
@@ -1066,13 +1127,19 @@ const AttendanceSlot = () => {
                           >
                             Location (Lng, Lat)
                           </th>
+                          <th
+                            scope="col"
+                            className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredStudents.length === 0 ? (
                           <tr>
                             <td
-                              colSpan="6"
+                              colSpan="7"
                               className="px-2 sm:px-6 py-4 text-center text-sm text-gray-500"
                             >
                               No attendance records found
@@ -1143,6 +1210,26 @@ const AttendanceSlot = () => {
                                 </td>
                                 <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                                   {location ? `${location.coordinates[0]}, ${location.coordinates[1]}` : "N/A"}
+                                </td>
+                                <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+                                  {studentAttendance?.status === 'awaiting_approval' && (
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => handleApproveAttendance(studentAttendance._id || studentAttendance.id)}
+                                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                      >
+                                        <Check className="w-3 h-3 mr-1" />
+                                        Approve
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectAttendance(studentAttendance._id || studentAttendance.id)}
+                                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                      >
+                                        <X className="w-3 h-3 mr-1" />
+                                        Reject
+                                      </button>
+                                    </div>
+                                  )}
                                 </td>
                               </tr>
                             );

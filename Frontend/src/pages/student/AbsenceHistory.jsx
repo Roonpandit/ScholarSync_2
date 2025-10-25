@@ -17,7 +17,9 @@ const AbsenceHistory = () => {
     awaitingApproval: [],
     totalAbsences: 0,
     totalPending: 0,
-    totalAwaitingApproval: 0
+    totalAwaitingApproval: 0,
+    totalClosedSlots: 0,
+    totalActiveSlots: 0
   });
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -42,11 +44,11 @@ const AbsenceHistory = () => {
         throw new Error("Invalid month or year");
       }
 
-      // Send month as a number directly
-      const res = await axios.get(
+      // Fetch absence data for table display (absences, pending, awaiting approval lists)
+      const absenceRes = await axios.get(
         `/students/absences?month=${month}&year=${year}`
       );
-      setAttendanceData(res.data);
+      setAttendanceData(absenceRes.data);
     } catch (error) {
       console.error("Error fetching absence history:", error);
       toast.error("Failed to load absence history");
@@ -86,9 +88,7 @@ const AbsenceHistory = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4 sm:mb-0">
                 Your Absences
@@ -231,106 +231,39 @@ const AbsenceHistory = () => {
                 )}
               </>
             )}
-          </div>
-        </div>
-
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Summary for {getMonthName(filters.month)} {filters.year}</h2>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                <span className="text-gray-600">Total Closed Slots:</span>
-                <span className="font-semibold text-gray-800">{attendanceData.totalClosedSlots || 0}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Absences (Not Marked):</span>
-                <span className="font-semibold text-red-600">{attendanceData.totalAbsences}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Active Slots (Pending):</span>
-                <span className="font-semibold text-yellow-600">{attendanceData.totalPending}</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-                <span className="text-gray-600">Awaiting Teacher Approval:</span>
-                <span className="font-semibold text-orange-600">{attendanceData.totalAwaitingApproval || 0}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">Attendance Status:</span>
-                <span className={`font-bold text-lg ${
-                  attendanceData.totalAbsences > 3
-                    ? "text-red-600"
-                    : attendanceData.totalAbsences > 1
-                    ? "text-yellow-600"
-                    : "text-green-600"
-                }`}>
-                  {attendanceData.totalAbsences > 3
-                    ? "Critical"
-                    : attendanceData.totalAbsences > 1
-                    ? "Warning"
-                    : "Good"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {attendanceData.absences.length > 3 && (
-            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-6">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-5 w-5 text-red-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">
-                    You have exceeded the maximum allowed absences. Please
-                    contact the administration.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Absence Policy</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Attendance Policy</h2>
 
         <div className="text-sm text-gray-600">
           <p className="mb-3">
-            Students are expected to maintain regular attendance. Excessive
-            absences may affect academic performance and course completion.
+            Students are expected to maintain regular attendance. Maintaining good attendance
+            is crucial for academic performance and course completion.
           </p>
           <ul className="list-disc list-inside space-y-2 mb-3">
             <li>
-              Up to 2 absences per month:{" "}
-              <span className="text-green-600 font-medium">Good standing</span>
+              90% or above:{" "}
+              <span className="text-green-600 font-medium">Excellent - Good standing</span>
             </li>
             <li>
-              3 absences per month:{" "}
+              75% to 89%:{" "}
               <span className="text-yellow-600 font-medium">
-                Warning status
+                Warning - Needs improvement
               </span>
             </li>
             <li>
-              More than 3 absences per month:{" "}
-              <span className="text-red-600 font-medium">Critical status</span>
+              Below 75%:{" "}
+              <span className="text-red-600 font-medium">Critical - Action required</span>
             </li>
           </ul>
+          <p className="mb-3">
+            <strong>Note:</strong> Slots marked as "Awaiting Approval" are not counted in your attendance
+            percentage until approved by your teacher.
+          </p>
           <p>
-            If you have reached critical status, please contact the
-            administration office to discuss your situation.
+            If your attendance is below 75%, please contact the
+            administration office to discuss your situation and possible remedies.
           </p>
         </div>
       </div>
