@@ -1630,6 +1630,16 @@ exports.createAttendanceSlot = asyncHandler(async (req, res) => {
     }
   }
 
+  // If no slots were created and there are errors, return failure
+  if (createdSlots.length === 0 && errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Failed to create attendance slots',
+      errors: errors
+    });
+  }
+
+  // If some or all slots were created successfully
   res.status(201).json({
     success: true,
     message: `${createdSlots.length} attendance slot(s) created successfully`,

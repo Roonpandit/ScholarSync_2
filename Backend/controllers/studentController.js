@@ -457,17 +457,31 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
         $gte: effectiveStartDate,
         $lte: endOfMonth
       }
-    });
+    }).populate('slot', 'date shift startTime endTime');
 
     const absences = [];
     const pending = [];
+    const awaitingApproval = [];
+
+    // Categorize attendance records by status
+    attendanceRecords.forEach(record => {
+      if (record.status === 'awaiting_approval' && record.slot) {
+        awaitingApproval.push({
+          date: record.slot.date,
+          shift: record.slot.shift,
+          slotStartTime: record.slot.startTime,
+          slotEndTime: record.slot.endTime
+        });
+      }
+    });
 
     slots.forEach(slot => {
-      const isPresent = attendanceRecords.some(record =>
-        record.slot.toString() === slot._id.toString()
+      const attendanceRecord = attendanceRecords.find(record =>
+        record.slot && record.slot._id.toString() === slot._id.toString()
       );
 
-      if (!isPresent) {
+      // Only include in absences/pending if no attendance record exists or status is not present/awaiting
+      if (!attendanceRecord || (attendanceRecord.status !== 'present' && attendanceRecord.status !== 'awaiting_approval')) {
         const entry = {
           date: slot.date,
           shift: slot.shift,
@@ -487,8 +501,10 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
       success: true,
       absences,
       pending,
+      awaitingApproval,
       totalAbsences: absences.length,
       totalPending: pending.length,
+      totalAwaitingApproval: awaitingApproval.length,
       totalClosedSlots: slots.filter(slot => slot.status === 'closed').length,
       totalActiveSlots: slots.filter(slot => slot.status === 'active').length
     });
