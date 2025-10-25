@@ -32,7 +32,6 @@ import StudentDashboard from './pages/student/Dashboard.jsx'
 import MarkAttendance from './pages/student/MarkAttendance.jsx'
 import AttendanceHistory from './pages/student/AttendanceHistory.jsx'
 import AbsenceHistory from './pages/student/AbsenceHistory.jsx'
-import Leave from './pages/student/Leave.jsx'
 import LeaveManagement from './pages/student/LeaveManagement.jsx'
 
 import './App.css'
@@ -183,19 +182,11 @@ function App() {
           <Navigate to="/home" />
         } 
       />
-      <Route 
-        path="/student/absence-history" 
-        element={
-          user && user.role === 'student' ? 
-          <Layout><AbsenceHistory /></Layout> : 
-          <Navigate to="/home" />
-        } 
-      />
       <Route
-        path="/student/apply-leave"
+        path="/student/absence-history"
         element={
           user && user.role === 'student' ?
-          <Layout><Leave /></Layout> :
+          <Layout><AbsenceHistory /></Layout> :
           <Navigate to="/home" />
         }
       />

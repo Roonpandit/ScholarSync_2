@@ -555,7 +555,7 @@ const StudentDashboard = () => {
               </Link>
 
               <Link
-                to="/student/apply-leave"
+                to="/student/leave-management"
                 className="flex items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
               >
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -574,10 +574,10 @@ const StudentDashboard = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-900">
-                    Apply Leave
+                    Leave Management
                   </p>
                   <p className="text-xs text-gray-500">
-                    Request absence from class
+                    Apply and manage leave requests
                   </p>
                 </div>
                 <div className="ml-auto">
