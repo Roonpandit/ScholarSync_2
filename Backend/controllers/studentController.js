@@ -462,6 +462,8 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
     const absences = [];
     const pending = [];
     const awaitingApproval = [];
+    let totalClosedSlots = 0;
+    let totalActiveSlots = 0;
 
     // Categorize attendance records by status
     attendanceRecords.forEach(record => {
@@ -475,13 +477,22 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
       }
     });
 
+    // Process each slot to categorize properly
     slots.forEach(slot => {
       const attendanceRecord = attendanceRecords.find(record =>
         record.slot && record.slot._id.toString() === slot._id.toString()
       );
 
-      // Only include in absences/pending if no attendance record exists or status is not present/awaiting
-      if (!attendanceRecord || (attendanceRecord.status !== 'present' && attendanceRecord.status !== 'awaiting_approval')) {
+      // Count total closed and active slots
+      if (slot.status === 'closed') {
+        totalClosedSlots++;
+      } else if (slot.status === 'active') {
+        totalActiveSlots++;
+      }
+
+      // Only include in absences/pending if no attendance record exists
+      // OR if record exists but is marked as 'absent' or 'pending'
+      if (!attendanceRecord) {
         const entry = {
           date: slot.date,
           shift: slot.shift,
@@ -494,6 +505,22 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
         } else if (slot.status === 'active') {
           pending.push(entry);
         }
+      } else if (attendanceRecord.status === 'absent' && slot.status === 'closed') {
+        // If explicitly marked absent in closed slot
+        absences.push({
+          date: slot.date,
+          shift: slot.shift,
+          slotStartTime: slot.startTime,
+          slotEndTime: slot.endTime
+        });
+      } else if (attendanceRecord.status === 'pending' && slot.status === 'active') {
+        // If pending in active slot
+        pending.push({
+          date: slot.date,
+          shift: slot.shift,
+          slotStartTime: slot.startTime,
+          slotEndTime: slot.endTime
+        });
       }
     });
 
@@ -505,8 +532,8 @@ exports.getAbsenceHistory = asyncHandler(async (req, res) => {
       totalAbsences: absences.length,
       totalPending: pending.length,
       totalAwaitingApproval: awaitingApproval.length,
-      totalClosedSlots: slots.filter(slot => slot.status === 'closed').length,
-      totalActiveSlots: slots.filter(slot => slot.status === 'active').length
+      totalClosedSlots,
+      totalActiveSlots
     });
   } catch (error) {
     console.error('Error in getAbsenceHistory:', error);
