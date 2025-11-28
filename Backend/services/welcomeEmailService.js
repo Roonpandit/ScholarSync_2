@@ -4,6 +4,13 @@ require('dotenv').config();
 
 const OAuth2 = google.auth.OAuth2;
 
+// Log environment variables (without sensitive data) for debugging
+console.log('Email Service Initializing...');
+console.log('GMAIL_CLIENT_ID exists:', !!process.env.GMAIL_CLIENT_ID);
+console.log('GMAIL_CLIENT_SECRET exists:', !!process.env.GMAIL_CLIENT_SECRET);
+console.log('GMAIL_REFRESH_TOKEN exists:', !!process.env.GMAIL_REFRESH_TOKEN);
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+
 // Create OAuth2 client
 const oauth2Client = new OAuth2(
   process.env.GMAIL_CLIENT_ID,
@@ -17,8 +24,17 @@ oauth2Client.setCredentials({
 
 // Create transporter with OAuth2
 const createTransporter = async () => {
+  console.log('Creating OAuth2 transporter...');
+  
   try {
+    // Check if credentials exist
+    if (!process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET || !process.env.GMAIL_REFRESH_TOKEN) {
+      throw new Error('Missing Gmail OAuth2 credentials in environment variables');
+    }
+
+    console.log('Getting access token...');
     const accessToken = await oauth2Client.getAccessToken();
+    console.log('Access token obtained successfully');
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -32,9 +48,11 @@ const createTransporter = async () => {
       },
     });
 
+    console.log('OAuth2 transporter created successfully');
     return transporter;
   } catch (error) {
-    console.error('Error creating email transporter:', error);
+    console.error('Error creating OAuth2 email transporter:', error.message);
+    console.error('Full error:', error);
     throw error;
   }
 };
