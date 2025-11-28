@@ -136,7 +136,7 @@ const Layout = ({ children }) => {
 
           <div className="flex-1 flex justify-end items-center gap-4">
             {/* Notifications Icon */}
-            <button className="p-2 rounded-full hover:bg-gray-100 transition-colors relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+            {/* <button className="p-2 rounded-full hover:bg-gray-100 transition-colors relative focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 text-gray-600"
@@ -152,7 +152,7 @@ const Layout = ({ children }) => {
                 />
               </svg>
               <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
+            </button> */}
 
             {/* User Dropdown */}
             <div className="relative user-dropdown">
