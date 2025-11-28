@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import Modals from './Modals';
 import StudentDetails from './StudentDetails';
 import TeacherDetails from './TeacherDetails';
+import Loader from '../../components/Loader';
 
 const LectureManagement = () => {
   const [lectures, setLectures] = useState([]);
@@ -236,11 +237,7 @@ const LectureManagement = () => {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   return (

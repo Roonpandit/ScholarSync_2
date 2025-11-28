@@ -715,7 +715,7 @@ const AttendanceSlot = () => {
   }, []);
 
   if (loading) {
-    return <Loader message="Loading attendance slots..." />;
+    return <Loader />;
   }
 
   return (

@@ -79,7 +79,7 @@ const StudentDashboard = () => {
   }, []);
 
   if (loading) {
-    return <Loader message="Loading dashboard data..." />;
+    return <Loader />;
   }
 
   const calculateAttendancePercentage = (stats) => {

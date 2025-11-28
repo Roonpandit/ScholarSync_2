@@ -105,7 +105,7 @@ const TeacherDashboard = () => {
   }
 
   if (loading) {
-    return <Loader message="Loading dashboard data..." />
+    return <Loader />
   }
 
   return (

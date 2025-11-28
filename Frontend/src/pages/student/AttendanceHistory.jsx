@@ -80,7 +80,7 @@ const AttendanceHistory = () => {
   const stats = calculateStats();
 
   if (loading) {
-    return <Loader message="Loading attendance history..." />;
+    return <Loader />;
   }
 
   return (

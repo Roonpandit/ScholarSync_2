@@ -72,7 +72,7 @@ const AbsenceHistory = () => {
   };
 
   if (loading) {
-    return <Loader message="Loading absence history..." />;
+    return <Loader />;
   }
 
   return (

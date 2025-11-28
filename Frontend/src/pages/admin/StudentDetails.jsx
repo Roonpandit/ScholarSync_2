@@ -232,7 +232,7 @@ const StudentDetails = ({ isModal = false, studentIdProp = null, onClose = null 
   };
 
   if (loading) {
-    return <Loader message="Loading student details..." />;
+    return <Loader />;
   }
 
   if (!student) {

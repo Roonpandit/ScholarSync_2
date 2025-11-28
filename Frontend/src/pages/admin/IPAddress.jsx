@@ -170,7 +170,7 @@ const IPAddress = () => {
   };
 
   if (loading) {
-    return <Loader message="Loading IP addresses..." />;
+    return <Loader />;
   }
 
   return (

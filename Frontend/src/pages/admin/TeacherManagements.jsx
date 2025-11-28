@@ -238,7 +238,7 @@ const TeacherManagements = () => {
   );
 
   if (loading) {
-    return <Loader message="Loading teachers data..." />;
+    return <Loader />;
   }
 
   return (

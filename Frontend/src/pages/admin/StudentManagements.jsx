@@ -213,7 +213,7 @@ const StudentManagements = () => {
   const formatDate = (date) => formatDateDisplay(convertToIST(new Date(date)));
 
   if (loading) {
-    return <Loader message="Loading students data..." />;
+    return <Loader />;
   }
 
   return (

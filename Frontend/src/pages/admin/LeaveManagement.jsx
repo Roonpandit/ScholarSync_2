@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import Loader from "../../components/Loader";
 
 const AdminLeaveManagement = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -514,9 +515,8 @@ const AdminLeaveManagement = () => {
 
         {/* Requests List */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <RefreshCw className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
-            <p className="text-gray-600">Loading requests...</p>
+          <div className="flex items-center justify-center min-h-[300px]">
+            <Loader />
           </div>
         ) : (
           <div className="space-y-4">

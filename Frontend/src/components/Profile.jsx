@@ -132,7 +132,7 @@ const Profile = () => {
   };
 
   if (loading) {
-    return <Loader message="Loading profile data..." />;
+    return <Loader />;
   }
 
   if (error) {
@@ -145,7 +145,7 @@ const Profile = () => {
   }
 
   if (!profile) {
-    return <Loader message="No profile data available" />;
+    return <Loader />;
   }
 
   return (

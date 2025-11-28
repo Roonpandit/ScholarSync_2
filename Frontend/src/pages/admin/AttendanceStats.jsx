@@ -412,7 +412,7 @@ const AttendanceStats = () => {
   };
 
   if (loading) {
-    return <Loader message="Loading attendance statistics..." />;
+    return <Loader />;
   }
 
   const safeStats = Array.isArray(filteredStats)
