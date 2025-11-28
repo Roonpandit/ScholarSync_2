@@ -1,25 +1,48 @@
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 require('dotenv').config();
 
-// Create reusable transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false, // Force to false as we're using port 587 with STARTTLS
-  requireTLS: true, // Force using STARTTLS
-  tls: {
-    // Do not fail on invalid certs
-    rejectUnauthorized: false
-  },
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  },
-  debug: true // Show debug output
+const OAuth2 = google.auth.OAuth2;
+
+// Create OAuth2 client
+const oauth2Client = new OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  'https://developers.google.com/oauthplayground'
+);
+
+oauth2Client.setCredentials({
+  refresh_token: process.env.GMAIL_REFRESH_TOKEN
 });
+
+// Create transporter with OAuth2
+const createTransporter = async () => {
+  try {
+    const accessToken = await oauth2Client.getAccessToken();
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: process.env.EMAIL_USER,
+        clientId: process.env.GMAIL_CLIENT_ID,
+        clientSecret: process.env.GMAIL_CLIENT_SECRET,
+        refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+        accessToken: accessToken.token,
+      },
+    });
+
+    return transporter;
+  } catch (error) {
+    console.error('Error creating email transporter:', error);
+    throw error;
+  }
+};
 
 const sendWelcomeEmail = async (user, role = 'student') => {
   try {
+    const transporter = await createTransporter();
+    
     const isTeacher = role === 'teacher';
     const userType = isTeacher ? 'Teacher' : 'Student';
     const userCode = isTeacher ? user.teacherCode : user.studentCode;
@@ -85,7 +108,7 @@ const sendWelcomeEmail = async (user, role = 'student') => {
           </div>
 
           <div style="text-align: center; margin: 30px 0;">
-            <a href="scholarsync.online" style="display: inline-block; padding: 12px 30px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
+            <a href="https://scholarsync.online" style="display: inline-block; padding: 12px 30px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
               Login to ScholarSync
             </a>
           </div>
@@ -103,14 +126,24 @@ const sendWelcomeEmail = async (user, role = 'student') => {
     };
 
     await transporter.sendMail(mailOptions);
-    //console.log(`Welcome email sent to ${user.email} (${role})`);
+    console.log(`Welcome email sent to ${user.email} (${role})`);
+    return { success: true };
   } catch (error) {
     console.error(`Error sending welcome email to ${user.email}:`, error);
-    throw error;
+    return { success: false, error: error.message };
+  }
+};
+
+// Export a wrapper transporter for backward compatibility with other services
+const transporter = {
+  sendMail: async (mailOptions) => {
+    const actualTransporter = await createTransporter();
+    return actualTransporter.sendMail(mailOptions);
   }
 };
 
 module.exports = {
   sendWelcomeEmail,
-  transporter
+  transporter,
+  createTransporter
 };

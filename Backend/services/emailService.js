@@ -1,18 +1,9 @@
-const nodemailer = require('nodemailer');
 const User = require('../models/Student');
 const AttendanceSlot = require('../models/AttendanceSlot');
 require('dotenv').config();
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  requireTLS: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// Import the createTransporter function from welcomeEmailService
+const { createTransporter } = require('./welcomeEmailService');
 
 const sendAttendanceReminder = async (slotId) => {
   try {
@@ -35,7 +26,6 @@ const sendAttendanceReminder = async (slotId) => {
       minute: '2-digit'
     });
     const startTimeWithOffset = new Date(new Date(slot.startTime).getTime() + 5.5 * 60 * 60 * 1000);
-
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -60,8 +50,9 @@ Best regards,
 ScholarSync`
     };
 
+    const transporter = await createTransporter();
     await transporter.sendMail(mailOptions);
-    //console.log(`Email sent successfully to ${students.length} students for slot ${slot._id}`);
+    console.log(`Email sent successfully to ${students.length} students for slot ${slot._id}`);
     return true;
   } catch (error) {
     console.error(`Error sending email:`, error);

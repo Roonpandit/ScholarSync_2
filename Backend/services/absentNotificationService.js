@@ -1,17 +1,7 @@
-const nodemailer = require('nodemailer');
+require('dotenv').config();
 
-// Create reusable transporter
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-};
+// Import the createTransporter function from welcomeEmailService
+const { createTransporter } = require('./welcomeEmailService');
 
 // Send absent notification email to student
 const sendAbsentNotificationEmail = async (emailData) => {
@@ -31,8 +21,6 @@ const sendAbsentNotificationEmail = async (emailData) => {
   } = emailData;
 
   try {
-    const transporter = createTransporter();
-
     // Format date
     const formattedDate = new Date(date).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -232,8 +220,9 @@ This is an automated email. Please do not reply to this message.
     `;
 
     // Send email
+    const transporter = await createTransporter();
     const info = await transporter.sendMail({
-      from: `"ScholarSync Attendance" <${process.env.SMTP_FROM_EMAIL}>`,
+      from: process.env.EMAIL_USER,
       to: studentEmail,
       subject: subject,
       text: textBody,

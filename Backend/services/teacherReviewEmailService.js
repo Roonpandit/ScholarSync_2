@@ -1,18 +1,9 @@
-const nodemailer = require('nodemailer');
 const Teacher = require('../models/Teacher');
 const Lecture = require('../models/Lecture');
 require('dotenv').config();
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  requireTLS: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// Import the createTransporter function from welcomeEmailService
+const { createTransporter } = require('./welcomeEmailService');
 
 /**
  * Send email to teachers when there are pending attendance reviews
@@ -95,7 +86,7 @@ const sendTeacherReviewEmail = async ({ lectureId, slotId, shift, date, pendingC
             </p>
 
             <div style="margin: 30px 0; text-align: center;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/teacher/dashboard"
+              <a href="${process.env.FRONTEND_URL || 'https://scholarsync.online'}/teacher/dashboard"
                  style="display: inline-block; padding: 12px 30px; background-color: #1890ff; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;">
                 Review Attendance
               </a>
@@ -114,6 +105,7 @@ const sendTeacherReviewEmail = async ({ lectureId, slotId, shift, date, pendingC
       `
     };
 
+    const transporter = await createTransporter();
     await transporter.sendMail(mailOptions);
     console.log(`Review email sent to ${teachers.length} teacher(s) for lecture ${lecture.name}, slot ${slotId}`);
     return true;

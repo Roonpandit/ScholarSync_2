@@ -1,8 +1,8 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Reuse the transporter from welcome email service
-const { transporter } = require('./welcomeEmailService');
+// Import the createTransporter function from welcomeEmailService
+const { createTransporter } = require('./welcomeEmailService');
 
 const sendPasswordResetEmail = async (email, name, resetToken) => {
   // Get the second origin from ALLOWED_ORIGINS (production URL)
@@ -44,6 +44,7 @@ const sendPasswordResetEmail = async (email, name, resetToken) => {
   };
 
   try {
+    const transporter = await createTransporter();
     await transporter.sendMail(mailOptions);
     return { success: true };
   } catch (error) {
@@ -78,6 +79,7 @@ const sendPasswordResetConfirmation = async (email, name) => {
   };
 
   try {
+    const transporter = await createTransporter();
     await transporter.sendMail(mailOptions);
     return { success: true };
   } catch (error) {

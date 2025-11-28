@@ -1,5 +1,7 @@
-const nodemailer = require('nodemailer');
 const Student = require('../models/Student');
+
+// Import the createTransporter function from welcomeEmailService
+const { createTransporter } = require('../services/welcomeEmailService');
 
 // Professional email template
 const feedbackEmailTemplate = (studentName, feedbackLink) => `
@@ -126,14 +128,8 @@ exports.sendFeedbackEmails = async (req, res) => {
         // Get students
         const students = await Student.find({ _id: { $in: studentIds } });
 
-        // Create transporter
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD
-            }
-        });
+        // Create transporter using OAuth2
+        const transporter = await createTransporter();
 
         // Send emails
         const promises = students.map(async (student) => {
