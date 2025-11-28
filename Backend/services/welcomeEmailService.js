@@ -3,14 +3,6 @@ require('dotenv').config();
 
 const OAuth2 = google.auth.OAuth2;
 
-// Log environment variables for debugging
-console.log('Email Service Initializing...');
-console.log('GMAIL_CLIENT_ID exists:', !!process.env.GMAIL_CLIENT_ID);
-console.log('GMAIL_CLIENT_SECRET exists:', !!process.env.GMAIL_CLIENT_SECRET);
-console.log('GMAIL_REFRESH_TOKEN exists:', !!process.env.GMAIL_REFRESH_TOKEN);
-console.log('EMAIL_USER:', process.env.EMAIL_USER);
-
-// Create OAuth2 client
 const oauth2Client = new OAuth2(
   process.env.GMAIL_CLIENT_ID,
   process.env.GMAIL_CLIENT_SECRET,
@@ -21,12 +13,8 @@ oauth2Client.setCredentials({
   refresh_token: process.env.GMAIL_REFRESH_TOKEN
 });
 
-// Create Gmail API client
 const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-/**
- * Create a base64 encoded email
- */
 const createEmail = (to, subject, htmlBody) => {
   const emailLines = [
     `To: ${to}`,
@@ -40,7 +28,6 @@ const createEmail = (to, subject, htmlBody) => {
 
   const email = emailLines.join('\r\n');
   
-  // Base64 encode the email
   const encodedEmail = Buffer.from(email)
     .toString('base64')
     .replace(/\+/g, '-')
@@ -50,14 +37,7 @@ const createEmail = (to, subject, htmlBody) => {
   return encodedEmail;
 };
 
-/**
- * Send email using Gmail API
- */
 const sendEmail = async (to, subject, htmlBody) => {
-  console.log('Sending email via Gmail API...');
-  console.log('To:', to);
-  console.log('Subject:', subject);
-
   try {
     const encodedEmail = createEmail(to, subject, htmlBody);
 
@@ -68,22 +48,13 @@ const sendEmail = async (to, subject, htmlBody) => {
       }
     });
 
-    console.log('Email sent successfully via Gmail API. Message ID:', result.data.id);
     return { success: true, messageId: result.data.id };
   } catch (error) {
-    console.error('Error sending email via Gmail API:', error.message);
-    console.error('Full error:', error);
     throw error;
   }
 };
 
-/**
- * Create transporter-like object for backward compatibility
- */
 const createTransporter = async () => {
-  console.log('Creating Gmail API transporter...');
-  
-  // Return an object that mimics nodemailer's transporter
   return {
     sendMail: async (mailOptions) => {
       const { to, subject, html, text } = mailOptions;
@@ -173,16 +144,13 @@ const sendWelcomeEmail = async (user, role = 'student') => {
       </div>
     `;
 
-    const result = await sendEmail(user.email, subject, htmlBody);
-    console.log(`Welcome email sent to ${user.email} (${role})`);
+    await sendEmail(user.email, subject, htmlBody);
     return { success: true };
   } catch (error) {
-    console.error(`Error sending welcome email to ${user.email}:`, error);
     return { success: false, error: error.message };
   }
 };
 
-// Export a wrapper transporter for backward compatibility with other services
 const transporter = {
   sendMail: async (mailOptions) => {
     const { to, subject, html, text } = mailOptions;
