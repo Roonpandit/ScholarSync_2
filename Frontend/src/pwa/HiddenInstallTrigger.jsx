@@ -22,7 +22,6 @@ export function HiddenInstallTrigger() {
           toast.success('App installed successfully!', { icon: '🎉' });
           break;
         case 'dismissed':
-          toast.info('Installation cancelled');
           break;
         case 'already-installed':
           toast.info('App is already installed', { icon: '✅' });
