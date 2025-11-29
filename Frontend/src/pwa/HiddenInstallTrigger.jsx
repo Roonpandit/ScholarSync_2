@@ -27,7 +27,7 @@ export function HiddenInstallTrigger() {
       
       switch (outcome) {
         case 'accepted':
-          showPopup('inprogress', 'App install started');
+          showPopup('inprogress', 'Check after installation');
           break;
         case 'dismissed':
           break;
@@ -66,7 +66,7 @@ export function HiddenInstallTrigger() {
           icon: <Download className="h-12 w-12 text-indigo-500" />,
           bgColor: 'bg-indigo-50',
           borderColor: 'border-indigo-200',
-          title: 'Check after installation'
+          title: 'App installation started'
         };
       case 'ios':
         return {
@@ -187,11 +187,9 @@ export function HiddenInstallTrigger() {
  * InstallHint - Floating install button
  * A beautiful, subtle floating button that prompts installation
  */
-export function InstallHint({ position = 'bottom-left' }) {
-  const { isInstalled, promptInstall } = usePWAInstall();
-  
-  if (isInstalled) return null;
-  
+export function InstallHint({ position }) {
+  const { promptInstall } = usePWAInstall();
+    
   const positionClasses = {
     'bottom-left': 'bottom-6 left-6',
     'bottom-right': 'bottom-6 right-6',
