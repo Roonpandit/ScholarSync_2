@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import InstallButton from "./install";
 import {
   BookOpen,
   Users,
@@ -242,10 +241,6 @@ export default function ScholarSyncLanding() {
               </div>
 
               <div className="border-t border-gray-300 pt-5 space-y-4">
-                {/* Mobile Install Button */}
-                <div className="w-full">
-                  <InstallButton className="w-full justify-center" />
-                </div>
                 <button
                   onClick={() => {
                     navigate("/login");
