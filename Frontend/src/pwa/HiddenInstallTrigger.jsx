@@ -1,93 +1,92 @@
-import { useEffect, useState } from "react";
-import { Check, X, Download, AlertCircle, Smartphone } from "lucide-react";
-import usePWAInstall from "./usePWAInstall";
+import { useEffect, useState } from 'react';
+import { Check, X, Download, AlertCircle, Smartphone } from 'lucide-react';
+import usePWAInstall from './usePWAInstall';
 
 /**
  * HiddenInstallTrigger - Invisible component that enables PWA installation
- *
+ * 
  * Features:
  * - Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac) to install
  * - Shows popup modals for install status
  */
 export function HiddenInstallTrigger() {
-  const [popup, setPopup] = useState({ show: false, type: "", message: "" });
+  const [popup, setPopup] = useState({ show: false, type: '', message: '' });
 
   const showPopup = (type, message) => {
     setPopup({ show: true, type, message });
   };
 
   const closePopup = () => {
-    setPopup({ show: false, type: "", message: "" });
+    setPopup({ show: false, type: '', message: '' });
   };
 
   useEffect(() => {
     const handleInstallResult = (e) => {
       const { outcome, message } = e.detail;
-
+      
       switch (outcome) {
-        case "accepted":
-          showPopup("inprogress", "Check after installation");
+        case 'accepted':
+          showPopup('inprogress', 'Check after installation');
           break;
-        case "dismissed":
+        case 'dismissed':
           break;
-        case "already-installed":
-          showPopup("success", "App is already installed");
+        case 'already-installed':
+          showPopup('success', 'App is already installed');
           break;
-        case "ios-manual":
-          showPopup("ios", message);
+        case 'ios-manual':
+          showPopup('ios', message);
           break;
-        case "not-available":
-          showPopup("info", message);
+        case 'not-available':
+          showPopup('info', message);
           break;
-        case "error":
-          showPopup("error", message);
+        case 'error':
+          showPopup('error', message);
           break;
         default:
           break;
       }
     };
 
-    window.addEventListener("pwa-install-result", handleInstallResult);
-    return () =>
-      window.removeEventListener("pwa-install-result", handleInstallResult);
+    window.addEventListener('pwa-install-result', handleInstallResult);
+    return () => window.removeEventListener('pwa-install-result', handleInstallResult);
   }, []);
 
   const getPopupConfig = () => {
     switch (popup.type) {
-      case "success":
+      case 'success':
         return {
           icon: <Check className="h-12 w-12 text-green-500" />,
-          bgColor: "bg-green-50",
-          borderColor: "border-green-200",
-          title: "Success!",
+          bgColor: 'bg-green-50',
+          borderColor: 'border-green-200',
+          title: 'Success!'
         };
-      case "inprogress":
+      case 'inprogress':
         return {
           icon: <Download className="h-12 w-12 text-indigo-500" />,
-          bgColor: "bg-indigo-50",
-          borderColor: "border-indigo-200",
-          title: "App installation started",
+          bgColor: 'bg-indigo-50',
+          borderColor: 'border-indigo-200',
+          title: 'App installation started'
         };
-      case "ios":
+      case 'ios':
         return {
           icon: <Smartphone className="h-12 w-12 text-indigo-500" />,
-          bgColor: "bg-indigo-50",
-          borderColor: "border-indigo-200",
-          title: "Install on iOS",
+          bgColor: 'bg-indigo-50',
+          borderColor: 'border-indigo-200',
+          title: 'Install on iOS'
         };
-      case "error":
+      case 'error':
         return {
           icon: <AlertCircle className="h-12 w-12 text-red-500" />,
-          bgColor: "bg-red-50",
-          borderColor: "border-red-200",
-          title: "Error",
+          bgColor: 'bg-red-50',
+          borderColor: 'border-red-200',
+          title: 'Error'
         };
       default:
         return {
           icon: <Download className="h-12 w-12 text-indigo-500" />,
-          bgColor: "bg-indigo-50",
-          borderColor: "border-indigo-200",
-          title: "Install App",
+          bgColor: 'bg-indigo-50',
+          borderColor: 'border-indigo-200',
+          title: 'Install App'
         };
     }
   };
@@ -98,11 +97,11 @@ export function HiddenInstallTrigger() {
     <>
       {/* Popup Modal */}
       {popup.show && (
-        <div
+        <div 
           className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={closePopup}
         >
-          <div
+          <div 
             className={`relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform animate-popup ${config.borderColor} border-2`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -115,9 +114,7 @@ export function HiddenInstallTrigger() {
             </button>
 
             {/* Icon */}
-            <div
-              className={`mx-auto w-20 h-20 ${config.bgColor} rounded-full flex items-center justify-center mb-4`}
-            >
+            <div className={`mx-auto w-20 h-20 ${config.bgColor} rounded-full flex items-center justify-center mb-4`}>
               {config.icon}
             </div>
 
@@ -127,80 +124,41 @@ export function HiddenInstallTrigger() {
             </h3>
 
             {/* Message */}
-            <p className="text-gray-600 text-center mb-6">{popup.message}</p>
+            <p className="text-gray-600 text-center mb-6">
+              {popup.message}
+            </p>
 
             {/* iOS specific instructions */}
-            {popup.type === "ios" && (
+            {popup.type === 'ios' && (
               <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
-                    1
-                  </div>
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">1</div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-700">Tap the</span>
-                    <svg
-                      className="h-5 w-5 text-indigo-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                      />
+                    <svg className="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
                     <span className="text-sm text-gray-700">Share button</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
-                    2
-                  </div>
-                  <span className="text-sm text-gray-700">
-                    Select "Add to Home Screen"
-                  </span>
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">2</div>
+                  <span className="text-sm text-gray-700">Select "Add to Home Screen"</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
-                    3
-                  </div>
-                  <span className="text-sm text-gray-700">
-                    Tap "Add" to confirm
-                  </span>
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">3</div>
+                  <span className="text-sm text-gray-700">Tap "Add" to confirm</span>
                 </div>
               </div>
             )}
 
-            {/* Buttons */}
-            {popup.type === "ios" ? (
-              <div className="space-y-3">
-                <button
-                  onClick={closePopup}
-                  className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
-                >
-                  Got it
-                </button>
-                <button
-                  onClick={() => {
-                    localStorage.setItem("pwa-installed", "true");
-                    closePopup();
-                    window.location.reload();
-                  }}
-                  className="w-full py-2 text-indigo-600 font-medium hover:underline"
-                >
-                  I've already installed
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={closePopup}
-                className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
-              >
-                OK
-              </button>
-            )}
+            {/* Button */}
+            <button
+              onClick={closePopup}
+              className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+            >
+              {popup.type === 'ios' ? 'Got it' : 'OK'}
+            </button>
           </div>
         </div>
       )}
@@ -230,25 +188,20 @@ export function HiddenInstallTrigger() {
  */
 export function InstallHint({ position }) {
   const { promptInstall } = usePWAInstall();
-  const isMobile =
-    /android|iphone|ipad|ipod|webos|blackberry|opera mini|iemobile/i.test(
-      navigator.userAgent
-    );
-
+  const isMobile = /android|iphone|ipad|ipod|webos|blackberry|opera mini|iemobile/i.test(navigator.userAgent);
+  
   if (!isMobile) return null;
-
+    
   const positionClasses = {
-    "bottom-left": "bottom-6 left-6",
-    "bottom-right": "bottom-6 right-6",
-    "top-left": "top-20 left-6",
-    "top-right": "top-20 right-6",
+    'bottom-left': 'bottom-6 left-6',
+    'bottom-right': 'bottom-6 right-6',
+    'top-left': 'top-20 left-6',
+    'top-right': 'top-20 right-6',
   };
 
   const handleClick = async () => {
     const result = await promptInstall();
-    window.dispatchEvent(
-      new CustomEvent("pwa-install-result", { detail: result })
-    );
+    window.dispatchEvent(new CustomEvent('pwa-install-result', { detail: result }));
   };
 
   return (
@@ -263,7 +216,7 @@ export function InstallHint({ position }) {
       >
         {/* Pulse animation ring */}
         <span className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-25"></span>
-
+        
         {/* Icon */}
         <span className="relative">
           <Download className="w-5 h-5" />
