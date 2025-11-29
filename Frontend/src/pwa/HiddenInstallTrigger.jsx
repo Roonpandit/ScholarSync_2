@@ -27,7 +27,7 @@ export function HiddenInstallTrigger() {
       
       switch (outcome) {
         case 'accepted':
-          showPopup('success', 'App installed successfully!');
+          showPopup('inprogress', 'App installing...');
           break;
         case 'dismissed':
           break;
