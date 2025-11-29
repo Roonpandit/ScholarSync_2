@@ -30,7 +30,6 @@ export function HiddenInstallTrigger() {
           showPopup('success', 'App installed successfully!');
           break;
         case 'dismissed':
-          showPopup('info', 'Installation cancelled');
           break;
         case 'already-installed':
           showPopup('success', 'App is already installed');
