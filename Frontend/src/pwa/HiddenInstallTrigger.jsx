@@ -227,11 +227,6 @@ export function InstallHint({ position = 'bottom-left' }) {
         <span className="relative">
           <Download className="w-5 h-5" />
         </span>
-        
-        {/* Text - visible on hover */}
-        <span className="relative max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-out whitespace-nowrap font-medium">
-          Install App
-        </span>
       </button>
     </div>
   );
