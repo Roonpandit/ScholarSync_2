@@ -50,7 +50,7 @@ function App() {
     <>
       <HiddenInstallTrigger />{" "}
       {/* Invisible - just sets up keyboard shortcut */}
-      <InstallHint position="bottom-left" />{" "}
+      <InstallHint position="bottom-right" />{" "}
       {/* Optional: subtle visual hint */}
       <Routes>
         <Route path="/home" element={<Landing />} />
