@@ -9,55 +9,59 @@ const InstallButton = ({ className = "" }) => {
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    // Check if app is already installed
+    // Check if app is already installed (running in standalone mode)
     const checkIfInstalled = () => {
-      // Check for standalone mode (iOS Safari)
-      const isIos = () => {
-        const userAgent = window.navigator.userAgent.toLowerCase();
-        return /iphone|ipad|ipod/.test(userAgent);
-      };
-
-      // Check for standalone mode (iOS)
-      if (isIos() && window.navigator.standalone) {
-        setIsInstalled(true);
+      // Check for iOS standalone mode - ONLY true when actually added to home screen
+      const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+      
+      if (isIos) {
+        // On iOS, window.navigator.standalone is ONLY true when launched from home screen
+        // It's false or undefined when running in Safari browser
+        if (window.navigator.standalone === true) {
+          setIsInstalled(true);
+          return;
+        }
+        // If on iOS and NOT standalone, it's NOT installed
+        // Don't check other conditions for iOS
         return;
       }
       
-      // Check for display-mode (Android/Desktop Chrome)
+      // For Android/Desktop Chrome - check display-mode
+      // These are ONLY true when the PWA is actually running in standalone mode
       if (window.matchMedia('(display-mode: standalone)').matches || 
           window.matchMedia('(display-mode: fullscreen)').matches ||
-          window.matchMedia('(display-mode: minimal-ui)').matches) {
+          window.matchMedia('(display-mode: minimal-ui)').matches ||
+          window.matchMedia('(display-mode: window-controls-overlay)').matches) {
         setIsInstalled(true);
         return;
       }
       
-      // Check for PWAs installed on Windows
-      if (window.matchMedia('(display-mode: window-controls-overlay)').matches) {
-        setIsInstalled(true);
-        return;
-      }
-      
-      // Check for browsers that support getInstalledRelatedApps
+      // Optional: Check getInstalledRelatedApps (Chrome only)
+      // This can check if the PWA is installed even when not running in standalone
       if ('getInstalledRelatedApps' in window.navigator) {
-        window.navigator.getInstalledRelatedApps().then((relatedApps) => {
-          if (relatedApps && relatedApps.length > 0) {
-            setIsInstalled(true);
-          }
-        }).catch((error) => {
-          console.log('Error checking installed apps:', error);
-        });
+        window.navigator.getInstalledRelatedApps()
+          .then((relatedApps) => {
+            if (relatedApps && relatedApps.length > 0) {
+              setIsInstalled(true);
+            }
+          })
+          .catch((error) => {
+            console.log('Error checking installed apps:', error);
+          });
       }
     };
 
     checkIfInstalled();
 
-    // Listen for beforeinstallprompt event
+    // Listen for beforeinstallprompt event (Chrome/Edge/Samsung Browser)
     const handleBeforeInstallPrompt = (e) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Save the event so it can be triggered later
       setDeferredPrompt(e);
       setIsInstallable(true);
+      // If we get this event, the app is definitely NOT installed
+      setIsInstalled(false);
     };
 
     // Listen for app installed event
@@ -82,7 +86,7 @@ const InstallButton = ({ className = "" }) => {
     setShowToast(true);
     setTimeout(() => {
       setShowToast(false);
-    }, 3000);
+    }, 4000);
   };
 
   const handleInstallClick = async () => {
@@ -91,21 +95,27 @@ const InstallButton = ({ className = "" }) => {
       return;
     }
 
-    // Show installation instructions for iOS
-    const isIos = () => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      return /iphone|ipad|ipod/.test(userAgent);
-    };
+    // Check if iOS
+    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 
-    // Handle iOS Safari which doesn't support beforeinstallprompt
-    if (isIos()) {
-      showToastMessage('Tap the share icon and select "Add to Home Screen"');
+    // Handle iOS Safari - show manual instructions
+    if (isIos) {
+      showToastMessage('Tap the Share button ↑ then "Add to Home Screen"');
       return;
     }
 
-    // Handle browsers that don't support PWA installation
+    // Handle browsers that don't support PWA installation or prompt not available
     if (!deferredPrompt) {
-      showToastMessage('Use the browser menu to install this app');
+      // Check if it's a browser that supports PWA but just hasn't fired the event
+      const isChromium = /chrome|chromium|crios/i.test(navigator.userAgent);
+      const isEdge = /edg/i.test(navigator.userAgent);
+      const isSamsung = /samsungbrowser/i.test(navigator.userAgent);
+      
+      if (isChromium || isEdge || isSamsung) {
+        showToastMessage('Use browser menu (⋮) → "Install app" or "Add to Home Screen"');
+      } else {
+        showToastMessage('This browser may not support app installation');
+      }
       return;
     }
 
@@ -117,12 +127,12 @@ const InstallButton = ({ className = "" }) => {
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
-        showToastMessage('App installation started...');
+        showToastMessage('Installing app...');
       } else {
         showToastMessage('Installation cancelled');
       }
       
-      // Clear the deferredPrompt
+      // Clear the deferredPrompt - it can only be used once
       setDeferredPrompt(null);
       setIsInstallable(false);
     } catch (error) {
@@ -131,7 +141,7 @@ const InstallButton = ({ className = "" }) => {
     }
   };
 
-  // Always show the install button, but handle different states
+  // Determine button appearance
   const buttonText = isInstalled ? 'Installed' : 'Install App';
   const buttonIcon = isInstalled ? <Check className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />;
 
@@ -141,8 +151,8 @@ const InstallButton = ({ className = "" }) => {
         onClick={handleInstallClick}
         className={`inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 w-full ${
           isInstalled
-            ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-default'
-            : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 hover:scale-105'
+            ? 'bg-green-100 text-green-700 cursor-default'
+            : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 hover:scale-105 active:scale-95'
         } ${className}`}
         disabled={isInstalled}
         title={isInstalled ? 'App is already installed' : 'Install this app on your device'}
@@ -153,12 +163,16 @@ const InstallButton = ({ className = "" }) => {
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in">
-          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-slide-down">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm mx-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 {toastMessage.includes('already installed') || toastMessage.includes('successfully') ? (
                   <Check className="h-5 w-5 text-green-500" />
+                ) : toastMessage.includes('Share') ? (
+                  <svg className="h-5 w-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
                 ) : (
                   <Download className="h-5 w-5 text-indigo-500" />
                 )}
@@ -185,19 +199,19 @@ const InstallButton = ({ className = "" }) => {
       )}
 
       <style jsx>{`
-        @keyframes slide-in {
+        @keyframes slide-down {
           from {
-            transform: translateX(100%);
+            transform: translateX(-50%) translateY(-100%);
             opacity: 0;
           }
           to {
-            transform: translateX(0);
+            transform: translateX(-50%) translateY(0);
             opacity: 1;
           }
         }
         
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
+        .animate-slide-down {
+          animation: slide-down 0.3s ease-out;
         }
       `}</style>
     </>
