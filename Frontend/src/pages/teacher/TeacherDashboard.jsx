@@ -112,7 +112,7 @@ const TeacherDashboard = () => {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Teacher Dashboard</h1>
           <p className="text-gray-500 mt-1">Overview of attendance system</p>
         </div>
         <div className="flex items-center space-x-3 mt-4 md:mt-0">
@@ -345,11 +345,11 @@ const StatCard = ({ title, value, linkTo, linkText, icon, color }) => {
           <div className={`p-3 rounded-lg ${classes.light}`}>
             {icon}
           </div>
-          <div className={`h-8 w-8 rounded-full ${classes.bg} flex items-center justify-center`}>
+          {/* <div className={`h-8 w-8 rounded-full ${classes.bg} flex items-center justify-center`}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
             </svg>
-          </div>
+          </div> */}
         </div>
         <div>
           <h3 className="text-gray-500 text-sm font-medium">{title}</h3>

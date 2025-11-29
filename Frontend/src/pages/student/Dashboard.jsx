@@ -125,7 +125,7 @@ const StudentDashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-blue-500">
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-b-4 border-blue-500">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-gray-600 text-sm font-medium mb-2">
@@ -180,7 +180,7 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-green-500">
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-b-4 border-green-500">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-gray-600 text-sm font-medium mb-2">
@@ -227,7 +227,7 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-orange-500">
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-b-4 border-orange-500">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-gray-600 text-sm font-medium mb-2">
@@ -274,7 +274,7 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-b-4 border-purple-500">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-gray-600 text-sm font-medium mb-2">
@@ -321,7 +321,7 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-yellow-500">
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-b-4 border-yellow-500">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-gray-600 text-sm font-medium mb-2">
@@ -368,7 +368,7 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-t-4 border-red-500">
+        <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6 border-b-4 border-red-500">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-gray-600 text-sm font-medium mb-2">
