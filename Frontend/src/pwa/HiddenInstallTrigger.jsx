@@ -27,7 +27,7 @@ export function HiddenInstallTrigger() {
       
       switch (outcome) {
         case 'accepted':
-          showPopup('inprogress', 'App installing...');
+          showPopup('inprogress', 'App install started');
           break;
         case 'dismissed':
           break;
@@ -66,7 +66,7 @@ export function HiddenInstallTrigger() {
           icon: <Download className="h-12 w-12 text-indigo-500" />,
           bgColor: 'bg-indigo-50',
           borderColor: 'border-indigo-200',
-          title: 'Installing...'
+          title: 'Check after installation'
         };
       case 'ios':
         return {
