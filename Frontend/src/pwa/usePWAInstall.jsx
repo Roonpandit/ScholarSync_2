@@ -8,19 +8,19 @@ export function usePWAInstall() {
   useEffect(() => {
     // Check if already installed
     const checkInstalled = () => {
-      // Check localStorage first
-      if (localStorage.getItem('pwa-installed') === 'true') {
-        setIsInstalled(true);
-        return;
-      }
-    
       const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
       
       if (isIos) {
+        // On iOS, ONLY trust standalone mode, NOT localStorage
         if (window.navigator.standalone === true) {
           setIsInstalled(true);
-          localStorage.setItem('pwa-installed', 'true');
         }
+        return;  // Don't check localStorage for iOS
+      }
+      
+      // For Android/Desktop only - check localStorage
+      if (localStorage.getItem('pwa-installed') === 'true') {
+        setIsInstalled(true);
         return;
       }
       
