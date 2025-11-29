@@ -62,6 +62,18 @@ export function HiddenInstallTrigger() {
           borderColor: 'border-green-200',
           title: 'Success!'
         };
+      case 'inprogress':
+        return {
+          icon: (
+            <svg className="h-12 w-12 text-indigo-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ),
+          bgColor: 'bg-indigo-50',
+          borderColor: 'border-indigo-200',
+          title: 'Installing...'
+        };
       case 'ios':
         return {
           icon: <Smartphone className="h-12 w-12 text-indigo-500" />,
@@ -152,7 +164,7 @@ export function HiddenInstallTrigger() {
               onClick={closePopup}
               className="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
             >
-              {popup.type === 'ios' ? 'Got it' : 'OK'}
+              {popup.type === 'ios' ? 'Got it' : popup.type === 'inprogress' ? 'Please wait...' : 'OK'}
             </button>
           </div>
         </div>
@@ -181,7 +193,7 @@ export function HiddenInstallTrigger() {
  * InstallHint - Floating install button
  * A beautiful, subtle floating button that prompts installation
  */
-export function InstallHint({ position }) {
+export function InstallHint({ position = 'bottom-left' }) {
   const { isInstalled, promptInstall } = usePWAInstall();
   
   if (isInstalled) return null;
@@ -214,6 +226,11 @@ export function InstallHint({ position }) {
         {/* Icon */}
         <span className="relative">
           <Download className="w-5 h-5" />
+        </span>
+        
+        {/* Text - visible on hover */}
+        <span className="relative max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-out whitespace-nowrap font-medium">
+          Install App
         </span>
       </button>
     </div>
