@@ -13,7 +13,7 @@
 ## Architecture Overview
 
 | Component | Tech Stack | Port |
-|---|---|---|
+|---|----|---|
 | **IAM Service** | Node.js, Express, Sequelize, PostgreSQL (Supabase) | 5001 |
 | **WFMS Service** | Node.js, Express, Sequelize, PostgreSQL (Supabase) | 5002 |
 | **Notification Service** | Node.js, Express, Gmail OAuth2, node-cron | 5003 |
