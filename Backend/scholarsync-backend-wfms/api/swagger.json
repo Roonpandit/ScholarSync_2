@@ -1,0 +1,562 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "ScholarSync WFMS Service",
+		"description": "Workflow Management Service - Attendance slots, student attendance, leave management, and lectures",
+		"version": "1.0.0"
+	},
+	"servers": [
+		{ "url": "http://localhost:6002/api/wfms", "description": "Local" }
+	],
+	"security": [{ "BearerAuth": [] }],
+	"tags": [
+		{ "name": "Attendance Slots", "description": "Create, list, close, and delete attendance slots" },
+		{ "name": "Student Attendance", "description": "Student-facing attendance operations" },
+		{ "name": "Admin Attendance", "description": "Admin/Teacher attendance management" },
+		{ "name": "Leave - Student", "description": "Student leave application and management" },
+		{ "name": "Leave - Admin", "description": "Teacher/Admin leave approval and listing" },
+		{ "name": "Lectures", "description": "Lecture CRUD and student/teacher lookups" }
+	],
+	"paths": {
+		"/v1/attendance-slots": {
+			"post": {
+				"summary": "Create attendance slot(s)",
+				"tags": ["Attendance Slots"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["shift", "date", "startTime", "endTime", "lectures"],
+								"properties": {
+									"shift": { "type": "string", "enum": ["morning", "afternoon", "evening"] },
+									"date": { "type": "string", "format": "date" },
+									"startTime": { "type": "string", "format": "date-time" },
+									"endTime": { "type": "string", "format": "date-time" },
+									"lectures": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": { "description": "Attendance slot(s) created" },
+					"400": { "description": "Validation error" },
+					"403": { "description": "Not authorized for this lecture" }
+				}
+			},
+			"get": {
+				"summary": "Get all attendance slots",
+				"tags": ["Attendance Slots"],
+				"parameters": [
+					{ "name": "date", "in": "query", "schema": { "type": "string", "format": "date" }, "description": "Filter by date" }
+				],
+				"responses": {
+					"200": { "description": "List of attendance slots" }
+				}
+			}
+		},
+		"/v1/attendance-slots/{id}/close": {
+			"put": {
+				"summary": "Close an attendance slot",
+				"tags": ["Attendance Slots"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Slot closed" },
+					"404": { "description": "Slot not found" }
+				}
+			}
+		},
+		"/v1/attendance-slots/{id}": {
+			"delete": {
+				"summary": "Delete attendance slot and records",
+				"tags": ["Attendance Slots"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Slot and records deleted" },
+					"404": { "description": "Slot not found" }
+				}
+			}
+		},
+		"/v1/student/attendance-slots": {
+			"get": {
+				"summary": "Get active attendance slots for student",
+				"tags": ["Student Attendance"],
+				"responses": {
+					"200": { "description": "Active slots for student's lectures" }
+				}
+			}
+		},
+		"/v1/student/attendance": {
+			"post": {
+				"summary": "Mark student attendance with photo",
+				"tags": ["Student Attendance"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"required": ["slotId", "latitude", "longitude", "photo"],
+								"properties": {
+									"slotId": { "type": "string", "format": "uuid" },
+									"latitude": { "type": "number" },
+									"longitude": { "type": "number" },
+									"address": { "type": "string" },
+									"photo": { "type": "string", "format": "binary" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Attendance marked (existing record updated)" },
+					"201": { "description": "Attendance marked (new record)" },
+					"400": { "description": "Validation error or leave conflict" }
+				}
+			},
+			"get": {
+				"summary": "Get student attendance history",
+				"description": "Returns attendance history. Use ?type=absent for detailed absence breakdown, ?type=present/pending/awaiting_approval to filter by status.",
+				"tags": ["Student Attendance"],
+				"parameters": [
+					{ "name": "month", "in": "query", "schema": { "type": "integer" } },
+					{ "name": "year", "in": "query", "schema": { "type": "integer" } },
+					{ "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+					{ "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+					{ "name": "type", "in": "query", "schema": { "type": "string", "enum": ["present", "absent", "pending", "awaiting_approval"] }, "description": "Filter by attendance type" }
+				],
+				"responses": {
+					"200": { "description": "Attendance history (format varies when type=absent)" }
+				}
+			}
+		},
+		"/v1/student/attendance-counts": {
+			"get": {
+				"summary": "Get student attendance counts",
+				"tags": ["Student Attendance"],
+				"parameters": [
+					{ "name": "year", "in": "query", "schema": { "type": "integer" } },
+					{ "name": "month", "in": "query", "schema": { "type": "integer" } },
+					{ "name": "date", "in": "query", "schema": { "type": "string", "format": "date" } },
+					{ "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+					{ "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } }
+				],
+				"responses": {
+					"200": { "description": "Attendance counts" }
+				}
+			}
+		},
+		"/v1/attendance": {
+			"get": {
+				"summary": "Get attendance records by slot ID",
+				"tags": ["Admin Attendance"],
+				"parameters": [
+					{ "name": "slotId", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Attendance records for the slot" }
+				}
+			}
+		},
+		"/v1/attendance/mark": {
+			"post": {
+				"summary": "Admin/Teacher mark attendance",
+				"tags": ["Admin Attendance"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["slotId", "studentId", "isPresent"],
+								"properties": {
+									"slotId": { "type": "string", "format": "uuid" },
+									"studentId": { "type": "string", "format": "uuid" },
+									"isPresent": { "type": "boolean" },
+									"timestamp": { "type": "string", "format": "date-time" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Attendance marked" }
+				}
+			}
+		},
+		"/v1/attendance/absent": {
+			"get": {
+				"summary": "Get absent students",
+				"tags": ["Admin Attendance"],
+				"parameters": [
+					{ "name": "threshold", "in": "query", "schema": { "type": "integer", "default": 0 } },
+					{ "name": "month", "in": "query", "schema": { "type": "integer" } },
+					{ "name": "year", "in": "query", "schema": { "type": "integer" } }
+				],
+				"responses": {
+					"200": { "description": "Absent students list" }
+				}
+			}
+		},
+		"/v1/attendance/details": {
+			"get": {
+				"summary": "Get attendance details for a student",
+				"tags": ["Admin Attendance"],
+				"parameters": [
+					{ "name": "studentId", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } },
+					{ "name": "month", "in": "query", "required": true, "schema": { "type": "integer" } },
+					{ "name": "year", "in": "query", "required": true, "schema": { "type": "integer" } }
+				],
+				"responses": {
+					"200": { "description": "Detailed attendance records" }
+				}
+			}
+		},
+		"/v1/attendance/{id}/mark-absent": {
+			"post": {
+				"summary": "Mark attendance as absent",
+				"tags": ["Admin Attendance"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["remark"],
+								"properties": {
+									"remark": { "type": "string", "maxLength": 1000 }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Marked absent" }
+				}
+			}
+		},
+		"/v1/attendance/{id}/status": {
+			"post": {
+				"summary": "Update attendance status (approve or reject)",
+				"tags": ["Admin Attendance"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["action"],
+								"properties": {
+									"action": { "type": "string", "enum": ["approve", "reject"] },
+									"remark": { "type": "string", "maxLength": 1000, "description": "Required when action is 'reject'" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Attendance status updated" },
+					"400": { "description": "Invalid action or missing remark for reject" }
+				}
+			}
+		},
+		"/v1/attendance/stats": {
+			"get": {
+				"summary": "Get attendance statistics",
+				"tags": ["Admin Attendance"],
+				"parameters": [
+					{ "name": "month", "in": "query", "schema": { "type": "integer" } },
+					{ "name": "year", "in": "query", "schema": { "type": "integer" } },
+					{ "name": "minAbsences", "in": "query", "schema": { "type": "integer", "default": 0 } },
+					{ "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+					{ "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } }
+				],
+				"responses": {
+					"200": { "description": "Attendance statistics" }
+				}
+			}
+		},
+		"/v1/leave/apply": {
+			"post": {
+				"summary": "Apply for leave",
+				"tags": ["Leave - Student"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["leaveRequests", "leaveType", "fromDate", "toDate", "reason"],
+								"properties": {
+									"leaveRequests": {
+										"type": "array",
+										"items": {
+											"type": "object",
+											"required": ["lectureId", "teacherId"],
+											"properties": {
+												"lectureId": { "type": "string", "format": "uuid" },
+												"teacherId": { "type": "string", "format": "uuid" }
+											}
+										}
+									},
+									"leaveType": { "type": "string", "enum": ["sick", "other"] },
+									"fromDate": { "type": "string", "format": "date" },
+									"toDate": { "type": "string", "format": "date" },
+									"reason": { "type": "string", "minLength": 10, "maxLength": 500 }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": { "description": "Leave requests created" },
+					"400": { "description": "Validation or overlap error" }
+				}
+			}
+		},
+		"/v1/leave/my-requests": {
+			"get": {
+				"summary": "Get student's leave requests",
+				"tags": ["Leave - Student"],
+				"parameters": [
+					{ "name": "lecture", "in": "query", "schema": { "type": "string" } },
+					{ "name": "teacher", "in": "query", "schema": { "type": "string" } },
+					{ "name": "status", "in": "query", "schema": { "type": "string" } },
+					{ "name": "fromDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+					{ "name": "toDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+					{ "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+					{ "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+				],
+				"responses": {
+					"200": { "description": "Paginated leave requests" }
+				}
+			}
+		},
+		"/v1/leave/check-slot": {
+			"get": {
+				"summary": "Check if student has leave for a slot",
+				"tags": ["Leave - Student"],
+				"parameters": [
+					{ "name": "studentId", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } },
+					{ "name": "attendanceSlotId", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Leave check result" }
+				}
+			}
+		},
+		"/v1/leave/details/{leaveRequestId}": {
+			"get": {
+				"summary": "Get leave details for attendance modal",
+				"tags": ["Leave - Student"],
+				"parameters": [
+					{ "name": "leaveRequestId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Leave details" },
+					"404": { "description": "Not found" }
+				}
+			}
+		},
+		"/v1/leave/{requestId}": {
+			"get": {
+				"summary": "Get leave request details",
+				"tags": ["Leave - Student"],
+				"parameters": [
+					{ "name": "requestId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Leave request details" },
+					"404": { "description": "Not found" }
+				}
+			},
+			"delete": {
+				"summary": "Delete pending leave request",
+				"tags": ["Leave - Student"],
+				"parameters": [
+					{ "name": "requestId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Deleted" },
+					"400": { "description": "Cannot delete non-pending" }
+				}
+			}
+		},
+		"/v1/leave/{requestId}/manage": {
+			"post": {
+				"summary": "Manage leave request (approve/reject/resend/cancel)",
+				"description": "Unified endpoint for all leave request actions. Students can resend/cancel; teachers/admins can approve/reject.",
+				"tags": ["Leave - Admin"],
+				"parameters": [
+					{ "name": "requestId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["action"],
+								"properties": {
+									"action": { "type": "string", "enum": ["approve", "reject", "resend", "cancel"] },
+									"teacherRemark": { "type": "string", "maxLength": 500, "description": "Required when action is 'reject'" },
+									"studentRemark": { "type": "string", "maxLength": 500, "description": "Required when action is 'resend'" },
+									"cancelReason": { "type": "string", "maxLength": 500, "description": "Required when action is 'cancel'" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Action performed successfully" },
+					"400": { "description": "Invalid action or missing required fields" }
+				}
+			}
+		},
+		"/v1/leave": {
+			"get": {
+				"summary": "Get leave requests with optional status filter",
+				"description": "Returns leave requests. Use ?status=pending to get only pending requests. Teacher sees only their assigned; Admin sees all.",
+				"tags": ["Leave - Admin"],
+				"parameters": [
+					{ "name": "status", "in": "query", "schema": { "type": "string" }, "description": "Filter by status (e.g. 'pending')" }
+				],
+				"responses": {
+					"200": { "description": "Leave requests" }
+				}
+			}
+		},
+		"/v1/lectures": {
+			"get": {
+				"summary": "Get lectures with optional filter",
+				"description": "Returns lectures. Use ?filter=default for default lecture only, ?filter=non-default for student's non-default lectures, or no filter for all.",
+				"tags": ["Lectures"],
+				"parameters": [
+					{ "name": "filter", "in": "query", "schema": { "type": "string", "enum": ["default", "non-default"] }, "description": "Filter lectures by type" }
+				],
+				"responses": {
+					"200": { "description": "Lectures list" }
+				}
+			},
+			"post": {
+				"summary": "Create a lecture",
+				"tags": ["Lectures"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["name"],
+								"properties": {
+									"name": { "type": "string", "minLength": 3 },
+									"description": { "type": "string" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": { "description": "Lecture created" },
+					"400": { "description": "Duplicate name" }
+				}
+			}
+		},
+		"/v1/lectures/{id}": {
+			"get": {
+				"summary": "Get lecture by ID",
+				"tags": ["Lectures"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Lecture details with student count" },
+					"404": { "description": "Not found" }
+				}
+			},
+			"put": {
+				"summary": "Update lecture",
+				"tags": ["Lectures"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"name": { "type": "string" },
+									"description": { "type": "string" },
+									"isActive": { "type": "boolean" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Updated" },
+					"400": { "description": "Duplicate name" }
+				}
+			},
+			"delete": {
+				"summary": "Delete lecture (cascade)",
+				"tags": ["Lectures"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Deleted with all related data" },
+					"403": { "description": "Cannot delete default lecture" }
+				}
+			}
+		},
+		"/v1/lectures/{id}/students": {
+			"get": {
+				"summary": "Get students in a lecture",
+				"tags": ["Lectures"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Student list" }
+				}
+			}
+		},
+		"/v1/lectures/{lectureId}/teacher": {
+			"get": {
+				"summary": "Get teacher for a lecture",
+				"tags": ["Lectures"],
+				"parameters": [
+					{ "name": "lectureId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+				],
+				"responses": {
+					"200": { "description": "Teacher details" },
+					"404": { "description": "No teacher assigned" }
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"BearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			}
+		}
+	}
+}

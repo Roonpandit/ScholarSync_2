@@ -1,0 +1,27 @@
+{
+  "name": "scholarsync-backend-iam",
+  "version": "1.0.0",
+  "description": "Identity & Access Management service for ScholarSync",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "scholarsync-backend-common": "file:../scholarsync-backend-common",
+    "express": "^4.21.2",
+    "express-async-handler": "^1.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "sequelize": "^6.35.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "axios": "^1.6.0",
+    "joi": "^17.11.0",
+    "swagger-ui-express": "^5.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

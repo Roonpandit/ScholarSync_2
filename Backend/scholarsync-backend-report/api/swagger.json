@@ -1,0 +1,287 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "ScholarSync Report Service",
+		"description": "Reporting & Analytics - Student attendance details, attendance counts, monthly aggregation, overall stats, leave stats",
+		"version": "1.0.0"
+	},
+	"servers": [
+		{ "url": "http://localhost:6004/api/report", "description": "Local" }
+	],
+	"security": [{ "BearerAuth": [] }],
+	"tags": [
+		{ "name": "Student Reports", "description": "Per-student attendance details and counts" },
+		{ "name": "Attendance Reports", "description": "Monthly attendance details and overall stats" },
+		{ "name": "Leave Reports", "description": "Leave statistics" }
+	],
+	"paths": {
+		"/v1/students/{id}/details": {
+			"get": {
+				"summary": "Get student details with attendance history and counts",
+				"description": "Returns student details, attendance records, stats, and counts in a single response.",
+				"tags": ["Student Reports"],
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string", "format": "uuid" },
+						"description": "Student UUID"
+					},
+					{
+						"name": "year",
+						"in": "query",
+						"schema": { "type": "integer", "example": 2025 },
+						"description": "Filter by year"
+					},
+					{
+						"name": "month",
+						"in": "query",
+						"schema": { "type": "integer", "minimum": 1, "maximum": 12, "example": 3 },
+						"description": "Filter by month (1-12)"
+					},
+					{
+						"name": "date",
+						"in": "query",
+						"schema": { "type": "string", "example": "2025-03-15" },
+						"description": "Filter by specific date (YYYY-MM-DD)"
+					},
+					{
+						"name": "startDate",
+						"in": "query",
+						"schema": { "type": "string", "example": "2025-03-01" },
+						"description": "Range start date"
+					},
+					{
+						"name": "endDate",
+						"in": "query",
+						"schema": { "type": "string", "example": "2025-03-31" },
+						"description": "Range end date"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Student details with attendance records, stats, and counts",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": {
+										"student": {
+											"id": "uuid",
+											"name": "John Doe",
+											"email": "john@example.com",
+											"studentCode": "STU001"
+										},
+										"filter": {
+											"year": 2025,
+											"month": 3,
+											"date": null,
+											"startDate": null,
+											"endDate": null,
+											"description": "March 2025"
+										},
+										"attendance": {
+											"records": [],
+											"stats": {
+												"totalSlots": 10,
+												"pendingSlots": 0,
+												"awaitingSlots": 0,
+												"present": 8,
+												"absent": 2,
+												"attendancePercentage": 80
+											},
+											"totalRecords": 10
+										},
+										"counts": {
+											"totalSlots": 10,
+											"pendingSlots": 0,
+											"awaitingSlots": 0,
+											"present": 8,
+											"absent": 2,
+											"totalRecords": 10,
+											"attendancePercentage": 80
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": { "description": "Invalid student ID or date filter" },
+					"401": { "description": "Unauthorized" },
+					"404": { "description": "Student not found" }
+				}
+			}
+		},
+		"/v1/attendance/details": {
+			"get": {
+				"summary": "Get monthly attendance details (aggregation)",
+				"tags": ["Attendance Reports"],
+				"parameters": [
+					{
+						"name": "studentId",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "string", "format": "uuid" },
+						"description": "Student UUID"
+					},
+					{
+						"name": "month",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "integer", "minimum": 1, "maximum": 12, "example": 3 },
+						"description": "Month (1-12)"
+					},
+					{
+						"name": "year",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "integer", "example": 2025 },
+						"description": "Year"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Monthly attendance details with slot-level info",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": {
+										"student": {
+											"id": "uuid",
+											"name": "John Doe",
+											"email": "john@example.com"
+										},
+										"attendance": {
+											"records": [],
+											"stats": { "total": 10, "present": 8, "absent": 2 },
+											"totalRecords": 10
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": { "description": "Missing or invalid parameters" },
+					"401": { "description": "Unauthorized" },
+					"404": { "description": "Student not found" }
+				}
+			}
+		},
+		"/v1/attendance/stats": {
+			"get": {
+				"summary": "Get overall attendance stats for all students",
+				"tags": ["Attendance Reports"],
+				"parameters": [
+					{
+						"name": "month",
+						"in": "query",
+						"schema": { "type": "integer", "minimum": 1, "maximum": 12, "example": 3 },
+						"description": "Month (required with year, unless startDate+endDate provided)"
+					},
+					{
+						"name": "year",
+						"in": "query",
+						"schema": { "type": "integer", "example": 2025 },
+						"description": "Year (required with month)"
+					},
+					{
+						"name": "startDate",
+						"in": "query",
+						"schema": { "type": "string", "example": "2025-03-01" },
+						"description": "Range start date (alternative to month+year)"
+					},
+					{
+						"name": "endDate",
+						"in": "query",
+						"schema": { "type": "string", "example": "2025-03-31" },
+						"description": "Range end date (required with startDate)"
+					},
+					{
+						"name": "minAbsences",
+						"in": "query",
+						"schema": { "type": "integer", "example": 3 },
+						"description": "Minimum absences filter (default 0)"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Attendance stats for all students",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": {
+										"dateRange": {
+											"startDate": "2025-03-01T00:00:00.000Z",
+											"endDate": "2025-03-31T23:59:59.999Z"
+										},
+										"stats": {
+											"totalSlots": 20,
+											"totalStudents": 5,
+											"attendanceRecords": 80,
+											"studentsWithAbsences": []
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": { "description": "Missing or invalid date parameters" },
+					"401": { "description": "Unauthorized" }
+				}
+			}
+		},
+		"/v1/leave/stats": {
+			"get": {
+				"summary": "Get leave statistics by status and type",
+				"tags": ["Leave Reports"],
+				"responses": {
+					"200": {
+						"description": "Leave statistics",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": {
+										"statusStats": {
+											"pending": 5,
+											"approved": 10,
+											"rejected": 2,
+											"cancelled": 1,
+											"closed": 3,
+											"total": 21
+										},
+										"typeStats": {
+											"sick": 12,
+											"other": 9
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": { "description": "Unauthorized" }
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"BearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			}
+		}
+	}
+}

@@ -1,0 +1,520 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "ScholarSync IAM Service",
+		"description": "Identity & Access Management - Authentication, User CRUD, Lecture Assignment, IP Management",
+		"version": "1.0.0"
+	},
+	"servers": [
+		{ "url": "http://localhost:6001/api/iam", "description": "Local" }
+	],
+	"security": [{ "BearerAuth": [] }],
+	"tags": [
+		{ "name": "Auth (Public)", "description": "Login, password reset" },
+		{ "name": "Auth (Protected)", "description": "Profile, password change, registration" },
+		{ "name": "User Management", "description": "Unified GET/PUT/DELETE by ID" },
+		{ "name": "List", "description": "List teachers and students" },
+		{ "name": "Lecture Assignment", "description": "Assign/unassign lectures" },
+		{ "name": "IP Management", "description": "Manage allowed IPs and restriction" }
+	],
+	"paths": {
+		"/v1/auth/login": {
+			"post": {
+				"summary": "Login",
+				"tags": ["Auth (Public)"],
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["email", "password"],
+								"properties": {
+									"email": { "type": "string", "format": "email", "example": "tarunvashisth0000@gmail.com" },
+									"password": { "type": "string", "example": "Tarun@2002" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Login successful — returns access token (15m) and refresh token (2h)",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"data": {
+										"accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+										"refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+									}
+								}
+							}
+						}
+					},
+					"401": { "description": "Invalid credentials", "content": { "application/json": { "example": { "status": 401, "message": "User does not exist with this email", "code": "1002" } } } },
+					"422": { "description": "Validation failed", "content": { "application/json": { "example": { "status": 422, "message": "email is required", "code": "2001", "fieldName": "email" } } } }
+				}
+			}
+		},
+		"/v1/auth/seed-admin": {
+			"post": {
+				"summary": "Seed admin account",
+				"tags": ["Auth (Public)"],
+				"security": [],
+				"responses": {
+					"201": { "description": "Admin created", "content": { "application/json": { "example": { "status": 201, "message": "Admin account created successfully", "code": "5002" } } } },
+					"400": { "description": "Admin already exists", "content": { "application/json": { "example": { "status": 400, "message": "Admin account already exists", "code": "1009" } } } }
+				}
+			}
+		},
+		"/v1/auth/forgot-password": {
+			"post": {
+				"summary": "Send password reset email",
+				"tags": ["Auth (Public)"],
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["email"],
+								"properties": {
+									"email": { "type": "string", "format": "email" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Reset email sent (or email not found — same response to prevent enumeration)", "content": { "application/json": { "example": { "status": 200, "message": "If an account with that email exists, a password reset link has been sent", "code": "5003" } } } }
+				}
+			}
+		},
+		"/v1/auth/reset-password/{resetToken}": {
+			"put": {
+				"summary": "Reset password using token",
+				"tags": ["Auth (Public)"],
+				"security": [],
+				"parameters": [
+					{ "name": "resetToken", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["password"],
+								"properties": {
+									"password": { "type": "string", "minLength": 8, "example": "NewPass@123" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Password reset successful", "content": { "application/json": { "example": { "status": 200, "message": "Password reset successful", "code": "5005" } } } },
+					"400": { "description": "Invalid/expired token", "content": { "application/json": { "example": { "status": 400, "message": "Invalid or expired token", "code": "1018" } } } }
+				}
+			}
+		},
+		"/v1/auth/refresh-token": {
+			"post": {
+				"summary": "Refresh access token using refresh token",
+				"tags": ["Auth (Public)"],
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["refreshToken"],
+								"properties": {
+									"refreshToken": { "type": "string", "description": "The refresh token received from login" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "New access token generated",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Token refreshed successfully",
+									"code": "5007",
+									"data": {
+										"accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+									}
+								}
+							}
+						}
+					},
+					"401": { "description": "Invalid/expired refresh token", "content": { "application/json": { "example": { "status": 401, "message": "Invalid or expired refresh token", "code": "1022" } } } }
+				}
+			}
+		},
+		"/v1/auth/me": {
+			"get": {
+				"summary": "Get current user profile",
+				"tags": ["Auth (Protected)"],
+				"responses": {
+					"200": {
+						"description": "User profile",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": { "_id": "...", "name": "Tarun", "email": "tarun@example.com", "role": "admin", "phone": null }
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/auth/update-password": {
+			"put": {
+				"summary": "Change password (logged in)",
+				"tags": ["Auth (Protected)"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["currentPassword", "newPassword"],
+								"properties": {
+									"currentPassword": { "type": "string" },
+									"newPassword": { "type": "string", "minLength": 8 }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Password updated", "content": { "application/json": { "example": { "status": 200, "message": "Password updated successfully", "code": "5001" } } } },
+					"400": { "description": "Validation error", "content": { "application/json": { "example": { "status": 400, "message": "Current password is incorrect", "code": "1007" } } } }
+				}
+			}
+		},
+		"/v1/auth/register": {
+			"post": {
+				"summary": "Register student or teacher",
+				"tags": ["Auth (Protected)"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"examples": {
+								"student": {
+									"summary": "Register Student",
+									"value": {
+										"role": "student",
+										"name": "John Doe",
+										"email": "john@example.com",
+										"studentCode": "STU001",
+										"password": "Pass@123",
+										"phone": "9876543210",
+										"lectures": ["lectureId1", "lectureId2"]
+									}
+								},
+								"teacher": {
+									"summary": "Register Teacher",
+									"value": {
+										"role": "teacher",
+										"name": "Jane Smith",
+										"email": "jane@example.com",
+										"teacherCode": "TCH001",
+										"password": "Pass@123",
+										"phone": "9876543210",
+										"lectures": ["lectureId1"]
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": { "description": "User registered", "content": { "application/json": { "example": { "status": 201, "message": "Student registered successfully", "code": "5101", "data": { "_id": "...", "name": "John Doe", "email": "john@example.com", "studentCode": "STU001", "role": "student" } } } } },
+					"400": { "description": "Validation error" },
+					"422": { "description": "Joi validation failed" }
+				}
+			}
+		},
+		"/v1/auth/bulk/register": {
+			"post": {
+				"summary": "Bulk register students",
+				"tags": ["Auth (Protected)"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"required": ["name", "email", "studentCode", "password", "lectures"],
+									"properties": {
+										"name": { "type": "string" },
+										"email": { "type": "string", "format": "email" },
+										"studentCode": { "type": "string" },
+										"password": { "type": "string", "minLength": 8 },
+										"phone": { "type": "string", "pattern": "^\\d{10}$" },
+										"lectures": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"201": { "description": "Students created", "content": { "application/json": { "example": { "status": 201, "message": "3 students created successfully", "created": { "count": 3 }, "existing": { "count": 0 } } } } }
+				}
+			}
+		},
+		"/v1/users/{id}": {
+			"get": {
+				"summary": "Get any user by ID (auto-detects role)",
+				"tags": ["User Management"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "MongoDB ObjectId" }
+				],
+				"responses": {
+					"200": { "description": "User found", "content": { "application/json": { "example": { "status": 200, "message": "Fetched successfully", "code": "5801", "data": { "_id": "...", "name": "John", "email": "john@example.com", "role": "student" } } } } },
+					"404": { "description": "Not found", "content": { "application/json": { "example": { "status": 404, "message": "User not found", "code": "1005" } } } }
+				}
+			},
+			"put": {
+				"summary": "Update any user by ID (role-specific validation)",
+				"tags": ["User Management"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"name": { "type": "string" },
+									"email": { "type": "string", "format": "email" },
+									"phone": { "type": "string", "pattern": "^\\d{10}$" },
+									"studentCode": { "type": "string", "description": "For students only" },
+									"teacherCode": { "type": "string", "description": "For teachers only" },
+									"lectures": { "type": "array", "items": { "type": "string" }, "description": "Array of lecture ObjectIds" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "User updated" },
+					"403": { "description": "Teachers can only update name and phone for students" },
+					"404": { "description": "User not found" },
+					"422": { "description": "Validation failed" }
+				}
+			},
+			"delete": {
+				"summary": "Delete user by ID (admin only, cleans up attendance for students)",
+				"tags": ["User Management"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
+				"responses": {
+					"200": { "description": "User deleted", "content": { "application/json": { "example": { "status": 200, "message": "Student deleted successfully", "code": "5104" } } } },
+					"403": { "description": "Admin accounts cannot be deleted via this endpoint" },
+					"404": { "description": "User not found" }
+				}
+			}
+		},
+		"/v1/users/{id}/block": {
+			"post": {
+				"summary": "Block user (admin only)",
+				"tags": ["User Management"],
+				"description": "Sets user status to Disabled. Admin accounts cannot be blocked.",
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "User UUID" }
+				],
+				"responses": {
+					"200": { "description": "User blocked", "content": { "application/json": { "example": { "status": 200, "message": "User blocked successfully", "code": "5008", "data": { "id": "...", "status": "Disabled" } } } } },
+					"400": { "description": "User already blocked or invalid ID", "content": { "application/json": { "example": { "status": 400, "message": "User is already blocked" } } } },
+					"403": { "description": "Admin accounts cannot be blocked", "content": { "application/json": { "example": { "status": 403, "message": "Admin accounts cannot be blocked" } } } },
+					"404": { "description": "User not found", "content": { "application/json": { "example": { "status": 404, "message": "User not found", "code": "1005" } } } }
+				}
+			}
+		},
+		"/v1/users/{id}/unblock": {
+			"post": {
+				"summary": "Unblock user (admin only)",
+				"tags": ["User Management"],
+				"description": "Sets user status to Active and clears all failed login attempts.",
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "User UUID" }
+				],
+				"responses": {
+					"200": { "description": "User unblocked", "content": { "application/json": { "example": { "status": 200, "message": "User unblocked successfully", "code": "5009", "data": { "id": "...", "status": "Active" } } } } },
+					"400": { "description": "User already active or invalid ID", "content": { "application/json": { "example": { "status": 400, "message": "User is already active" } } } },
+					"404": { "description": "User not found", "content": { "application/json": { "example": { "status": 404, "message": "User not found", "code": "1005" } } } }
+				}
+			}
+		},
+		"/v1/teachers": {
+			"get": {
+				"summary": "List all teachers",
+				"tags": ["List"],
+				"responses": {
+					"200": {
+						"description": "Teachers list",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": [{ "_id": "...", "name": "Jane", "email": "jane@example.com", "teacherCode": "TCH001", "lectures": [] }]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/students": {
+			"get": {
+				"summary": "List students (optional lecture filter)",
+				"tags": ["List"],
+				"parameters": [
+					{ "name": "lectureId", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Filter by lecture ObjectId" }
+				],
+				"responses": {
+					"200": {
+						"description": "Students list",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": [{ "_id": "...", "name": "John", "email": "john@example.com", "studentCode": "STU001" }]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/lectures/manage": {
+			"post": {
+				"summary": "Assign or unassign lectures to/from students",
+				"tags": ["Lecture Assignment"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"examples": {
+								"assign": {
+									"summary": "Assign lectures",
+									"value": { "action": "assign", "lectureIds": ["id1", "id2"], "studentIds": ["sid1", "sid2"] }
+								},
+								"unassign": {
+									"summary": "Unassign lectures",
+									"value": { "action": "unassign", "lectureIds": ["id1"], "studentIds": ["sid1"] }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "Lectures managed", "content": { "application/json": { "example": { "status": 200, "message": "Lectures assigned successfully", "code": "5106", "data": { "totalAdded": 4, "alreadyAssigned": 0 } } } } },
+					"403": { "description": "Cannot remove default lecture" },
+					"422": { "description": "Validation failed" }
+				}
+			}
+		},
+		"/v1/ip/manage": {
+			"post": {
+				"summary": "Add IP or toggle restriction",
+				"tags": ["IP Management"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"examples": {
+								"add": {
+									"summary": "Add allowed IP",
+									"value": { "action": "add", "ipAddress": "192.168.1.1", "locationName": "Main Campus Lab Room 1", "description": "Optional" }
+								},
+								"toggle": {
+									"summary": "Toggle IP restriction",
+									"value": { "action": "toggle", "isEnabled": true }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": { "description": "IP restriction toggled", "content": { "application/json": { "example": { "status": 200, "message": "IP restriction enabled", "code": "5303" } } } },
+					"201": { "description": "IP added", "content": { "application/json": { "example": { "status": 201, "message": "IP added successfully", "code": "5301" } } } },
+					"422": { "description": "Validation failed" }
+				}
+			}
+		},
+		"/v1/ip/{id}": {
+			"delete": {
+				"summary": "Delete allowed IP",
+				"tags": ["IP Management"],
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
+				"responses": {
+					"200": { "description": "IP deleted", "content": { "application/json": { "example": { "status": 200, "message": "IP deleted successfully", "code": "5302" } } } },
+					"404": { "description": "IP not found" }
+				}
+			}
+		},
+		"/v1/ip/status": {
+			"get": {
+				"summary": "Get IP restriction status and allowed IPs",
+				"tags": ["IP Management"],
+				"responses": {
+					"200": {
+						"description": "IP status",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Fetched successfully",
+									"code": "5801",
+									"data": {
+										"isEnabled": true,
+										"count": 2,
+										"ips": [{ "_id": "...", "ipAddress": "192.168.1.1", "locationName": "Main Campus" }]
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"BearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			}
+		}
+	}
+}

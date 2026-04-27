@@ -1,0 +1,328 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "ScholarSync Notification Service",
+		"description": "Email notification service - Welcome emails, Password resets, Absent notifications, Feedback emails",
+		"version": "1.0.0"
+	},
+	"servers": [
+		{ "url": "http://localhost:6003/api/notification", "description": "Local" }
+	],
+	"security": [{ "BearerAuth": [] }],
+	"tags": [
+		{ "name": "Internal", "description": "Service-to-service endpoints (no auth)" },
+		{ "name": "Protected", "description": "User-facing endpoints (requires auth)" }
+	],
+	"paths": {
+		"/v1/welcome-email": {
+			"post": {
+				"summary": "Send welcome email to new user",
+				"tags": ["Internal"],
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"examples": {
+								"student": {
+									"summary": "Welcome email for student",
+									"value": {
+										"name": "John Doe",
+										"email": "john@example.com",
+										"studentCode": "STU001",
+										"phone": "9876543210",
+										"role": "student"
+									}
+								},
+								"teacher": {
+									"summary": "Welcome email for teacher",
+									"value": {
+										"name": "Jane Smith",
+										"email": "jane@example.com",
+										"teacherCode": "TCH001",
+										"phone": "9876543210",
+										"role": "teacher"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Welcome email sent",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Welcome email sent successfully",
+									"code": "5701"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 400,
+									"message": "name is required"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Email sending failed",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 500,
+									"message": "Name and email are required for welcome email",
+									"code": "1701"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/password-reset-email": {
+			"post": {
+				"summary": "Send password reset email with token link",
+				"tags": ["Internal"],
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["email", "name", "resetToken"],
+								"properties": {
+									"email": { "type": "string", "format": "email", "example": "john@example.com" },
+									"name": { "type": "string", "example": "John Doe" },
+									"resetToken": { "type": "string", "example": "abc123def456" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Password reset email sent",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Password reset email sent successfully",
+									"code": "5702"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 400,
+									"message": "resetToken is required"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Email sending failed",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 500,
+									"message": "Email and name are required for password reset email",
+									"code": "1702"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/password-reset-confirmation": {
+			"post": {
+				"summary": "Send password reset confirmation email",
+				"tags": ["Internal"],
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["email", "name"],
+								"properties": {
+									"email": { "type": "string", "format": "email", "example": "john@example.com" },
+									"name": { "type": "string", "example": "John Doe" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Confirmation email sent",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Password reset confirmation email sent successfully",
+									"code": "5703"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 400,
+									"message": "email is required"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Email sending failed",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 500,
+									"message": "Email and name are required for password reset confirmation",
+									"code": "1703"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/absent-notification": {
+			"post": {
+				"summary": "Send absent notification email to student",
+				"tags": ["Internal"],
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["studentName", "studentEmail", "lectureName", "date", "shift", "slotTime", "markedAt", "location", "remark", "updatedByName", "updatedByRole"],
+								"properties": {
+									"studentName": { "type": "string", "example": "John Doe" },
+									"studentEmail": { "type": "string", "format": "email", "example": "john@example.com" },
+									"lectureName": { "type": "string", "example": "Mathematics" },
+									"date": { "type": "string", "example": "2024-01-15" },
+									"shift": { "type": "string", "example": "morning" },
+									"slotTime": { "type": "string", "example": "09:00 - 10:00" },
+									"markedAt": { "type": "string", "example": "2024-01-15T09:15:00.000Z" },
+									"location": { "type": "string", "example": "Main Campus, Room 101" },
+									"photoUrl": { "type": "string", "example": "https://res.cloudinary.com/..." },
+									"remark": { "type": "string", "example": "Face not visible in photo" },
+									"updatedByName": { "type": "string", "example": "Dr. Smith" },
+									"updatedByRole": { "type": "string", "example": "teacher" }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Absent notification sent",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Absent notification email sent successfully",
+									"code": "5704",
+									"data": { "messageId": "abc123" }
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 400,
+									"message": "studentName is required"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/v1/feedback-emails": {
+			"post": {
+				"summary": "Send feedback request emails to students",
+				"tags": ["Protected"],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"required": ["feedbackLink", "studentIds"],
+								"properties": {
+									"feedbackLink": { "type": "string", "format": "uri", "example": "https://forms.google.com/feedback123" },
+									"studentIds": {
+										"type": "array",
+										"items": { "type": "string" },
+										"example": ["student-id-1", "student-id-2"]
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Feedback emails sent",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 200,
+									"message": "Feedback emails sent successfully",
+									"code": "5705",
+									"data": { "count": 5 }
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"example": {
+									"status": 400,
+									"message": "feedbackLink is required"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"BearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			}
+		}
+	}
+}

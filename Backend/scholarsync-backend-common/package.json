@@ -1,0 +1,23 @@
+{
+  "name": "scholarsync-backend-common",
+  "version": "1.0.0",
+  "description": "Shared models, middlewares, config, and helpers for ScholarSync",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.6.1",
+    "dotenv": "^16.3.1",
+    "express-async-handler": "^1.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.5.0",
+    "validator": "^13.11.0",
+    "sequelize": "^6.35.0",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "winston": "^3.11.0",
+    "cls-hooked": "^4.2.2",
+    "uuidv7": "^1.0.2",
+    "moment": "^2.30.1"
+  }
+}

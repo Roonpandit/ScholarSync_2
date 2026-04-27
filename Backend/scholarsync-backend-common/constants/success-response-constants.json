@@ -1,0 +1,56 @@
+{
+	"5001": "Password changed successfully. Please login again.",
+	"5002": "Admin account created successfully",
+	"5003": "If an account with that email exists, a password reset link has been sent",
+	"5004": "Password reset link has been sent to $email$",
+	"5005": "Password reset successful",
+	"5006": "Password reset successful, but could not send confirmation email",
+	"5007": "Token refreshed successfully",
+
+	"5101": "Student registered successfully",
+	"5102": "$count$ students created, $count2$ already exist",
+	"5103": "$count$ students created successfully",
+	"5104": "Student deleted successfully",
+	"5105": "$count$ lecture(s) added",
+	"5106": "Lectures assigned successfully",
+	"5107": "Lectures unassigned successfully",
+
+	"5201": "Teacher deleted successfully",
+
+	"5301": "IP added successfully",
+	"5302": "IP deleted successfully",
+	"5303": "IP restriction $status$",
+
+	"5401": "Default lecture created successfully. This lecture cannot be deleted and all students must belong to it.",
+	"5402": "Lecture created successfully",
+	"5403": "Lecture updated successfully",
+	"5404": "Lecture deleted successfully along with all related attendance data and photos",
+
+	"5501": "$count$ attendance slot(s) created successfully",
+	"5502": "Attendance slot closed successfully",
+	"5503": "Attendance slot and associated records deleted successfully. Photos removed from Cloudinary.",
+	"5504": "Attendance marked successfully. Waiting for teacher approval.",
+	"5505": "Attendance marked successfully",
+	"5506": "Attendance marked as absent successfully",
+	"5507": "Attendance approved successfully",
+	"5508": "Attendance rejected successfully",
+
+	"5601": "Leave requests submitted successfully",
+	"5602": "Leave request deleted successfully",
+	"5603": "Leave request resent successfully",
+	"5604": "Leave request cancelled successfully",
+	"5605": "Leave request approved successfully",
+	"5606": "Leave request rejected successfully",
+
+	"5701": "Welcome email sent successfully",
+	"5702": "Password reset email sent successfully",
+	"5703": "Password reset confirmation email sent successfully",
+	"5704": "Absent notification email sent successfully",
+	"5705": "Feedback emails sent successfully",
+
+	"5801": "Fetched successfully",
+
+	"5008": "User blocked successfully",
+	"5009": "User unblocked successfully",
+	"5010": "Logged out successfully"
+}
