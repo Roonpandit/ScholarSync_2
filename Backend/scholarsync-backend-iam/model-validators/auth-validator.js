@@ -1,8 +1,8 @@
 import Joi from 'joi';
-import { getErrorMessage } from 'scholarsync-backend-common';
+import { getErrorMessage, REGEX_PATTERNS, USER_ROLE } from 'scholarsync-backend-common';
 
 const objectId = Joi.string()
-	.regex(/^[0-9a-fA-F]{24}$/)
+	.pattern(REGEX_PATTERNS.UUID)
 	.messages({
 		'string.pattern.base': getErrorMessage('2007', {}, 'id'),
 	});
@@ -66,7 +66,7 @@ const updatePasswordSchema = Joi.object({
 
 const registerStudentSchema = Joi.object({
 	role: Joi.string()
-		.valid('student')
+		.valid(USER_ROLE.STUDENT)
 		.required()
 		.messages({
 			'any.only': getErrorMessage('2006', { fieldName: 'role', values: 'student, teacher' }, 'role'),
@@ -87,25 +87,18 @@ const registerStudentSchema = Joi.object({
 			'string.email': getErrorMessage('2002', { fieldName: 'email' }, 'email'),
 			'any.required': getErrorMessage('2001', { fieldName: 'email' }, 'email'),
 		}),
-	studentCode: Joi.string()
+	userCode: Joi.string()
 		.trim()
 		.required()
 		.messages({
-			'any.required': getErrorMessage('2001', { fieldName: 'studentCode' }, 'studentCode'),
-			'string.empty': getErrorMessage('2001', { fieldName: 'studentCode' }, 'studentCode'),
+			'any.required': getErrorMessage('2001', { fieldName: 'userCode' }, 'userCode'),
+			'string.empty': getErrorMessage('2001', { fieldName: 'userCode' }, 'userCode'),
 		}),
-	password: Joi.string()
-		.min(8)
-		.required()
-		.messages({
-			'any.required': getErrorMessage('2001', { fieldName: 'password' }, 'password'),
-			'string.min': getErrorMessage('2003', { fieldName: 'password', limit: '8' }, 'password'),
-		}),
-	phone: Joi.string()
-		.pattern(/^\d{10}$/)
+	mobile: Joi.string()
+		.pattern(REGEX_PATTERNS.MOBILE)
 		.optional()
 		.messages({
-			'string.pattern.base': getErrorMessage('2005', { fieldName: 'phone' }, 'phone'),
+			'string.pattern.base': getErrorMessage('2005', { fieldName: 'mobile' }, 'mobile'),
 		}),
 	lectures: Joi.array()
 		.items(objectId)
@@ -120,7 +113,7 @@ const registerStudentSchema = Joi.object({
 
 const registerTeacherSchema = Joi.object({
 	role: Joi.string()
-		.valid('teacher')
+		.valid(USER_ROLE.TEACHER)
 		.required()
 		.messages({
 			'any.only': getErrorMessage('2006', { fieldName: 'role', values: 'student, teacher' }, 'role'),
@@ -141,25 +134,18 @@ const registerTeacherSchema = Joi.object({
 			'string.email': getErrorMessage('2002', { fieldName: 'email' }, 'email'),
 			'any.required': getErrorMessage('2001', { fieldName: 'email' }, 'email'),
 		}),
-	teacherCode: Joi.string()
+	userCode: Joi.string()
 		.trim()
 		.required()
 		.messages({
-			'any.required': getErrorMessage('2001', { fieldName: 'teacherCode' }, 'teacherCode'),
-			'string.empty': getErrorMessage('2001', { fieldName: 'teacherCode' }, 'teacherCode'),
+			'any.required': getErrorMessage('2001', { fieldName: 'userCode' }, 'userCode'),
+			'string.empty': getErrorMessage('2001', { fieldName: 'userCode' }, 'userCode'),
 		}),
-	password: Joi.string()
-		.min(8)
-		.required()
-		.messages({
-			'any.required': getErrorMessage('2001', { fieldName: 'password' }, 'password'),
-			'string.min': getErrorMessage('2003', { fieldName: 'password', limit: '8' }, 'password'),
-		}),
-	phone: Joi.string()
-		.pattern(/^\d{10}$/)
+	mobile: Joi.string()
+		.pattern(REGEX_PATTERNS.MOBILE)
 		.optional()
 		.messages({
-			'string.pattern.base': getErrorMessage('2005', { fieldName: 'phone' }, 'phone'),
+			'string.pattern.base': getErrorMessage('2005', { fieldName: 'mobile' }, 'mobile'),
 		}),
 	lectures: Joi.array()
 		.items(objectId)
@@ -190,25 +176,18 @@ const bulkRegisterItemSchema = Joi.object({
 			'string.email': getErrorMessage('2002', { fieldName: 'email' }, 'email'),
 			'any.required': getErrorMessage('2001', { fieldName: 'email' }, 'email'),
 		}),
-	studentCode: Joi.string()
+	userCode: Joi.string()
 		.trim()
 		.required()
 		.messages({
-			'any.required': getErrorMessage('2001', { fieldName: 'studentCode' }, 'studentCode'),
-			'string.empty': getErrorMessage('2001', { fieldName: 'studentCode' }, 'studentCode'),
+			'any.required': getErrorMessage('2001', { fieldName: 'userCode' }, 'userCode'),
+			'string.empty': getErrorMessage('2001', { fieldName: 'userCode' }, 'userCode'),
 		}),
-	password: Joi.string()
-		.min(8)
-		.required()
-		.messages({
-			'any.required': getErrorMessage('2001', { fieldName: 'password' }, 'password'),
-			'string.min': getErrorMessage('2003', { fieldName: 'password', limit: '8' }, 'password'),
-		}),
-	phone: Joi.string()
-		.pattern(/^\d{10}$/)
+	mobile: Joi.string()
+		.pattern(REGEX_PATTERNS.MOBILE)
 		.optional()
 		.messages({
-			'string.pattern.base': getErrorMessage('2005', { fieldName: 'phone' }, 'phone'),
+			'string.pattern.base': getErrorMessage('2005', { fieldName: 'mobile' }, 'mobile'),
 		}),
 	lectures: Joi.array()
 		.items(objectId)

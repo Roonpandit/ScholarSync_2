@@ -1,18 +1,17 @@
-import { checkEmailExists, Lecture, STATUS_CODE, sendResponse, ACTIVITY_TYPE, USER_STATUS, USER_ROLE, ACTION_TYPE, DeletionLog, UpdateHistory } from 'scholarsync-backend-common';
+import { checkEmailExists, Lecture, STATUS_CODE, sendResponse, ACTIVITY_TYPE, USER_STATUS, USER_STATUS_ACTIONS, USER_ROLE, ACTION_TYPE, DeletionLog, UpdateHistory, REGEX_PATTERNS } from 'scholarsync-backend-common';
 import { updateUserSchema } from '../../model-validators/user-validator.js';
 import userService from '../service/user-service.js';
 import teacherService from '../service/teacher-service.js';
 import studentService from '../service/student-service.js';
 import authService from '../service/auth-service.js';
 
-const isValidUUID = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
 const isSuperAdmin = (reqUser) => reqUser.role === USER_ROLE.SUPERADMIN;
 
 const isOrgMatch = (user, reqUser) => isSuperAdmin(reqUser) || user.orgId === reqUser.orgId;
 
 const getUser = async (id, reqUser) => {
-  if (!isValidUUID(id)) {
+  if (!REGEX_PATTERNS.UUID.test(id)) {
     return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1028' }, 'getUser');
   }
 
@@ -27,7 +26,7 @@ const getUser = async (id, reqUser) => {
 };
 
 const updateUser = async (id, data, reqUser) => {
-  if (!isValidUUID(id)) {
+  if (!REGEX_PATTERNS.UUID.test(id)) {
     return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1028' }, 'updateUser');
   }
 
@@ -60,7 +59,7 @@ const updateStudent = async (id, student, data, reqUser) => {
     return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1116' }, 'updateStudent');
   }
 
-  if (mobile && !/^\d{10}$/.test(mobile)) {
+  if (mobile && !REGEX_PATTERNS.MOBILE.test(mobile)) {
     return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1112' }, 'updateStudent');
   }
 
@@ -127,7 +126,7 @@ const updateTeacher = async (id, teacher, data, reqUser) => {
     teacher.userCode = userCode;
   }
   if (mobile) {
-    if (!/^\d{10}$/.test(mobile)) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1112' }, 'updateTeacher');
+    if (!REGEX_PATTERNS.MOBILE.test(mobile)) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1112' }, 'updateTeacher');
     teacher.mobile = mobile;
   }
 
@@ -170,7 +169,7 @@ const updateTeacher = async (id, teacher, data, reqUser) => {
 };
 
 const deleteUser = async (id, reqUser) => {
-  if (!isValidUUID(id)) {
+  if (!REGEX_PATTERNS.UUID.test(id)) {
     return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1028' }, 'deleteUser');
   }
 
@@ -200,10 +199,10 @@ const deleteUser = async (id, reqUser) => {
 };
 
 const manageUserStatus = async (id, action, reqUser) => {
-  if (!isValidUUID(id)) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1028' }, 'manageUserStatus');
-  if (!action || !['block', 'unblock'].includes(action)) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1037' }, 'manageUserStatus');
+  if (!REGEX_PATTERNS.UUID.test(id)) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1028' }, 'manageUserStatus');
+  if (!action || !Object.values(USER_STATUS_ACTIONS).includes(action)) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1037' }, 'manageUserStatus');
 
-  if (action === 'block' && id === reqUser._id) return sendResponse(STATUS_CODE.FORBIDDEN, { code: '1042' }, 'manageUserStatus');
+  if (action === USER_STATUS_ACTIONS.BLOCK && id === reqUser._id) return sendResponse(STATUS_CODE.FORBIDDEN, { code: '1042' }, 'manageUserStatus');
 
   const { user, role } = await userService.findUserById(id);
   if (!user) return sendResponse(STATUS_CODE.NOTFOUND, { code: '1005' }, 'manageUserStatus');
@@ -214,7 +213,7 @@ const manageUserStatus = async (id, action, reqUser) => {
 
   if (role === USER_ROLE.ADMIN || role === USER_ROLE.SUPERADMIN) return sendResponse(STATUS_CODE.FORBIDDEN, { code: '1031' }, 'manageUserStatus');
 
-  if (action === 'block') {
+  if (action === USER_STATUS_ACTIONS.BLOCK) {
     if (user.status === USER_STATUS.DISABLED) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1032' }, 'manageUserStatus');
     await authService.disableUser(id);
     await authService.logActivity(user.email, ACTIVITY_TYPE.USER_BLOCKED, null, id, role);

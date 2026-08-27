@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { getErrorMessage } from 'scholarsync-backend-common';
+import { getErrorMessage, IP_APPLIES_TO } from 'scholarsync-backend-common';
 import { IP_ACTIONS } from '../constants/application-constants.js';
 
 const manageIPSchema = Joi.alternatives().try(
@@ -27,6 +27,13 @@ const manageIPSchema = Joi.alternatives().try(
 				'string.min': getErrorMessage('2013', { fieldName: 'locationName', limit: '10' }, 'locationName'),
 				'string.empty': getErrorMessage('2001', { fieldName: 'locationName' }, 'locationName'),
 			}),
+		appliesTo: Joi.string()
+			.valid(...Object.values(IP_APPLIES_TO))
+			.required()
+			.messages({
+				'any.only': getErrorMessage('2006', { fieldName: 'appliesTo', values: 'student, teacher, both' }, 'appliesTo'),
+				'any.required': getErrorMessage('2001', { fieldName: 'appliesTo' }, 'appliesTo'),
+			}),
 		description: Joi.string()
 			.trim()
 			.optional(),
@@ -38,6 +45,13 @@ const manageIPSchema = Joi.alternatives().try(
 			.messages({
 				'any.only': getErrorMessage('2006', { fieldName: 'action', values: Object.values(IP_ACTIONS).join(', ') }, 'action'),
 				'any.required': getErrorMessage('2001', { fieldName: 'action' }, 'action'),
+			}),
+		ipId: Joi.string()
+			.guid({ version: ['uuidv4'] })
+			.required()
+			.messages({
+				'string.guid': getErrorMessage('2007', { fieldName: 'ipId' }, 'ipId'),
+				'any.required': getErrorMessage('2001', { fieldName: 'ipId' }, 'ipId'),
 			}),
 		isEnabled: Joi.boolean()
 			.required()

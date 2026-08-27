@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { validatePassword, checkDuplicateFields, Lecture, STATUS_CODE, ERRORS, sendResponse, ACTIVITY_TYPE, USER_STATUS, USER_ROLE } from 'scholarsync-backend-common';
 import { loginSchema, updatePasswordSchema, registerSchema, bulkRegisterSchema } from '../../model-validators/auth-validator.js';
@@ -113,7 +114,7 @@ const register = async (data, reqUser) => {
 };
 
 const registerStudent = async (data, reqUser) => {
-  const { name, email, userCode, password, mobile, lectures } = data;
+  const { name, email, userCode, mobile, lectures } = data;
   const orgId = reqUser.orgId;
 
   const defaultLecture = await studentService.getDefaultLecture();
@@ -155,13 +156,18 @@ const registerStudent = async (data, reqUser) => {
   }
 
   try {
+    const tempPassword = crypto.randomUUID();
     const student = await studentService.createStudent({
-      name, email, userCode, password, mobile, lectures: lectureIds, role: USER_ROLE.STUDENT, orgId
+      name, email, userCode, password: tempPassword, mobile, lectures: lectureIds, role: USER_ROLE.STUDENT, orgId
     });
+
+    // Generate reset token for first-time password setup (24 hours expiry)
+    const resetToken = student.getResetPasswordToken(1440);
+    await student.save({ validate: false });
 
     const notificationUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:6003';
     await axios.post(`${notificationUrl}/api/notification/v1/welcome-email`, {
-      name: student.name, email: student.email, userCode: student.userCode, mobile: student.mobile, role: USER_ROLE.STUDENT
+      name: student.name, email: student.email, userCode: student.userCode, mobile: student.mobile, role: USER_ROLE.STUDENT, resetToken
     }).catch((err) => console.error('Error sending welcome email:', err.message));
 
     return sendResponse(STATUS_CODE.CREATED, {
@@ -178,7 +184,7 @@ const registerStudent = async (data, reqUser) => {
 };
 
 const registerTeacher = async (data, reqUser) => {
-  const { name, email, userCode, password, mobile, lectures } = data;
+  const { name, email, userCode, mobile, lectures } = data;
   const orgId = reqUser.orgId;
 
   // Unified duplicate check across users table (email, mobile, userCode)
@@ -196,13 +202,18 @@ const registerTeacher = async (data, reqUser) => {
   if (validLectures.length !== lectures.length) return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1106' }, 'registerTeacher');
 
   try {
+    const tempPassword = crypto.randomUUID();
     const teacher = await teacherService.createTeacher({
-      name, email, userCode, password, mobile, lectures, role: USER_ROLE.TEACHER, orgId
+      name, email, userCode, password: tempPassword, mobile, lectures, role: USER_ROLE.TEACHER, orgId
     });
+
+    // Generate reset token for first-time password setup (24 hours expiry)
+    const resetToken = teacher.getResetPasswordToken(1440);
+    await teacher.save({ validate: false });
 
     const notificationUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:6003';
     await axios.post(`${notificationUrl}/api/notification/v1/welcome-email`, {
-      name: teacher.name, email: teacher.email, userCode: teacher.userCode, mobile: teacher.mobile, role: USER_ROLE.TEACHER
+      name: teacher.name, email: teacher.email, userCode: teacher.userCode, mobile: teacher.mobile, role: USER_ROLE.TEACHER, resetToken
     }).catch((err) => console.error('Error sending welcome email:', err.message));
 
     return sendResponse(STATUS_CODE.CREATED, {
@@ -271,7 +282,8 @@ const bulkRegister = async (studentsData, reqUser) => {
     const lectureIds = [...new Set(student.lectures)];
     if (!lectureIds.includes(defaultLecture.id)) lectureIds.unshift(defaultLecture.id);
 
-    validStudents.push({ ...student, email, lectures: lectureIds, role: USER_ROLE.STUDENT, orgId });
+    const tempPassword = crypto.randomUUID();
+    validStudents.push({ ...student, email, password: tempPassword, lectures: lectureIds, role: USER_ROLE.STUDENT, orgId });
   }
 
   let createdStudents = [];
@@ -280,8 +292,11 @@ const bulkRegister = async (studentsData, reqUser) => {
 
     const notificationUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:6003';
     for (const student of createdStudents) {
+      const resetToken = student.getResetPasswordToken(1440);
+      await student.save({ validate: false });
+
       await axios.post(`${notificationUrl}/api/notification/v1/welcome-email`, {
-        name: student.name, email: student.email, userCode: student.userCode
+        name: student.name, email: student.email, userCode: student.userCode, resetToken
       }).catch((err) => console.error(`Failed to send email to ${student.email}:`, err.message));
     }
   }

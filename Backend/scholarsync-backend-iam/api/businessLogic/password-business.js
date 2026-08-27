@@ -1,4 +1,4 @@
-import { STATUS_CODE, sendResponse, ACTIVITY_TYPE, USER_STATUS } from 'scholarsync-backend-common';
+import { STATUS_CODE, sendResponse, ACTIVITY_TYPE, USER_STATUS, REGEX_PATTERNS } from 'scholarsync-backend-common';
 import { forgotPasswordSchema, resetPasswordBodySchema } from '../../model-validators/auth-validator.js';
 import passwordService from '../service/password-service.js';
 import authService from '../service/auth-service.js';
@@ -55,8 +55,7 @@ const resetPassword = async (resetToken, password) => {
   const { error } = resetPasswordBodySchema.validate({ password });
   if (error) return sendResponse(STATUS_CODE.BAD_REQUEST, { message: error.message }, 'resetPassword');
 
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
-  if (!passwordRegex.test(password)) {
+  if (!REGEX_PATTERNS.PASSWORD.test(password)) {
     return sendResponse(STATUS_CODE.BAD_REQUEST, { code: '1017' }, 'resetPassword');
   }
 

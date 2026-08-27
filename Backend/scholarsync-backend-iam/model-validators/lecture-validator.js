@@ -1,9 +1,9 @@
 import Joi from 'joi';
-import { getErrorMessage } from 'scholarsync-backend-common';
+import { getErrorMessage, REGEX_PATTERNS } from 'scholarsync-backend-common';
 import { LECTURE_ACTIONS } from '../constants/application-constants.js';
 
 const objectId = Joi.string()
-	.regex(/^[0-9a-fA-F]{24}$/)
+	.pattern(REGEX_PATTERNS.UUID)
 	.messages({
 		'string.pattern.base': getErrorMessage('2007', {}, 'id'),
 	});
