@@ -26,7 +26,7 @@ const getAllStudents = async (role, userId, orgId) => {
   if (role === USER_ROLE.TEACHER) {
     const teacher = await User.findByPk(userId, { attributes: ['lectures'] });
     if (!teacher || !teacher.lectures || teacher.lectures.length === 0) {
-      return { students: [], message: 'No lectures assigned to this teacher' };
+      return { students: [] };
     }
     const students = await User.findAll({
       where: {

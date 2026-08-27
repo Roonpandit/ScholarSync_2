@@ -26,3 +26,14 @@ export const ACTION_TYPE = {
 	CHANGE_STATUS: 'changeStatus',
 	CREATED: 'created',
 };
+
+export const USER_STATUS_ACTIONS = {
+	BLOCK: 'block',
+	UNBLOCK: 'unblock',
+};
+
+export const IP_APPLIES_TO = {
+	STUDENT: 'student',
+	TEACHER: 'teacher',
+	BOTH: 'both',
+};

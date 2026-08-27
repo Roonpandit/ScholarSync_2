@@ -131,7 +131,7 @@ User.prototype.matchPassword = async function (enteredPassword) {
 };
 
 // Instance method: Generate and hash password reset token
-User.prototype.getResetPasswordToken = function () {
+User.prototype.getResetPasswordToken = function (expireMinutes = 10) {
   // Generate token
   const resetToken = crypto.randomBytes(20).toString('hex');
 
@@ -141,8 +141,8 @@ User.prototype.getResetPasswordToken = function () {
     .update(resetToken)
     .digest('hex');
 
-  // Set expire (10 minutes)
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+  // Set expire (default 10 minutes, configurable for first-time setup)
+  this.resetPasswordExpire = Date.now() + expireMinutes * 60 * 1000;
 
   return resetToken;
 };

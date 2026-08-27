@@ -1,4 +1,4 @@
-import { User, Attendance, cloudinary } from 'scholarsync-backend-common';
+import { User, Attendance, cloudinary, USER_ROLE } from 'scholarsync-backend-common';
 
 const findUserById = async (id) => {
   const user = await User.findByPk(id, { attributes: { exclude: ['password'] } });
@@ -13,7 +13,7 @@ const findUserByIdWithPassword = async (id) => {
 };
 
 const deleteUserById = async (id, role) => {
-  if (role === 'student') {
+  if (role === USER_ROLE.STUDENT) {
     // Clean up attendance records + Cloudinary photos
     const attendanceRecords = await Attendance.findAll({ where: { student: id } });
     const photoDeletePromises = attendanceRecords.map(record => {

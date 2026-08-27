@@ -313,6 +313,8 @@
 | 7.2 | Email lowercase enforcement | YES — Joi `.lowercase()` on all email fields | [x] |
 | 7.3 | Unified duplicate check (email, phone, code) | YES — `checkDuplicateFields()` checks across all tables, error 1039 `$fieldName$ already exists` | [x] |
 | 7.4 | getCatchErrorMessage helper | YES — logs errors + returns structured response | [x] |
+| 7.5 | No password in registration | YES — removed password field, auto-generates temp password, sends "Set Password" link via welcome email | [x] |
+| 7.6 | Reset token on creation | YES — 24hr expiry for first-time setup (vs 10min for forgot password) | [x] |
 
 ### #8 — Bulk Register
 
@@ -324,6 +326,7 @@
 | 8.2 | Per-row duplicate check (email, phone, code) | YES — checks within batch + against DB | [x] |
 | 8.3 | Per-row detailed errors | YES — returns `{ row, field, message }` for each failed row | [x] |
 | 8.4 | Same validations as single register | YES — lowercase email, phone check, mustChangePassword from model default | [x] |
+| 8.5 | No password in bulk register | YES — auto-generates temp password per student, sends "Set Password" link | [x] |
 
 ### #9 — User Management (Get/Update/Delete/Block/Unblock)
 
@@ -338,10 +341,32 @@
 | 9.5 | Log block/unblock in UpdateHistory | YES — action_type `changeStatus`, before/after status | [x] |
 | 9.6 | Log user updates in UpdateHistory | YES — action_type `updateData`, original + edit JSONB | [x] |
 
-### #11 — Lecture Management
+### #10 — Lecture Assignment
+
+**Current:** Assign/unassign lectures to students via action.
+
 | # | Enhancement | Decision | Status |
 |---|---|---|---|
-| | *(To be discussed)* | | [ ] |
+| 10.1 | Org filter — only same-org lectures/students | YES — orgId enforced | [x] |
+| 10.2 | Admin + Teacher can assign (teacher restricted to own lectures) | YES | [x] |
+| 10.3 | Bulk limit same as BULK_REGISTER_LIMIT (50) | YES | [x] |
+| 10.4 | Log in UpdateHistory | NO — skip | [x] |
+
+### #11 — IP Management
+
+**Current:** Add/toggle/delete IPs, per-IP enabled/disabled, applies_to (student/teacher/both).
+
+| # | Enhancement | Decision | Status |
+|---|---|---|---|
+| 11.1 | Org-scoped — each org has own IP whitelist | YES — orgId in allowed_ips | [x] |
+| 11.2 | Per-IP `appliesTo` (student/teacher/both) | YES — enum column | [x] |
+| 11.3 | Per-IP `isEnabled` toggle | YES — enable/disable without deleting | [x] |
+| 11.4 | Removed IPSettings table | YES — toggle is per-IP, no global switch | [x] |
+| 11.5 | Removed ip_restriction_enabled from global_settings | YES | [x] |
+| 11.6 | Middleware IP check for students AND teachers | YES — checks based on role + appliesTo | [x] |
+| 11.7 | Kill session on IP violation | YES — clears sessionId + deletes refresh token | [x] |
+| 11.8 | Using request-ip package | YES — like eSign | [x] |
+| 11.9 | REGEX_PATTERNS in common | YES — UUID, MOBILE, IPV4, PASSWORD, etc. | [x] |
 
 ### #12 — Attendance Slots
 | # | Enhancement | Decision | Status |

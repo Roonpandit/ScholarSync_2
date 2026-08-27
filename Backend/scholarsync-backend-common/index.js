@@ -13,7 +13,6 @@ import AttendanceSlot from './models/AttendanceSlot.js';
 import LeaveRequest from './models/LeaveRequest.js';
 import LeaveSlot from './models/LeaveSlot.js';
 import AllowedIP from './models/AllowedIP.js';
-import IPSettings from './models/IPSettings.js';
 import RefreshToken from './models/RefreshToken.js';
 import ActivityLog from './models/LoginAttempt.js';
 import DeletionLog from './models/DeletionLog.js';
@@ -40,15 +39,16 @@ const SUCCESS = require('./constants/success-response-constants.json');
 const ERRORS = require('./constants/validation-errors-constants.json');
 const ERROR_CONDITIONS = require('./constants/validation-error-condition.json');
 import { STATUS_CODE } from './constants/status-codes.js';
-import { USER_ROLE, ACTIVITY_TYPE, USER_STATUS, ACTION_TYPE } from './constants/application-constant.js';
+import { USER_ROLE, ACTIVITY_TYPE, USER_STATUS, ACTION_TYPE, USER_STATUS_ACTIONS, IP_APPLIES_TO } from './constants/application-constant.js';
+import { REGEX_PATTERNS } from './constants/regex-constant.js';
 
 export {
   connectDB, connectPG,
   cloudinary,
   User, Lecture, Attendance, AttendanceSlot,
-  LeaveRequest, LeaveSlot, AllowedIP, IPSettings, RefreshToken, ActivityLog, DeletionLog, UpdateHistory,
+  LeaveRequest, LeaveSlot, AllowedIP, RefreshToken, ActivityLog, DeletionLog, UpdateHistory,
   protect, authorize, restrictToAdmin, verifyAdmin, initiateMiddleware,
   checkEmailExists, checkDuplicateFields, validatePassword, getErrorMessage, getCatchErrorMessage, logCatchError, sendResponse,
-  SUCCESS, ERRORS, ERROR_CONDITIONS, STATUS_CODE, USER_ROLE, ACTIVITY_TYPE, USER_STATUS, ACTION_TYPE,
+  SUCCESS, ERRORS, ERROR_CONDITIONS, STATUS_CODE, USER_ROLE, ACTIVITY_TYPE, USER_STATUS, ACTION_TYPE, USER_STATUS_ACTIONS, IP_APPLIES_TO, REGEX_PATTERNS,
   logger, getScholarSyncLog, appendToScholarSyncLog
 };

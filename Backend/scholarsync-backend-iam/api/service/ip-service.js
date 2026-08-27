@@ -1,41 +1,29 @@
-import { AllowedIP, IPSettings } from 'scholarsync-backend-common';
+import { AllowedIP } from 'scholarsync-backend-common';
 
 const addAllowedIP = async (data) => {
   return AllowedIP.create(data);
 };
 
-const findAllowedIPById = async (id) => {
-  return AllowedIP.findByPk(id);
+const findAllowedIPById = async (ipId, orgId) => {
+  return AllowedIP.findOne({ where: { ipId, orgId } });
 };
 
-const deleteAllowedIPById = async (id) => {
-  return AllowedIP.destroy({ where: { id } });
+const deleteAllowedIPById = async (ipId) => {
+  return AllowedIP.destroy({ where: { ipId } });
 };
 
-const getAllAllowedIPs = async () => {
-  return AllowedIP.findAll({ order: [['createdAt', 'DESC']] });
+const toggleIP = async (ipId, isEnabled) => {
+  return AllowedIP.update({ isEnabled }, { where: { ipId } });
 };
 
-const getIPSettings = async () => {
-  return IPSettings.findOne();
-};
-
-const updateIPSettings = async (isEnabled, adminId) => {
-  let settings = await IPSettings.findOne();
-  if (settings) {
-    settings.isEnabled = isEnabled;
-    settings.updatedBy = adminId;
-    await settings.save();
-    return settings;
-  }
-  return IPSettings.create({ isEnabled, updatedBy: adminId });
+const getAllAllowedIPs = async (orgId) => {
+  return AllowedIP.findAll({ where: { orgId }, order: [['created_at', 'DESC']] });
 };
 
 export default {
   addAllowedIP,
   findAllowedIPById,
   deleteAllowedIPById,
+  toggleIP,
   getAllAllowedIPs,
-  getIPSettings,
-  updateIPSettings
 };

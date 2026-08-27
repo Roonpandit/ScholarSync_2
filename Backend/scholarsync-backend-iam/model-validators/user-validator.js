@@ -1,8 +1,8 @@
 import Joi from 'joi';
-import { getErrorMessage } from 'scholarsync-backend-common';
+import { getErrorMessage, REGEX_PATTERNS } from 'scholarsync-backend-common';
 
 const objectId = Joi.string()
-	.regex(/^[0-9a-fA-F]{24}$/)
+	.pattern(REGEX_PATTERNS.UUID)
 	.messages({
 		'string.pattern.base': getErrorMessage('2007', {}, 'id'),
 	});
@@ -33,7 +33,7 @@ const updateUserSchema = Joi.object({
 			'string.base': getErrorMessage('2004', { fieldName: 'teacherCode' }, 'teacherCode'),
 		}),
 	phone: Joi.string()
-		.pattern(/^\d{10}$/)
+		.pattern(REGEX_PATTERNS.MOBILE)
 		.optional()
 		.messages({
 			'string.pattern.base': getErrorMessage('2005', { fieldName: 'phone' }, 'phone'),
